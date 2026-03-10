@@ -1,0 +1,146 @@
+# AI LINE Bot System — MVP Proposal
+
+> **LINE-based workflow & task management platform with AI assistance**
+> Designed for multi-store operations · Built on Supabase · Powered by Qwen 3.5
+
+---
+
+## The Problem
+
+Multi-store retail operations rely on spreadsheets, scattered LINE messages, and manual follow-ups to manage store openings, procurement, and daily tasks. This leads to:
+
+- **No single source of truth** — task status lives in spreadsheets, hard to track in real-time
+- **No accountability** — assignments and deadlines aren't enforced
+- **Manual reminders** — managers chase updates instead of getting auto-alerts
+- **No visibility** — leadership can't see operational progress across stores at a glance
+
+---
+
+## The Solution
+
+A **LINE-native workflow platform** where teams manage tasks, track progress, and receive AI-powered assistance — all from the messaging app they already use daily.
+
+```
+┌─────────────────────────────────────────────┐
+│               LINE Chat / Groups            │
+│   Commands: /任務 列表  ·  /流程 狀態       │
+└──────────────────┬──────────────────────────┘
+                   │ webhook
+┌──────────────────▼──────────────────────────┐
+│            Supabase Backend                 │
+│  Edge Functions · PostgreSQL · Auth · Cron  │
+├─────────────────────────────┬───────────────┤
+│     Workflow & Task Engine  │  AI Engine    │
+│     Notification Engine     │  (Qwen 3.5)  │
+│     Trigger Engine          │              │
+└─────────────────────────────┴───────────────┘
+                   │
+┌──────────────────▼──────────────────────────┐
+│         Admin Dashboard (React)             │
+│  Workflows · Tasks · Triggers · LINE Mgmt  │
+└─────────────────────────────────────────────┘
+```
+
+![Architecture Overview](C:/Users/TING/.gemini/antigravity/brain/cf8bdf59-92b3-4d56-8ce9-83aefbfc701a/mvp_architecture_1773175652545.png)
+
+---
+
+## MVP Scope — 6 Phases
+
+### Phase 1 · Foundation
+Core database, LINE Bot webhook, Qwen 3.5 AI chat, admin UI skeleton, user authentication.
+
+### Phase 2 · Task & Workflow Management
+Workflow engine (templates → instances → steps), task CRUD, assignment, status tracking, admin task board.
+
+### Phase 3 · LINE Commands (Bilingual)
+Teams interact via LINE in **Traditional Chinese or English**:
+
+| 中文指令 | English | 動作 |
+|---|---|---|
+| `/任務 列表` | `/task list` | 查看我的任務 |
+| `/任務 新增 [標題]` | `/task create` | 建立新任務 |
+| `/任務 [id] 完成` | `/task done` | 完成任務 |
+| `/流程 狀態` | `/workflow status` | 查看流程進度 |
+| `/指派 [id] [人員]` | `/assign` | 指派任務 |
+| `/提醒 [id] [時間]` | `/remind` | 設定提醒 |
+| `/報告` | `/report` | 每日摘要 |
+
+### Phase 4 · Auto Reminders & Notifications
+Scheduled reminders, overdue escalation, LINE push notifications, centralized notification rules.
+
+### Phase 5 · Workflow Triggers
+Event-driven automation: "When task X completes → create task Y → notify manager." Admin UI for trigger setup.
+
+### Phase 6 · LINE Identity & Group Mapping
+Map LINE users → internal users, LINE groups → departments/stores, group-based notification routing.
+
+---
+
+## Initial Data Import
+
+Import from existing `wine_store` spreadsheet:
+
+| Sheet | Records | Imported As |
+|---|---|---|
+| **開店前置作業** | 32 tasks | Workflow template + active instance |
+| **營業小物件** | 33 items | Operational procurement checklist |
+
+**Seed users:** Zoey, 學文, Ken, 營運
+
+The system will be **pre-populated** with real operational data on Day 1.
+
+---
+
+## Tech Stack
+
+| Component | Technology |
+|---|---|
+| Database & Auth | Supabase (PostgreSQL) |
+| Backend API | Supabase Edge Functions (Deno) |
+| AI Assistant | Qwen 3.5 (DashScope API) |
+| LINE Integration | LINE Messaging API |
+| Admin UI | Vite + React + TypeScript |
+| Scheduling | pg_cron |
+
+---
+
+## Key Deliverables
+
+| Phase | Deliverable | Estimated Effort |
+|---|---|---|
+| 1 | Bot responds to LINE messages with AI · Admin login works | Foundation |
+| 2 | Create/manage workflows and tasks from admin UI | Core Engine |
+| 3 | Full task management from LINE chat in 中文/English | LINE Interface |
+| 4 | Auto reminders for overdue tasks · Escalation rules | Notifications |
+| 5 | Event → Condition → Action automation from admin UI | Automation |
+| 6 | LINE users mapped to system · Group routing active | Identity Layer |
+
+---
+
+## Success Metrics
+
+| Metric | Target |
+|---|---|
+| Task visibility | 100% of store-opening tasks tracked in one system |
+| Response time | LINE commands respond in < 3 seconds |
+| Reminder coverage | Every overdue task triggers a notification |
+| User adoption | Team manages daily tasks via LINE, not spreadsheets |
+| AI utility | Natural language queries return actionable data |
+
+---
+
+## Future Expansion (Post-MVP)
+
+The foundation supports scaling into:
+
+| Module | Description |
+|---|---|
+| Inventory Management | Stock tracking, purchase orders, vendor management |
+| Employee & HR | Attendance, scheduling, leave requests |
+| Marketing | Campaign management, promotion tracking |
+| Finance | Sales reporting, expense tracking, P&L |
+| Analytics & Dashboards | Real-time KPIs per store, executive reports |
+| Multi-store RBAC | Role-based access per store, department, region |
+
+> The MVP builds the **operational backbone** — every future module plugs into the same workflow, task, and notification infrastructure.
