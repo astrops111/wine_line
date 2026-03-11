@@ -9,6 +9,16 @@ import { Checklists } from './pages/Checklists';
 import { Notifications } from './pages/Notifications';
 import { Triggers } from './pages/Triggers';
 import { Users } from './pages/Users';
+import { Employees } from './pages/Employees';
+import { Holidays } from './pages/Holidays';
+import { Scheduling } from './pages/Scheduling';
+import { ShiftRules } from './pages/ShiftRules';
+import { AdminSettings } from './pages/AdminSettings';
+import { TimeTracker } from './pages/TimeTracker';
+import { HrDashboard } from './pages/HrDashboard';
+import { LiffApp } from './pages/LiffApp';
+import { ManagerDashboard } from './pages/ManagerDashboard';
+import { LiffManagerDashboard } from './pages/LiffManagerDashboard';
 import './index.css';
 
 initLocale();
@@ -30,6 +40,13 @@ function Sidebar() {
     { path: '/workflows', icon: '🔄', label: t('nav.workflows') },
     { path: '/checklists', icon: '✅', label: t('nav.checklists') },
     { path: '/line', icon: '💬', label: t('nav.line') },
+    { path: '/employees', icon: '👥', label: t('nav.employees') },
+    { path: '/scheduling', icon: '📅', label: t('nav.scheduling') },
+    { path: '/holidays', icon: '🗓', label: t('nav.holidays') },
+    { path: '/time-tracker', icon: '⏱', label: locale === 'zh-TW' ? '打卡追蹤' : 'Time Tracker' },
+    { path: '/hr-dashboard', icon: '📈', label: locale === 'zh-TW' ? 'HR 報表' : 'HR Dashboard' },
+    { path: '/shift-rules', icon: '⚖️', label: locale === 'zh-TW' ? '排班規則' : 'Shift Rules' },
+    { path: '/manager-dashboard', icon: '🎯', label: locale === 'zh-TW' ? '營運看板' : 'Ops Dashboard' },
   ];
 
   return (
@@ -73,6 +90,10 @@ function Sidebar() {
             <span className="icon">👤</span>
             {t('nav.users')}
           </NavLink>
+          <NavLink to="/admin" className={`nav-item ${location.pathname === '/admin' ? 'active' : ''}`}>
+            <span className="icon">⚙️</span>
+            {locale === 'zh-TW' ? '系統設定' : 'Admin Settings'}
+          </NavLink>
         </div>
       </nav>
 
@@ -99,17 +120,28 @@ function AppContent() {
           <Route path="/triggers" element={<Triggers />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/users" element={<Users />} />
+          <Route path="/employees" element={<Employees />} />
+          <Route path="/scheduling" element={<Scheduling />} />
+          <Route path="/holidays" element={<Holidays />} />
+          <Route path="/shift-rules" element={<ShiftRules />} />
+          <Route path="/admin" element={<AdminSettings />} />
+          <Route path="/time-tracker" element={<TimeTracker />} />
+          <Route path="/hr-dashboard" element={<HrDashboard />} />
+          <Route path="/manager-dashboard" element={<ManagerDashboard />} />
         </Routes>
       </main>
     </div>
   );
 }
 
-
 export default function App() {
   return (
     <BrowserRouter>
-      <AppContent />
+      <Routes>
+        <Route path="/liff/app" element={<LiffApp />} />
+        <Route path="/liff/dashboard" element={<LiffManagerDashboard />} />
+        <Route path="/*" element={<AppContent />} />
+      </Routes>
     </BrowserRouter>
   );
 }

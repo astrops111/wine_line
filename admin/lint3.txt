@@ -1,0 +1,448 @@
+﻿
+> admin@0.0.0 lint
+> eslint .
+
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\components\WorkflowAIChat.tsx
+   91:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  129:64  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  132:26  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\AdminSettings.tsx
+  22:23  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\AdminSettings.tsx:22:23
+  20 |     };
+  21 |
+> 22 |     useEffect(() => { loadModules().then(() => setLoading(false)); }, []);
+     |                       ^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  23 |
+  24 |     const toggleModule = async (id: string, enabled: boolean) => {
+  25 |         await supabase.from('module_access').update({ is_enabled: enabled }).eq('id', id);  react-hooks/set-state-in-effect
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Checklists.tsx
+  25:23  error  Error: Cannot access variable before it is declared
+
+`loadData` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Checklists.tsx:25:23
+  23 |     const zh = getLocale() === 'zh-TW';
+  24 |
+> 25 |     useEffect(() => { loadData(); }, []);
+     |                       ^^^^^^^^ `loadData` accessed before it is declared
+  26 |
+  27 |     async function loadData() {
+  28 |         const { data } = await supabase.from('checklists')
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Checklists.tsx:27:5
+  25 |     useEffect(() => { loadData(); }, []);
+  26 |
+> 27 |     async function loadData() {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 28 |         const { data } = await supabase.from('checklists')
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 29 |             .select('id, name, items:checklist_items(id, category, name, quantity, is_purchased, sort_order)')
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 30 |             .order('created_at', { ascending: true });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 31 |         if (data) setChecklists(data as any);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 32 |         setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 33 |     }
+     | ^^^^^^ `loadData` is declared here
+  34 |
+  35 |     async function togglePurchased(itemId: string, current: boolean) {
+  36 |         await supabase.from('checklist_items')  react-hooks/immutability
+  31:41  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-explicit-any
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Dashboard.tsx
+  49:35  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  50:46  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  53:59  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Employees.tsx
+   47:34  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+   48:39  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+   66:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Employees.tsx:66:13
+  64 |     useEffect(() => {
+  65 |         Promise.all([
+> 66 |             loadEmployees(),
+     |             ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  67 |             supabase.from('stores').select('id, name, store_code').order('name').then(r => setStores(r.data || []))
+  68 |         ]).then(() => setLoading(false));
+  69 |     }, []);  react-hooks/set-state-in-effect
+   73:13  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Employees.tsx:73:13
+  71 |     useEffect(() => {
+  72 |         if (selected) {
+> 73 |             loadLeaves(selected.id);
+     |             ^^^^^^^^^^ Avoid calling setState() directly within an effect
+  74 |             loadReviews(selected.id);
+  75 |         } else {
+  76 |             setLeaves([]);                                                                                   react-hooks/set-state-in-effect
+   79:8   warning  React Hook useEffect has a missing dependency: 'selected'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      react-hooks/exhaustive-deps
+   96:66  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+  264:98  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Holidays.tsx
+  25:23  error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Holidays.tsx:25:23
+  23 |     };
+  24 |
+> 25 |     useEffect(() => { loadHolidays().then(() => setLoading(false)); }, [year]);
+     |                       ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  26 |
+  27 |     const saveHoliday = async () => {
+  28 |         if (!form.date || !form.name_zh) return;  react-hooks/set-state-in-effect
+  25:72  warning  React Hook useEffect has a missing dependency: 'loadHolidays'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     react-hooks/exhaustive-deps
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\HrDashboard.tsx
+   64:49  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+   82:30  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-explicit-any
+  109:9   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\HrDashboard.tsx:109:9
+  107 |
+  108 |     useEffect(() => {
+> 109 |         loadDashboard();
+      |         ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  110 |     }, [startDate, endDate, selectedStore, employeeType, selectedEmployee]);
+  111 |
+  112 |     const typeLabel: Record<string, string> = { full_time: zh ? '?刻' : 'Full-time', part_time: zh ? '?潸' : 'Part-time', contract: zh ? '蝝?' : 'Contract' };  react-hooks/set-state-in-effect
+  110:8   warning  React Hook useEffect has a missing dependency: 'loadDashboard'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           react-hooks/exhaustive-deps
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\LineManagement.tsx
+  39:23  error  Error: Cannot access variable before it is declared
+
+`loadData` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\LineManagement.tsx:39:23
+  37 |     const webhookUrl = `https://kzawtuvmchhtdsokrjys.supabase.co/functions/v1/line-webhook`;
+  38 |
+> 39 |     useEffect(() => { loadData(); }, []);
+     |                       ^^^^^^^^ `loadData` accessed before it is declared
+  40 |
+  41 |     async function loadData() {
+  42 |         const [usersRes, groupsRes, sysUsersRes] = await Promise.all([
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\LineManagement.tsx:41:5
+  39 |     useEffect(() => { loadData(); }, []);
+  40 |
+> 41 |     async function loadData() {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 42 |         const [usersRes, groupsRes, sysUsersRes] = await Promise.all([
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 43 |             supabase.from('line_users').select('*, user:users(id, name)').order('last_active_at', { ascending: false }),
+     ??     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 50 |         setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 51 |     }
+     | ^^^^^^ `loadData` is declared here
+  52 |
+  53 |     async function mapLineUser(lineUserId: string, systemUserId: string | null) {
+  54 |         await supabase.from('line_users')  react-hooks/immutability
+  47:58  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Notifications.tsx
+  47:23  error  Error: Cannot access variable before it is declared
+
+`loadData` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Notifications.tsx:47:23
+  45 |     const zh = getLocale() === 'zh-TW';
+  46 |
+> 47 |     useEffect(() => { loadData(); }, []);
+     |                       ^^^^^^^^ `loadData` accessed before it is declared
+  48 |
+  49 |     async function loadData() {
+  50 |         setLoading(true);
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Notifications.tsx:49:5
+  47 |     useEffect(() => { loadData(); }, []);
+  48 |
+> 49 |     async function loadData() {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 50 |         setLoading(true);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 51 |         const [rulesRes, logsRes, remindersRes] = await Promise.all([
+     ??     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 59 |         setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 60 |     }
+     | ^^^^^^ `loadData` is declared here
+  61 |
+  62 |     async function createRule() {
+  63 |         if (!newRule.name.trim()) return;  react-hooks/immutability
+  57:56  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-explicit-any
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Scheduling.tsx
+    5:82   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+    9:173  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   22:42   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   98:63   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  110:23   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  204:54   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  205:96   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Tasks.tsx
+   48:23  error  Error: Cannot access variable before it is declared
+
+`loadTasks` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Tasks.tsx:48:23
+  46 |     const zh = getLocale() === 'zh-TW';
+  47 |
+> 48 |     useEffect(() => { loadTasks(); loadUsers(); }, []);
+     |                       ^^^^^^^^^ `loadTasks` accessed before it is declared
+  49 |
+  50 |     async function loadUsers() {
+  51 |         const { data } = await supabase.from('users').select('id, name');
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Tasks.tsx:55:5
+  53 |     }
+  54 |
+> 55 |     async function loadTasks() {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 56 |         setLoading(true);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 57 |         const { data } = await supabase.from('tasks')
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 58 |             .select('id, title, description, status, priority, sort_order, due_date, planned_start, completed_at, created_at, users!tasks_assigned_to_fkey(id, name), workflow_steps(name, step_order)')
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 59 |             .order('sort_order', { ascending: true });
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 60 |         if (data) setTasks(data.map((t: any) => ({ ...t, assigned_user: t.users, workflow_step: t.workflow_steps })));
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 61 |         setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 62 |     }
+     | ^^^^^^ `loadTasks` is declared here
+  63 |
+  64 |     async function updateStatus(taskId: string, newStatus: string) {
+  65 |         const updateData: Record<string, unknown> = { status: newStatus, updated_at: new Date().toISOString() };  react-hooks/immutability
+   48:36  error  Error: Cannot access variable before it is declared
+
+`loadUsers` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Tasks.tsx:48:36
+  46 |     const zh = getLocale() === 'zh-TW';
+  47 |
+> 48 |     useEffect(() => { loadTasks(); loadUsers(); }, []);
+     |                                    ^^^^^^^^^ `loadUsers` accessed before it is declared
+  49 |
+  50 |     async function loadUsers() {
+  51 |         const { data } = await supabase.from('users').select('id, name');
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Tasks.tsx:50:5
+  48 |     useEffect(() => { loadTasks(); loadUsers(); }, []);
+  49 |
+> 50 |     async function loadUsers() {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 51 |         const { data } = await supabase.from('users').select('id, name');
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 52 |         if (data) setUsers(data);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 53 |     }
+     | ^^^^^^ `loadUsers` is declared here
+  54 |
+  55 |     async function loadTasks() {
+  56 |         setLoading(true);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    react-hooks/immutability
+   60:41  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  100:42  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\TimeTracker.tsx
+   27:46   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
+   30:46   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
+   50:23   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\TimeTracker.tsx:50:23
+  48 |     }, []);
+  49 |
+> 50 |     useEffect(() => { loadData(); }, [selectedDate, selectedStore]);
+     |                       ^^^^^^^^ Avoid calling setState() directly within an effect
+  51 |
+  52 |     const loadMappings = async () => {
+  53 |         const { data } = await supabase.from('line_employee_mapping').select('*, user:users(name)').order('created_at', { ascending: false });  react-hooks/set-state-in-effect
+   50:38   warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 react-hooks/exhaustive-deps
+   56:46   error    Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\TimeTracker.tsx:56:46
+  54 |         setMappings(data || []);
+  55 |     };
+> 56 |     useEffect(() => { if (tab === 'mapping') loadMappings(); }, [tab]);
+     |                                              ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  57 |
+  58 |     const clockIn = async (userId: string) => {
+  59 |         const emp = employees.find(e => e.id === userId);                    react-hooks/set-state-in-effect
+  217:119  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
+  237:101  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
+  282:106  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-explicit-any
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Triggers.tsx
+   38:23   error  Error: Cannot access variable before it is declared
+
+`loadData` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Triggers.tsx:38:23
+  36 |     const zh = getLocale() === 'zh-TW';
+  37 |
+> 38 |     useEffect(() => { loadData(); }, []);
+     |                       ^^^^^^^^ `loadData` accessed before it is declared
+  39 |
+  40 |     async function loadData() {
+  41 |         setLoading(true);
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Triggers.tsx:40:5
+  38 |     useEffect(() => { loadData(); }, []);
+  39 |
+> 40 |     async function loadData() {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 41 |         setLoading(true);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 42 |         const [triggersRes, logsRes] = await Promise.all([
+     ??     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 51 |         setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 52 |     }
+     | ^^^^^^ `loadData` is declared here
+  53 |
+  54 |     async function createTrigger() {
+  55 |         if (!newTrigger.name.trim()) return;  react-hooks/immutability
+   47:56   error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+   49:54   error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+  212:95   error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+  212:126  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+  212:160  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+  213:101  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+  213:130  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-explicit-any
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Users.tsx
+  22:23  error  Error: Cannot access variable before it is declared
+
+`loadData` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Users.tsx:22:23
+  20 |     const zh = getLocale() === 'zh-TW';
+  21 |
+> 22 |     useEffect(() => { loadData(); }, []);
+     |                       ^^^^^^^^ `loadData` accessed before it is declared
+  23 |
+  24 |     async function loadData() {
+  25 |         setLoading(true);
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Users.tsx:24:5
+  22 |     useEffect(() => { loadData(); }, []);
+  23 |
+> 24 |     async function loadData() {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 25 |         setLoading(true);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 26 |         const { data } = await supabase.from('users')
+     ??     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 39 |         setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 40 |     }
+     | ^^^^^^ `loadData` is declared here
+  41 |
+  42 |     async function createUser() {
+  43 |         if (!newUser.name.trim() || !newUser.email.trim()) return;  react-hooks/immutability
+  33:35  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-explicit-any
+  35:47  error  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-explicit-any
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Workflows.tsx
+   52:23   error    Error: Cannot access variable before it is declared
+
+`loadData` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Workflows.tsx:52:23
+  50 |     const zh = getLocale() === 'zh-TW';
+  51 |
+> 52 |     useEffect(() => { loadData(); }, []);
+     |                       ^^^^^^^^ `loadData` accessed before it is declared
+  53 |
+  54 |     async function loadData() {
+  55 |         setLoading(true);
+
+C:\Users\TING\Documents\Astro8\AI\wines\admin\src\pages\Workflows.tsx:54:5
+  52 |     useEffect(() => { loadData(); }, []);
+  53 |
+> 54 |     async function loadData() {
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 55 |         setLoading(true);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 56 |         await Promise.all([loadTemplates(), loadInstances()]);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 57 |         setLoading(false);
+     | ^^^^^^^^^^^^^^^^^^^^^^^^^
+> 58 |     }
+     | ^^^^^^ `loadData` is declared here
+  59 |
+  60 |     async function loadTemplates() {
+  61 |         const { data } = await supabase.from('workflows')  react-hooks/immutability
+   52:38   warning  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        react-hooks/exhaustive-deps
+   64:45   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+   64:103  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+   64:111  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+   79:39   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+   79:86   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+   81:61   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  122:71   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  122:107  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  122:115  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  133:67   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  133:103  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  133:111  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  149:67   error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  149:103  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  149:111  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+
+??74 problems (69 errors, 5 warnings)
+

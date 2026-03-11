@@ -62,6 +62,45 @@ const translations: Record<string, Record<Locale, string>> = {
     'common.loading': { 'zh-TW': '載入中...', en: 'Loading...' },
     'common.no_data': { 'zh-TW': '暫無資料', en: 'No data' },
     'common.actions': { 'zh-TW': '操作', en: 'Actions' },
+
+    // Employees
+    'nav.employees': { 'zh-TW': '員工管理', en: 'Employees' },
+    'employee.title': { 'zh-TW': '員工管理', en: 'Employee Management' },
+    'employee.subtitle': { 'zh-TW': '管理員工資料、職位與工時設定', en: 'Manage employee profiles, positions, and hours' },
+    'employee.create': { 'zh-TW': '新增員工', en: 'Add Employee' },
+    'employee.name': { 'zh-TW': '姓名', en: 'Name' },
+    'employee.type': { 'zh-TW': '類型', en: 'Type' },
+    'employee.full_time': { 'zh-TW': '全職', en: 'Full-time' },
+    'employee.part_time': { 'zh-TW': '兼職', en: 'Part-time' },
+    'employee.contract': { 'zh-TW': '約聘', en: 'Contract' },
+    'employee.store': { 'zh-TW': '門市', en: 'Store' },
+    'employee.position': { 'zh-TW': '職位', en: 'Position' },
+    'employee.wage': { 'zh-TW': '時薪', en: 'Hourly Wage' },
+    'employee.max_hours': { 'zh-TW': '每週上限', en: 'Max Hrs/Week' },
+    'employee.hire_date': { 'zh-TW': '入職日期', en: 'Hire Date' },
+    'employee.phone': { 'zh-TW': '電話', en: 'Phone' },
+
+    // Scheduling
+    'nav.scheduling': { 'zh-TW': '排班管理', en: 'Scheduling' },
+    'schedule.title': { 'zh-TW': '排班管理', en: 'Shift Scheduling' },
+    'schedule.subtitle': { 'zh-TW': '管理班表、排班偏好與AI自動排班', en: 'Manage shifts, preferences, and AI scheduling' },
+    'schedule.calendar': { 'zh-TW': '班表總覽', en: 'Schedule' },
+    'schedule.store_settings': { 'zh-TW': '門市設定', en: 'Store Settings' },
+    'schedule.preferences': { 'zh-TW': '排班偏好', en: 'Preferences' },
+    'schedule.ai_generate': { 'zh-TW': 'AI 自動排班', en: 'AI Auto-Schedule' },
+    'schedule.publish': { 'zh-TW': '發佈班表', en: 'Publish Schedule' },
+    'schedule.draft': { 'zh-TW': '草稿', en: 'Draft' },
+    'schedule.published': { 'zh-TW': '已發佈', en: 'Published' },
+
+    // Holidays
+    'nav.holidays': { 'zh-TW': '假日管理', en: 'Holidays' },
+    'holiday.title': { 'zh-TW': '假日管理', en: 'Holiday Management' },
+    'holiday.subtitle': { 'zh-TW': '管理國定假日與自訂假日', en: 'Manage national and custom holidays' },
+    'holiday.national': { 'zh-TW': '國定假日', en: 'National' },
+    'holiday.company': { 'zh-TW': '公司假日', en: 'Company' },
+    'holiday.custom': { 'zh-TW': '自訂假日', en: 'Custom' },
+    'holiday.add': { 'zh-TW': '新增假日', en: 'Add Holiday' },
+    'holiday.pay_multiplier': { 'zh-TW': '薪資倍率', en: 'Pay Multiplier' },
 };
 
 let currentLocale: Locale = 'zh-TW';
