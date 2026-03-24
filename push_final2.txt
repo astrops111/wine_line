@@ -1,0 +1,107 @@
+﻿node.exe : Initialising 
+login role...
+At C:\Program 
+Files\nodejs\npx.ps1:28 
+char:12
++   $input | & $NODE_EXE 
+$NPX_CLI_JS $args
++            ~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (Ini  
+  tialising login role..   
+ .:String) [], RemoteEx    
+ception
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+Connecting to remote 
+database...
+Do you want to push these 
+migrations to the remote 
+database?
+ ??20260324310000_audit_per
+formance.sql
+ ??20260324320000_hrm_gap_f
+ill.sql
+ ??20260325000000_audit_log
+s.sql
+ ??20260325010000_documents
+.sql
+ ??20260325020000_performan
+ce.sql
+ ??20260325030000_recruitme
+nt.sql
+ ??20260325100000_special_i
+dentities.sql
+ ??20260325110000_reporting
+_to.sql
+
+ [Y/n] y
+Applying migration 20260324
+310000_audit_performance.sq
+l...
+NOTICE (00000): policy 
+"org_scope_audit_logs" for 
+relation 
+"public.audit_logs" does 
+not exist, skipping
+NOTICE (00000): policy 
+"org_scope_perf_reviews" 
+for relation "public.perfor
+mance_reviews" does not 
+exist, skipping
+NOTICE (00000): policy 
+"org_scope_perf_kpis" for 
+relation 
+"public.performance_kpis" 
+does not exist, skipping
+NOTICE (00000): policy 
+"org_scope_shift_swaps" 
+for relation "public.shift_
+swap_requests" does not 
+exist, skipping
+Applying migration 20260324
+320000_hrm_gap_fill.sql...
+ERROR: syntax error at or 
+near "SELECT" (SQLSTATE 
+42601)                  
+At statement: 18           
+                           
+                    
+-- ?? 7. Schedule 
+quarterly via pg_cron (if 
+extension is available)    
+   
+-- Run on 1st of Jan, Apr, 
+Jul, Oct at midnight UTC   
+                    
+DO $$                      
+                           
+                    
+BEGIN                      
+                           
+                    
+    IF EXISTS (SELECT 1 
+FROM pg_extension WHERE 
+extname = 'pg_cron') THEN 
+        PERFORM 
+cron.schedule(             
+                           
+    
+            'quarterly_pdpa
+_anonymize',               
+                    
+            '0 0 1 
+1,4,7,10 *',               
+                           
+ 
+            $$SELECT public
+.archive_and_anonymize_term
+inated_employees()$$
+          ^                
+                           
+                    
+Try rerunning the command 
+with --debug to 
+troubleshoot the error.

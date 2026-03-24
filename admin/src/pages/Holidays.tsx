@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { t, getLocale } from '../lib/i18n';
+import { useOrg } from '../lib/OrgContext';
 
 interface Holiday {
     id: string; date: string; name_zh: string; name_en: string | null;
@@ -9,6 +10,7 @@ interface Holiday {
 
 export function Holidays() {
     const zh = getLocale() === 'zh-TW';
+    const { orgId } = useOrg();
     const [holidays, setHolidays] = useState<Holiday[]>([]);
     const [loading, setLoading] = useState(true);
     const [year, setYear] = useState(new Date().getFullYear());
@@ -27,7 +29,7 @@ export function Holidays() {
     const saveHoliday = async () => {
         if (!form.date || !form.name_zh) return;
         const payload = {
-            organization_id: '00000000-0000-0000-0000-000000000001',
+            organization_id: orgId,
             date: form.date, name_zh: form.name_zh, name_en: form.name_en || null,
             holiday_type: form.holiday_type, pay_multiplier: Number(form.pay_multiplier) || 2.0,
             year: new Date(form.date).getFullYear(), is_active: true,

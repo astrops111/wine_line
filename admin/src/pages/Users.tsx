@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { t, getLocale } from '../lib/i18n';
+import { useOrg } from '../lib/OrgContext';
 
 interface User {
     id: string;
@@ -18,6 +19,7 @@ export function Users() {
     const [showCreate, setShowCreate] = useState(false);
     const [newUser, setNewUser] = useState({ name: '', email: '', role: '' });
     const zh = getLocale() === 'zh-TW';
+    const { orgId } = useOrg();
 
     useEffect(() => { loadData(); }, []);
 
@@ -42,7 +44,7 @@ export function Users() {
     async function createUser() {
         if (!newUser.name.trim() || !newUser.email.trim()) return;
         const { data } = await supabase.from('users').insert({
-            organization_id: '00000000-0000-0000-0000-000000000001',
+            organization_id: orgId,
             name: newUser.name.trim(),
             email: newUser.email.trim(),
             status: 'active',

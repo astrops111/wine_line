@@ -1,0 +1,58 @@
+
+[functions.liff-task]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/liff-task/index.ts"
+
+[functions.liff-new-task]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/liff-new-task/index.ts"
+
+[functions.line-webhook]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/line-webhook/index.ts"
+
+[functions.task-ai-agent]
+enabled = true
+verify_jwt = false
+import_map = "./functions/task-ai-agent/deno.json"
+entrypoint = "./functions/task-ai-agent/index.ts"
+
+[functions.workflow-ai]
+enabled = true
+verify_jwt = false
+import_map = "./functions/workflow-ai/deno.json"
+entrypoint = "./functions/workflow-ai/index.ts"
+
+[functions.workflow-modify-agent]
+enabled = true
+verify_jwt = false
+import_map = "./functions/workflow-modify-agent/deno.json"
+entrypoint = "./functions/workflow-modify-agent/index.ts"
+
+[functions.orchestrator]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/orchestrator/index.ts"
+
+[functions.doc-flow-analyzer]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/doc-flow-analyzer/index.ts"
+
+[functions.doc-content-gen]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/doc-content-gen/index.ts"
+
+[functions.doc-indexer]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/doc-indexer/index.ts"
+
+[functions.help-chatbot]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/help-chatbot/index.ts"

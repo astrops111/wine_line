@@ -1,0 +1,2003 @@
+﻿node.exe : open C:\Users\TI
+NG\.supabase\profile: The 
+system cannot find the 
+path specified.
+At C:\Program 
+Files\nodejs\npx.ps1:28 
+char:12
++   $input | & $NODE_EXE 
+$NPX_CLI_JS $args
++            ~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (ope  
+  n C:\Users\T...path sp   
+ ecified.:String) [], R    
+emoteException
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+Loading project ref from 
+file: 
+supabase\.temp\project-ref
+Resolved DNS: [2406:da12:b7
+8:de10:d8c0:a72f:b23d:d9ea]
+:5432
+Initialising login role...
+Using access token from 
+env var...
+Supabase CLI 2.83.0
+Using profile: supabase 
+(supabase.co)
+Connecting to remote 
+database...
+2026/03/24 04:22:16 PG 
+Send: {"Type":"StartupMessa
+ge","ProtocolVersion":19660
+8,"Parameters":{"database":
+"postgres","user":"cli_logi
+n_postgres"}}
+2026/03/24 04:22:16 PG 
+Recv: {"Type":"Authenticati
+onSASL","AuthMechanisms":["
+SCRAM-SHA-256"]}
+2026/03/24 04:22:16 PG 
+Send: {"Type":"SASLInitialR
+esponse","AuthMechanism":"S
+CRAM-SHA-256","Data":"n,,n=
+,r=roK29xHK0QIn5GEry5YXnuVl
+"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"Authenticati
+onSASLContinue","Data":"r=r
+oK29xHK0QIn5GEry5YXnuVllvPr
+7Y66miiSVQYmEIMq1wr3,s=Cx+l
+L2pa6I0gXLka7dYI5A==,i=4096
+"}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"SASLResponse
+","Data":"c=biws,r=roK29xHK
+0QIn5GEry5YXnuVllvPr7Y66mii
+SVQYmEIMq1wr3,p=u2fZydXdvE2
+vki8rvq121EyzCrhhplDz3a3Zi1
+JeL84="}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"Authenticati
+onSASLFinal","Data":"v=36Ct
+FJKK5yQcLsSO/jxs21pyEQcPyhE
+3R28+hnsBef8="}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"AuthenticationOK"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ParameterSta
+tus","Name":"in_hot_standby
+","Value":"off"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ParameterSta
+tus","Name":"integer_dateti
+mes","Value":"on"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ParameterSta
+tus","Name":"TimeZone","Val
+ue":"UTC"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ParameterSta
+tus","Name":"IntervalStyle"
+,"Value":"postgres"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ParameterSta
+tus","Name":"is_superuser",
+"Value":"off"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ParameterSta
+tus","Name":"application_na
+me","Value":""}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ParameterSta
+tus","Name":"default_transa
+ction_read_only","Value":"o
+ff"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ParameterSta
+tus","Name":"scram_iteratio
+ns","Value":"4096"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ParameterSta
+tus","Name":"DateStyle","Va
+lue":"ISO, MDY"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ParameterSta
+tus","Name":"standard_confo
+rming_strings","Value":"on"
+}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ParameterSta
+tus","Name":"session_author
+ization","Value":"cli_login
+_postgres"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ParameterSta
+tus","Name":"client_encodin
+g","Value":"UTF8"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ParameterSta
+tus","Name":"server_version
+","Value":"17.6"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ParameterSta
+tus","Name":"server_encodin
+g","Value":"UTF8"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"BackendKeyDa
+ta","ProcessID":878999,"Sec
+retKey":190208019}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ReadyForQuer
+y","TxStatus":"I"}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Query","Stri
+ng":"SET SESSION ROLE 
+postgres"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"SET"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ReadyForQuer
+y","TxStatus":"I"}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"lrupsc_1_0","Query":"SEL
+ECT version FROM supabase_m
+igrations.schema_migrations
+ ORDER BY version","Paramet
+erOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"S","Name":"lrup
+sc_1_0"}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Sync"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ParameterDes
+cription","ParameterOIDs":[
+]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"RowDescripti
+on","Fields":[{"Name":"vers
+ion","TableOID":17498,"Tabl
+eAttributeNumber":1,"DataTy
+peOID":25,"DataTypeSize":-1
+,"TypeModifier":-1,"Format"
+:0}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ReadyForQuer
+y","TxStatus":"I"}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"lrupsc_1_0","Par
+ameterFormatCodes":null,"Pa
+rameters":[],"ResultFormatC
+odes":[0]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Sync"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"RowDescripti
+on","Fields":[{"Name":"vers
+ion","TableOID":17498,"Tabl
+eAttributeNumber":1,"DataTy
+peOID":25,"DataTypeSize":-1
+,"TypeModifier":-1,"Format"
+:0}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260313224
+238"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260314212
+845"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260314215
+000"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260319000
+000"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260319000
+001"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260319000
+002"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260319000
+003"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260319000
+004"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260319000
+005"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260319000
+006"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260319000
+007"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260319000
+008"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260323000
+000"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260323100
+000"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260323200
+000"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260324100
+000"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260324200
+000"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260324210
+000"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260324220
+000"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260324230
+000"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"DataRow","Va
+lues":[{"text":"20260324300
+000"}]}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"SELECT 
+21"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ReadyForQuer
+y","TxStatus":"I"}
+Do you want to push these 
+migrations to the remote 
+database?
+ ??20260324310000_audit_per
+formance.sql
+
+ [Y/n] y
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"SET 
+lock_timeout = 
+'4s'","ParameterOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE 
+SCHEMA IF NOT EXISTS supaba
+se_migrations","ParameterOI
+Ds":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE TABLE 
+IF NOT EXISTS supabase_migr
+ations.schema_migrations 
+(version text NOT NULL 
+PRIMARY 
+KEY)","ParameterOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"ALTER TABLE s
+upabase_migrations.schema_m
+igrations ADD COLUMN IF 
+NOT EXISTS statements text[
+]","ParameterOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"ALTER TABLE s
+upabase_migrations.schema_m
+igrations ADD COLUMN IF 
+NOT EXISTS name 
+text","ParameterOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Sync"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"NoData"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"SET"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"NoData"}
+2026/03/24 04:22:17 PG 
+Recv: {"Severity":"NOTICE",
+"SeverityUnlocalized":"NOTI
+CE","Code":"42P06","Message
+":"schema 
+\"supabase_migrations\" 
+already exists, skipping","
+Detail":"","Hint":"","Posit
+ion":0,"InternalPosition":0
+,"InternalQuery":"","Where"
+:"","SchemaName":"","TableN
+ame":"","ColumnName":"","Da
+taTypeName":"","ConstraintN
+ame":"","File":"schemacmds.
+c","Line":132,"Routine":"Cr
+eateSchemaCommand","Unknown
+Fields":null}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"CREATE 
+SCHEMA"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"NoData"}
+2026/03/24 04:22:17 PG 
+Recv: {"Severity":"NOTICE",
+"SeverityUnlocalized":"NOTI
+CE","Code":"42P07","Message
+":"relation 
+\"schema_migrations\" 
+already exists, skipping","
+Detail":"","Hint":"","Posit
+ion":0,"InternalPosition":0
+,"InternalQuery":"","Where"
+:"","SchemaName":"","TableN
+ame":"","ColumnName":"","Da
+taTypeName":"","ConstraintN
+ame":"","File":"parse_utilc
+md.c","Line":207,"Routine":
+"transformCreateStmt","Unkn
+ownFields":null}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"CREATE 
+TABLE"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"NoData"}
+2026/03/24 04:22:17 PG 
+Recv: {"Severity":"NOTICE",
+"SeverityUnlocalized":"NOTI
+CE","Code":"42701","Message
+":"column \"statements\" 
+of relation 
+\"schema_migrations\" 
+already exists, skipping","
+Detail":"","Hint":"","Posit
+ion":0,"InternalPosition":0
+,"InternalQuery":"","Where"
+:"","SchemaName":"","TableN
+ame":"","ColumnName":"","Da
+taTypeName":"","ConstraintN
+ame":"","File":"tablecmds.c
+","Line":7471,"Routine":"ch
+eck_for_column_name_collisi
+on","UnknownFields":null}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"ALTER 
+TABLE"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"NoData"}
+2026/03/24 04:22:17 PG 
+Recv: {"Severity":"NOTICE",
+"SeverityUnlocalized":"NOTI
+CE","Code":"42701","Message
+":"column \"name\" of 
+relation 
+\"schema_migrations\" 
+already exists, skipping","
+Detail":"","Hint":"","Posit
+ion":0,"InternalPosition":0
+,"InternalQuery":"","Where"
+:"","SchemaName":"","TableN
+ame":"","ColumnName":"","Da
+taTypeName":"","ConstraintN
+ame":"","File":"tablecmds.c
+","Line":7471,"Routine":"ch
+eck_for_column_name_collisi
+on","UnknownFields":null}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"ALTER 
+TABLE"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ReadyForQuer
+y","TxStatus":"I"}
+Applying migration 20260324
+310000_audit_performance.sq
+l...
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Query","Stri
+ng":"RESET ALL"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"RESET"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ReadyForQuer
+y","TxStatus":"I"}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"-- ==========
+===========================
+=======================\r\n
+-- Audit Logs + 
+Performance Management 
+Tables\r\n-- 20260324310000
+_audit_performance.sql\r\n-
+- =========================
+===========================
+========\r\n\r\n-- ?? 1. 
+Audit Logs ????????
+??????????????
+?????????????
+??????\r\nCREATE 
+TABLE IF NOT EXISTS 
+public.audit_logs (\r\n    
+id              UUID       
+ PRIMARY KEY DEFAULT 
+gen_random_uuid(),\r\n    
+organization_id UUID       
+ NOT NULL REFERENCES 
+public.organizations(id) 
+ON DELETE CASCADE,\r\n    
+user_id         UUID       
+ REFERENCES 
+public.users(id) ON DELETE 
+SET NULL,\r\n    user_name 
+      TEXT,                
+          -- snapshot at 
+time of action\r\n    
+action          TEXT       
+ NOT NULL,          -- 
+'create' | 'update' | 
+'delete' | 'login' | 
+'export' | 'approve' | 
+'reject'\r\n    module     
+     TEXT        NOT NULL, 
+         -- 'payroll' | 
+'leave' | 'overtime' | 
+'employee' | 'scheduling' 
+| 'users' etc.\r\n    
+table_name      TEXT,\r\n  
+  record_id       
+UUID,\r\n    record_label  
+  TEXT,                    
+      -- human-readable 
+label (e.g. employee name, 
+period)\r\n    old_values  
+    JSONB,\r\n    
+new_values      JSONB,\r\n 
+   ip_address      
+TEXT,\r\n    created_at    
+  TIMESTAMPTZ DEFAULT now()
+\r\n)","ParameterOIDs":null
+}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE INDEX 
+IF NOT EXISTS 
+audit_logs_org_idx        
+ON public.audit_logs(organi
+zation_id)","ParameterOIDs"
+:null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE INDEX 
+IF NOT EXISTS 
+audit_logs_user_idx       
+ON public.audit_logs(user_i
+d)","ParameterOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE INDEX 
+IF NOT EXISTS 
+audit_logs_module_idx     
+ON public.audit_logs(module
+)","ParameterOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE INDEX 
+IF NOT EXISTS 
+audit_logs_created_at_idx 
+ON public.audit_logs(create
+d_at DESC)","ParameterOIDs"
+:null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"ALTER TABLE 
+public.audit_logs ENABLE 
+ROW LEVEL SECURITY","Parame
+terOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE 
+POLICY \"org_scope_audit_lo
+gs\"\r\n    ON 
+public.audit_logs FOR 
+ALL\r\n    USING (\r\n     
+   auth.role() = 
+'anon'\r\n        OR 
+organization_id = public.ge
+t_current_org_id()\r\n    
+)\r\n    WITH CHECK (\r\n  
+      auth.role() = 
+'anon'\r\n        OR 
+organization_id = public.ge
+t_current_org_id()\r\n    
+)","ParameterOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"-- ?? 2. 
+Performance Reviews ????
+?????????????
+??????????????
+?\r\nCREATE TABLE IF NOT 
+EXISTS 
+public.performance_reviews 
+(\r\n    id              
+UUID        PRIMARY KEY 
+DEFAULT 
+gen_random_uuid(),\r\n    
+organization_id UUID       
+ NOT NULL REFERENCES 
+public.organizations(id) 
+ON DELETE CASCADE,\r\n    
+employee_id     UUID       
+ NOT NULL REFERENCES 
+public.users(id) ON DELETE 
+CASCADE,\r\n    
+reviewer_id     UUID       
+ REFERENCES 
+public.users(id) ON DELETE 
+SET NULL,\r\n    period    
+      TEXT        NOT 
+NULL,           -- e.g. 
+'2026-Q1' | '2026-H1' | 
+'2026'\r\n    period_type  
+   TEXT        NOT NULL 
+DEFAULT 'quarterly', -- 
+'monthly' | 'quarterly' | 
+'semi-annual' | 
+'annual'\r\n    
+overall_score   
+NUMERIC(3,1),              
+    -- 0-10\r\n    status  
+        TEXT        NOT 
+NULL DEFAULT 'draft', -- 
+'draft' | 'submitted' | 
+'acknowledged' | 
+'closed'\r\n    strengths  
+     TEXT,\r\n    
+improvements    TEXT,\r\n  
+  goals_next      
+TEXT,\r\n    notes         
+  TEXT,\r\n    
+submitted_at    
+TIMESTAMPTZ,\r\n    
+acknowledged_at 
+TIMESTAMPTZ,\r\n    
+created_at      
+TIMESTAMPTZ DEFAULT 
+now(),\r\n    updated_at   
+   TIMESTAMPTZ DEFAULT now(
+)\r\n)","ParameterOIDs":nul
+l}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE INDEX 
+IF NOT EXISTS 
+perf_reviews_org_idx  ON pu
+blic.performance_reviews(or
+ganization_id)","ParameterO
+IDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE INDEX 
+IF NOT EXISTS 
+perf_reviews_emp_idx  ON pu
+blic.performance_reviews(em
+ployee_id)","ParameterOIDs"
+:null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE INDEX 
+IF NOT EXISTS 
+perf_reviews_period_idx ON 
+public.performance_reviews(
+period)","ParameterOIDs":nu
+ll}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"ALTER TABLE 
+public.performance_reviews 
+ENABLE ROW LEVEL SECURITY",
+"ParameterOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE 
+POLICY \"org_scope_perf_rev
+iews\"\r\n    ON 
+public.performance_reviews 
+FOR ALL\r\n    USING (\r\n 
+       auth.role() = 
+'anon'\r\n        OR 
+organization_id = public.ge
+t_current_org_id()\r\n    
+)\r\n    WITH CHECK (\r\n  
+      auth.role() = 
+'anon'\r\n        OR 
+organization_id = public.ge
+t_current_org_id()\r\n    
+)","ParameterOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"-- ?? 3. 
+Performance KPIs (per 
+review) ??????????
+???????????\r\n
+CREATE TABLE IF NOT EXISTS 
+public.performance_kpis 
+(\r\n    id          UUID  
+      PRIMARY KEY DEFAULT 
+gen_random_uuid(),\r\n    
+review_id   UUID        
+NOT NULL REFERENCES public.
+performance_reviews(id) ON 
+DELETE CASCADE,\r\n    
+kpi_name    TEXT        
+NOT NULL,\r\n    
+description TEXT,\r\n    
+target      TEXT,\r\n    
+actual      TEXT,\r\n    
+score       NUMERIC(3,1),  
+    -- 0-10\r\n    weight  
+    NUMERIC(3,1) DEFAULT 
+1.0,\r\n    created_at  
+TIMESTAMPTZ DEFAULT now()\r
+\n)","ParameterOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"ALTER TABLE 
+public.performance_kpis 
+ENABLE ROW LEVEL SECURITY",
+"ParameterOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE 
+POLICY \"org_scope_perf_kpi
+s\"\r\n    ON 
+public.performance_kpis 
+FOR ALL\r\n    USING (\r\n 
+       auth.role() = 
+'anon'\r\n        OR 
+EXISTS (\r\n            
+SELECT 1 FROM 
+public.performance_reviews 
+pr\r\n            WHERE 
+pr.id = review_id\r\n      
+        AND 
+pr.organization_id = public
+.get_current_org_id()\r\n  
+      )\r\n    )\r\n    
+WITH CHECK (\r\n        
+auth.role() = 'anon'\r\n   
+     OR EXISTS (\r\n       
+     SELECT 1 FROM 
+public.performance_reviews 
+pr\r\n            WHERE 
+pr.id = review_id\r\n      
+        AND 
+pr.organization_id = public
+.get_current_org_id()\r\n  
+      )\r\n    
+)","ParameterOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"-- ?? 4. 
+Shift Swap Requests ????
+?????????????
+??????????????
+?\r\nCREATE TABLE IF NOT 
+EXISTS 
+public.shift_swap_requests 
+(\r\n    id                
+  UUID        PRIMARY KEY 
+DEFAULT 
+gen_random_uuid(),\r\n    
+organization_id     UUID   
+     NOT NULL REFERENCES 
+public.organizations(id) 
+ON DELETE CASCADE,\r\n    
+requester_id        UUID   
+     NOT NULL REFERENCES 
+public.users(id),\r\n    
+target_id           UUID   
+     REFERENCES 
+public.users(id),       -- 
+NULL = open request 
+(anyone can take)\r\n    
+requester_shift_id  UUID   
+     NOT NULL REFERENCES pu
+blic.shift_assignments(id) 
+ON DELETE CASCADE,\r\n    
+target_shift_id     UUID   
+     REFERENCES public.shif
+t_assignments(id) ON 
+DELETE SET NULL,\r\n    
+swap_type           TEXT   
+     NOT NULL DEFAULT 
+'swap',           -- 
+'swap' | 'give_away'\r\n   
+ reason              
+TEXT,\r\n    status        
+      TEXT        NOT NULL 
+DEFAULT 'pending',        
+-- 'pending' | 
+'target_accepted' | 
+'approved' | 'rejected' | 
+'cancelled'\r\n    
+manager_id          UUID   
+     REFERENCES 
+public.users(id),\r\n    
+manager_note        
+TEXT,\r\n    approved_at   
+      TIMESTAMPTZ,\r\n    
+created_at          
+TIMESTAMPTZ DEFAULT 
+now(),\r\n    updated_at   
+       TIMESTAMPTZ DEFAULT 
+now()\r\n)","ParameterOIDs"
+:null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE INDEX 
+IF NOT EXISTS 
+shift_swap_org_idx       
+ON public.shift_swap_reques
+ts(organization_id)","Param
+eterOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE INDEX 
+IF NOT EXISTS 
+shift_swap_requester_idx 
+ON public.shift_swap_reques
+ts(requester_id)","Paramete
+rOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE INDEX 
+IF NOT EXISTS 
+shift_swap_status_idx    
+ON public.shift_swap_reques
+ts(status)","ParameterOIDs"
+:null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"ALTER TABLE 
+public.shift_swap_requests 
+ENABLE ROW LEVEL SECURITY",
+"ParameterOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"CREATE 
+POLICY \"org_scope_shift_sw
+aps\"\r\n    ON 
+public.shift_swap_requests 
+FOR ALL\r\n    USING (\r\n 
+       auth.role() = 
+'anon'\r\n        OR 
+organization_id = public.ge
+t_current_org_id()\r\n    
+)\r\n    WITH CHECK (\r\n  
+      auth.role() = 
+'anon'\r\n        OR 
+organization_id = public.ge
+t_current_org_id()\r\n    
+)","ParameterOIDs":null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"-- ?? 5. 
+Add audit-logs and 
+performance to 
+module_access 
+seed\r\nINSERT INTO 
+public.module_access\r\n   
+ (organization_id, 
+module_key, 
+module_name_zh, 
+module_name_en, icon, 
+is_enabled, required_role, 
+sort_order)\r\nSELECT\r\n  
+  o.id,\r\n    
+m.module_key,\r\n    
+m.name_zh,\r\n    
+m.name_en,\r\n    
+m.icon,\r\n    true,\r\n   
+ m.required_role,\r\n    
+m.sort_order\r\nFROM 
+public.organizations 
+o\r\nCROSS JOIN 
+(VALUES\r\n    
+('audit-logs', '??蝝??, 
+'Audit Logs', '??', 
+'admin',   20),\r\n    
+('performance','蝮暹?蝞∠?', 
+'Performance','潃?, 
+'manager', 21)\r\n) AS 
+m(module_key, name_zh, 
+name_en, icon, 
+required_role, 
+sort_order)\r\nWHERE 
+o.status = 'active'\r\nON 
+CONFLICT ON CONSTRAINT modu
+le_access_org_key_unique 
+DO NOTHING","ParameterOIDs"
+:null}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":null,"Parameters":
+[],"ResultFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Parse","Name
+":"","Query":"INSERT INTO s
+upabase_migrations.schema_m
+igrations(version, name, 
+statements) VALUES($1, $2, 
+$3)","ParameterOIDs":[25,25
+,1009]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Bind","Desti
+nationPortal":"","PreparedS
+tatement":"","ParameterForm
+atCodes":[0,0,1],"Parameter
+s":[{"text":"20260324310000
+"},{"text":"audit_performan
+ce"},{"binary":"00000001000
+000000000001900000017000000
+01000005142d2d203d3d3d3d3d3
+d3d3d3d3d3d3d3d3d3d3d3d3d3d
+3d3d3d3d3d3d3d3d3d3d3d3d3d3
+d3d3d3d3d3d3d3d3d3d3d3d3d3d
+3d3d3d3d3d3d3d3d3d3d3d3d3d3
+d0d0a2d2d204175646974204c6f
+6773202b20506572666f726d616
+e6365204d616e6167656d656e74
+205461626c65730d0a2d2d20323
+03236303332343331303030305f
+61756469745f706572666f726d6
+16e63652e73716c0d0a2d2d203d
+3d3d3d3d3d3d3d3d3d3d3d3d3d3
+d3d3d3d3d3d3d3d3d3d3d3d3d3d
+3d3d3d3d3d3d3d3d3d3d3d3d3d3
+d3d3d3d3d3d3d3d3d3d3d3d3d3d
+3d3d3d3d3d0d0a0d0a2d2d20e29
+480e2948020312e204175646974
+204c6f677320e29480e29480e29
+480e29480e29480e29480e29480
+e29480e29480e29480e29480e29
+480e29480e29480e29480e29480
+e29480e29480e29480e29480e29
+480e29480e29480e29480e29480
+e29480e29480e29480e29480e29
+480e29480e29480e29480e29480
+e29480e29480e29480e29480e29
+480e29480e294800d0a43524541
+5445205441424c45204946204e4
+f5420455849535453207075626c
+69632e61756469745f6c6f67732
+0280d0a20202020696420202020
+202020202020202020205555494
+420202020202020205052494d41
+5259204b45592044454641554c5
+42067656e5f72616e646f6d5f75
+75696428292c0d0a202020206f7
+267616e697a6174696f6e5f6964
+205555494420202020202020204
+e4f54204e554c4c205245464552
+454e434553207075626c69632e6
+f7267616e697a6174696f6e7328
+696429204f4e2044454c4554452
+0434153434144452c0d0a202020
+20757365725f696420202020202
+020202055554944202020202020
+20205245464552454e434553207
+075626c69632e75736572732869
+6429204f4e2044454c455445205
+34554204e554c4c2c0d0a202020
+20757365725f6e616d652020202
+0202020544558542c2020202020
+202020202020202020202020202
+0202020202020202d2d20736e61
+7073686f742061742074696d652
+06f6620616374696f6e0d0a2020
+2020616374696f6e20202020202
+020202020544558542020202020
+2020204e4f54204e554c4c2c202
+020202020202020202d2d202763
+726561746527207c20277570646
+1746527207c202764656c657465
+27207c20276c6f67696e27207c2
+0276578706f727427207c202761
+7070726f766527207c202772656
+a656374270d0a202020206d6f64
+756c65202020202020202020205
+445585420202020202020204e4f
+54204e554c4c2c2020202020202
+02020202d2d2027706179726f6c
+6c27207c20276c6561766527207
+c20276f76657274696d6527207c
+2027656d706c6f79656527207c2
+0277363686564756c696e672720
+7c2027757365727327206574632
+e0d0a202020207461626c655f6e
+616d65202020202020544558542
+c0d0a202020207265636f72645f
+696420202020202020555549442
+c0d0a202020207265636f72645f
+6c6162656c20202020544558542
+c20202020202020202020202020
+202020202020202020202020202
+d2d2068756d616e2d7265616461
+626c65206c6162656c2028652e6
+72e20656d706c6f796565206e61
+6d652c20706572696f64290d0a2
+02020206f6c645f76616c756573
+2020202020204a534f4e422c0d0
+a202020206e65775f76616c7565
+732020202020204a534f4e422c0
+d0a2020202069705f6164647265
+7373202020202020544558542c0
+d0a20202020637265617465645f
+617420202020202054494d45535
+4414d50545a2044454641554c54
+206e6f7728290d0a290000005a4
+3524541544520494e4445582049
+46204e4f5420455849535453206
+1756469745f6c6f67735f6f7267
+5f69647820202020202020204f4
+e207075626c69632e6175646974
+5f6c6f6773286f7267616e697a6
+174696f6e5f6964290000005243
+524541544520494e44455820494
+6204e4f54204558495354532061
+756469745f6c6f67735f7573657
+25f696478202020202020204f4e
+207075626c69632e61756469745
+f6c6f677328757365725f696429
+0000005143524541544520494e4
+44558204946204e4f5420455849
+5354532061756469745f6c6f677
+35f6d6f64756c655f6964782020
+2020204f4e207075626c69632e6
+1756469745f6c6f6773286d6f64
+756c65290000005a43524541544
+520494e444558204946204e4f54
+204558495354532061756469745
+f6c6f67735f637265617465645f
+61745f696478204f4e207075626
+c69632e61756469745f6c6f6773
+28637265617465645f617420444
+553432900000037414c54455220
+5441424c45207075626c69632e6
+1756469745f6c6f677320454e41
+424c4520524f57204c4556454c2
+053454355524954590000012343
+524541544520504f4c494359202
+26f72675f73636f70655f617564
+69745f6c6f6773220d0a2020202
+04f4e207075626c69632e617564
+69745f6c6f677320464f5220414
+c4c0d0a202020205553494e4720
+280d0a202020202020202061757
+4682e726f6c652829203d202761
+6e6f6e270d0a202020202020202
+04f52206f7267616e697a617469
+6f6e5f6964203d207075626c696
+32e6765745f63757272656e745f
+6f72675f696428290d0a2020202
+0290d0a20202020574954482043
+4845434b20280d0a20202020202
+02020617574682e726f6c652829
+203d2027616e6f6e270d0a20202
+020202020204f52206f7267616e
+697a6174696f6e5f6964203d207
+075626c69632e6765745f637572
+72656e745f6f72675f696428290
+d0a20202020290000049c2d2d20
+e29480e2948020322e205065726
+66f726d616e6365205265766965
+777320e29480e29480e29480e29
+480e29480e29480e29480e29480
+e29480e29480e29480e29480e29
+480e29480e29480e29480e29480
+e29480e29480e29480e29480e29
+480e29480e29480e29480e29480
+e29480e29480e29480e29480e29
+480e294800d0a43524541544520
+5441424c45204946204e4f54204
+55849535453207075626c69632e
+706572666f726d616e63655f726
+5766965777320280d0a20202020
+696420202020202020202020202
+020205555494420202020202020
+205052494d415259204b4559204
+4454641554c542067656e5f7261
+6e646f6d5f7575696428292c0d0
+a202020206f7267616e697a6174
+696f6e5f6964205555494420202
+020202020204e4f54204e554c4c
+205245464552454e43455320707
+5626c69632e6f7267616e697a61
+74696f6e7328696429204f4e204
+4454c4554452043415343414445
+2c0d0a20202020656d706c6f796
+5655f6964202020202055554944
+20202020202020204e4f54204e5
+54c4c205245464552454e434553
+207075626c69632e75736572732
+8696429204f4e2044454c455445
+20434153434144452c0d0a20202
+02072657669657765725f696420
+202020205555494420202020202
+020205245464552454e43455320
+7075626c69632e7573657273286
+96429204f4e2044454c45544520
+534554204e554c4c2c0d0a20202
+020706572696f64202020202020
+202020205445585420202020202
+020204e4f54204e554c4c2c2020
+2020202020202020202d2d20652
+e672e2027323032362d51312720
+7c2027323032362d483127207c2
+02732303236270d0a2020202070
+6572696f645f747970652020202
+020544558542020202020202020
+4e4f54204e554c4c20444546415
+54c542027717561727465726c79
+272c202d2d20276d6f6e74686c7
+927207c2027717561727465726c
+7927207c202773656d692d616e6
+e75616c27207c2027616e6e7561
+6c270d0a202020206f766572616
+c6c5f73636f72652020204e554d
+4552494328332c31292c2020202
+020202020202020202020202020
+202d2d20302d31300d0a2020202
+073746174757320202020202020
+202020544558542020202020202
+0204e4f54204e554c4c20444546
+41554c5420276472616674272c2
+02d2d2027647261667427207c20
+277375626d697474656427207c2
+02761636b6e6f776c6564676564
+27207c2027636c6f736564270d0
+a20202020737472656e67746873
+20202020202020544558542c0d0
+a20202020696d70726f76656d65
+6e747320202020544558542c0d0
+a20202020676f616c735f6e6578
+74202020202020544558542c0d0
+a202020206e6f74657320202020
+20202020202020544558542c0d0
+a202020207375626d6974746564
+5f61742020202054494d4553544
+14d50545a2c0d0a202020206163
+6b6e6f776c65646765645f61742
+054494d455354414d50545a2c0d
+0a20202020637265617465645f6
+17420202020202054494d455354
+414d50545a2044454641554c542
+06e6f7728292c0d0a2020202075
+7064617465645f6174202020202
+02054494d455354414d50545a20
+44454641554c54206e6f7728290
+d0a290000005f43524541544520
+494e444558204946204e4f54204
+5584953545320706572665f7265
+76696577735f6f72675f6964782
+0204f4e207075626c69632e7065
+72666f726d616e63655f7265766
+9657773286f7267616e697a6174
+696f6e5f6964290000005b43524
+541544520494e44455820494620
+4e4f54204558495354532070657
+2665f726576696577735f656d70
+5f69647820204f4e207075626c6
+9632e706572666f726d616e6365
+5f7265766965777328656d706c6
+f7965655f696429000000584352
+4541544520494e4445582049462
+04e4f5420455849535453207065
+72665f726576696577735f70657
+2696f645f696478204f4e207075
+626c69632e706572666f726d616
+e63655f72657669657773287065
+72696f642900000040414c54455
+2205441424c45207075626c6963
+2e706572666f726d616e63655f7
+265766965777320454e41424c45
+20524f57204c4556454c2053454
+355524954590000012e43524541
+544520504f4c49435920226f726
+75f73636f70655f706572665f72
+657669657773220d0a202020204
+f4e207075626c69632e70657266
+6f726d616e63655f72657669657
+77320464f5220414c4c0d0a2020
+20205553494e4720280d0a20202
+02020202020617574682e726f6c
+652829203d2027616e6f6e270d0
+a20202020202020204f52206f72
+67616e697a6174696f6e5f69642
+03d207075626c69632e6765745f
+63757272656e745f6f72675f696
+428290d0a20202020290d0a2020
+20205749544820434845434b202
+80d0a2020202020202020617574
+682e726f6c652829203d2027616
+e6f6e270d0a2020202020202020
+4f52206f7267616e697a6174696
+f6e5f6964203d207075626c6963
+2e6765745f63757272656e745f6
+f72675f696428290d0a20202020
+29000002382d2d20e29480e2948
+020332e20506572666f726d616e
+6365204b5049732028706572207
+265766965772920e29480e29480
+e29480e29480e29480e29480e29
+480e29480e29480e29480e29480
+e29480e29480e29480e29480e29
+480e29480e29480e29480e29480
+e294800d0a43524541544520544
+1424c45204946204e4f54204558
+49535453207075626c69632e706
+572666f726d616e63655f6b7069
+7320280d0a20202020696420202
+020202020202020555549442020
+2020202020205052494d4152592
+04b45592044454641554c542067
+656e5f72616e646f6d5f7575696
+428292c0d0a2020202072657669
+65775f696420202055554944202
+02020202020204e4f54204e554c
+4c205245464552454e434553207
+075626c69632e706572666f726d
+616e63655f72657669657773286
+96429204f4e2044454c45544520
+434153434144452c0d0a2020202
+06b70695f6e616d652020202054
+45585420202020202020204e4f5
+4204e554c4c2c0d0a2020202064
+65736372697074696f6e2054455
+8542c0d0a202020207461726765
+74202020202020544558542c0d0
+a2020202061637475616c202020
+202020544558542c0d0a2020202
+073636f7265202020202020204e
+554d4552494328332c31292c202
+0202020202d2d20302d31300d0a
+202020207765696768742020202
+020204e554d4552494328332c31
+292044454641554c5420312e302
+c0d0a2020202063726561746564
+5f6174202054494d455354414d5
+0545a2044454641554c54206e6f
+7728290d0a290000003d414c544
+552205441424c45207075626c69
+632e706572666f726d616e63655
+f6b70697320454e41424c452052
+4f57204c4556454c20534543555
+249545900000238435245415445
+20504f4c49435920226f72675f7
+3636f70655f706572665f6b7069
+73220d0a202020204f4e2070756
+26c69632e706572666f726d616e
+63655f6b70697320464f5220414
+c4c0d0a202020205553494e4720
+280d0a202020202020202061757
+4682e726f6c652829203d202761
+6e6f6e270d0a202020202020202
+04f522045584953545320280d0a
+202020202020202020202020534
+54c45435420312046524f4d2070
+75626c69632e706572666f726d6
+16e63655f726576696577732070
+720d0a202020202020202020202
+02057484552452070722e696420
+3d207265766965775f69640d0a2
+020202020202020202020202020
+414e442070722e6f7267616e697
+a6174696f6e5f6964203d207075
+626c69632e6765745f637572726
+56e745f6f72675f696428290d0a
+2020202020202020290d0a20202
+020290d0a202020205749544820
+434845434b20280d0a202020202
+0202020617574682e726f6c6528
+29203d2027616e6f6e270d0a202
+02020202020204f522045584953
+545320280d0a202020202020202
+02020202053454c454354203120
+46524f4d207075626c69632e706
+572666f726d616e63655f726576
+696577732070720d0a202020202
+020202020202020574845524520
+70722e6964203d2072657669657
+75f69640d0a2020202020202020
+202020202020414e442070722e6
+f7267616e697a6174696f6e5f69
+64203d207075626c69632e67657
+45f63757272656e745f6f72675f
+696428290d0a202020202020202
+0290d0a2020202029000004f22d
+2d20e29480e2948020342e20536
+869667420537761702052657175
+6573747320e29480e29480e2948
+0e29480e29480e29480e29480e2
+9480e29480e29480e29480e2948
+0e29480e29480e29480e29480e2
+9480e29480e29480e29480e2948
+0e29480e29480e29480e29480e2
+9480e29480e29480e29480e2948
+0e29480e294800d0a4352454154
+45205441424c45204946204e4f5
+420455849535453207075626c69
+632e73686966745f737761705f7
+26571756573747320280d0a2020
+202069642020202020202020202
+020202020202020205555494420
+202020202020205052494d41525
+9204b45592044454641554c5420
+67656e5f72616e646f6d5f75756
+96428292c0d0a202020206f7267
+616e697a6174696f6e5f6964202
+020202055554944202020202020
+20204e4f54204e554c4c2052454
+64552454e434553207075626c69
+632e6f7267616e697a6174696f6
+e7328696429204f4e2044454c45
+544520434153434144452c0d0a2
+02020207265717565737465725f
+696420202020202020205555494
+420202020202020204e4f54204e
+554c4c205245464552454e43455
+3207075626c69632e7573657273
+286964292c0d0a2020202074617
+26765745f696420202020202020
+202020205555494420202020202
+020205245464552454e43455320
+7075626c69632e7573657273286
+964292c202020202020202d2d20
+4e554c4c203d206f70656e20726
+571756573742028616e796f6e65
+2063616e2074616b65290d0a202
+020207265717565737465725f73
+686966745f69642020555549442
+0202020202020204e4f54204e55
+4c4c205245464552454e4345532
+07075626c69632e73686966745f
+61737369676e6d656e747328696
+429204f4e2044454c4554452043
+4153434144452c0d0a202020207
+461726765745f73686966745f69
+642020202020555549442020202
+0202020205245464552454e4345
+53207075626c69632e736869667
+45f61737369676e6d656e747328
+696429204f4e2044454c4554452
+0534554204e554c4c2c0d0a2020
+2020737761705f7479706520202
+020202020202020205445585420
+202020202020204e4f54204e554
+c4c2044454641554c5420277377
+6170272c2020202020202020202
+0202d2d20277377617027207c20
+27676976655f61776179270d0a2
+0202020726561736f6e20202020
+202020202020202020205445585
+42c0d0a20202020737461747573
+202020202020202020202020202
+05445585420202020202020204e
+4f54204e554c4c2044454641554
+c54202770656e64696e67272c20
+202020202020202d2d202770656
+e64696e6727207c202774617267
+65745f616363657074656427207
+c2027617070726f76656427207c
+202772656a656374656427207c2
+02763616e63656c6c6564270d0a
+202020206d616e616765725f696
+420202020202020202020555549
+442020202020202020524546455
+2454e434553207075626c69632e
+7573657273286964292c0d0a202
+020206d616e616765725f6e6f74
+652020202020202020544558542
+c0d0a20202020617070726f7665
+645f61742020202020202020205
+4494d455354414d50545a2c0d0a
+20202020637265617465645f617
+42020202020202020202054494d
+455354414d50545a20444546415
+54c54206e6f7728292c0d0a2020
+2020757064617465645f6174202
+0202020202020202054494d4553
+54414d50545a2044454641554c5
+4206e6f7728290d0a2900000062
+43524541544520494e444558204
+946204e4f542045584953545320
+73686966745f737761705f6f726
+75f696478202020202020204f4e
+207075626c69632e73686966745
+f737761705f7265717565737473
+286f7267616e697a6174696f6e5
+f6964290000005f435245415445
+20494e444558204946204e4f542
+04558495354532073686966745f
+737761705f72657175657374657
+25f696478204f4e207075626c69
+632e73686966745f737761705f7
+265717565737473287265717565
+737465725f69642900000059435
+24541544520494e444558204946
+204e4f542045584953545320736
+86966745f737761705f73746174
+75735f696478202020204f4e207
+075626c69632e73686966745f73
+7761705f7265717565737473287
+374617475732900000040414c54
+4552205441424c45207075626c6
+9632e73686966745f737761705f
+726571756573747320454e41424
+c4520524f57204c4556454c2053
+454355524954590000012d43524
+541544520504f4c49435920226f
+72675f73636f70655f736869667
+45f7377617073220d0a20202020
+4f4e207075626c69632e7368696
+6745f737761705f726571756573
+747320464f5220414c4c0d0a202
+020205553494e4720280d0a2020
+202020202020617574682e726f6
+c652829203d2027616e6f6e270d
+0a20202020202020204f52206f7
+267616e697a6174696f6e5f6964
+203d207075626c69632e6765745
+f63757272656e745f6f72675f69
+6428290d0a20202020290d0a202
+020205749544820434845434b20
+280d0a202020202020202061757
+4682e726f6c652829203d202761
+6e6f6e270d0a202020202020202
+04f52206f7267616e697a617469
+6f6e5f6964203d207075626c696
+32e6765745f63757272656e745f
+6f72675f696428290d0a2020202
+029000002c12d2d20e29480e294
+8020352e2041646420617564697
+42d6c6f677320616e6420706572
+666f726d616e636520746f206d6
+f64756c655f6163636573732073
+6565640d0a494e5345525420494
+e544f207075626c69632e6d6f64
+756c655f6163636573730d0a202
+02020286f7267616e697a617469
+6f6e5f69642c206d6f64756c655
+f6b65792c206d6f64756c655f6e
+616d655f7a682c206d6f64756c6
+55f6e616d655f656e2c2069636f
+6e2c2069735f656e61626c65642
+c2072657175697265645f726f6c
+652c20736f72745f6f726465722
+90d0a53454c4543540d0a202020
+206f2e69642c0d0a202020206d2
+e6d6f64756c655f6b65792c0d0a
+202020206d2e6e616d655f7a682
+c0d0a202020206d2e6e616d655f
+656e2c0d0a202020206d2e69636
+f6e2c0d0a20202020747275652c
+0d0a202020206d2e72657175697
+265645f726f6c652c0d0a202020
+206d2e736f72745f6f726465720
+d0a46524f4d207075626c69632e
+6f7267616e697a6174696f6e732
+06f0d0a43524f5353204a4f494e
+202856414c5545530d0a2020202
+0282761756469742d6c6f677327
+2c2027e6938de4bd9ce7b480e98
+c84272c20274175646974204c6f
+6773272c2027f09f948d272c202
+761646d696e272c202020323029
+2c0d0a202020202827706572666
+f726d616e6365272c27e7b8bee6
+9588e7aea1e79086272c2027506
+572666f726d616e6365272c27e2
+ad90272c20276d616e616765722
+72c203231290d0a29204153206d
+286d6f64756c655f6b65792c206
+e616d655f7a682c206e616d655f
+656e2c2069636f6e2c207265717
+5697265645f726f6c652c20736f
+72745f6f72646572290d0a57484
+55245206f2e737461747573203d
+2027616374697665270d0a4f4e2
+0434f4e464c494354204f4e2043
+4f4e53545241494e54206d6f647
+56c655f6163636573735f6f7267
+5f6b65795f756e6971756520444
+f204e4f5448494e47"}],"Resul
+tFormatCodes":[]}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Describe","O
+bjectType":"P","Name":""}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Execute","Po
+rtal":"","MaxRows":0}
+2026/03/24 04:22:17 PG 
+Send: {"Type":"Sync"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"NoData"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"CREATE 
+TABLE"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"NoData"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"CREATE 
+INDEX"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"NoData"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"CREATE 
+INDEX"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"NoData"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"CREATE 
+INDEX"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"NoData"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"CREATE 
+INDEX"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"NoData"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"ALTER 
+TABLE"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"NoData"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"CREATE 
+POLICY"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"NoData"}
+2026/03/24 04:22:17 PG 
+Recv: {"Severity":"NOTICE",
+"SeverityUnlocalized":"NOTI
+CE","Code":"42P07","Message
+":"relation 
+\"performance_reviews\" 
+already exists, skipping","
+Detail":"","Hint":"","Posit
+ion":0,"InternalPosition":0
+,"InternalQuery":"","Where"
+:"","SchemaName":"","TableN
+ame":"","ColumnName":"","Da
+taTypeName":"","ConstraintN
+ame":"","File":"parse_utilc
+md.c","Line":207,"Routine":
+"transformCreateStmt","Unkn
+ownFields":null}
+NOTICE (42P07): relation 
+"performance_reviews" 
+already exists, skipping
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"CREATE 
+TABLE"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"NoData"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"CommandCompl
+ete","CommandTag":"CREATE 
+INDEX"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"ParseComplete"}
+2026/03/24 04:22:17 PG 
+Recv: 
+{"Type":"BindComplete"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"NoData"}
+2026/03/24 04:22:17 PG 
+Recv: {"Type":"ErrorRespons
+e","Severity":"ERROR","Seve
+rityUnlocalized":"ERROR","C
+ode":"42703","Message":"col
+umn \"employee_id\" does 
+not exist","Detail":"","Hin
+t":"","Position":0,"Interna
+lPosition":0,"InternalQuery
+":"","Where":"","SchemaName
+":"","TableName":"","Column
+Name":"","DataTypeName":"",
+"ConstraintName":"","File":
+"indexcmds.c","Line":1888,"
+Routine":"ComputeIndexAttrs
+","UnknownFields":null}
+2026/03/24 04:22:18 PG 
+Recv: {"Type":"ReadyForQuer
+y","TxStatus":"I"}
+2026/03/24 04:22:18 PG 
+Send: {"Type":"Terminate"}
+ERROR: column 
+"employee_id" does not 
+exist (SQLSTATE 42703)     
+                           
+At statement: 9            
+                           
+                           
+          
+CREATE INDEX IF NOT EXISTS 
+perf_reviews_emp_idx  ON pu
+blic.performance_reviews(em
+ployee_id)

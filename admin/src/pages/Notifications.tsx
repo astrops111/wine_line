@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { t, getLocale } from '../lib/i18n';
+import { useOrg } from '../lib/OrgContext';
 
 interface NotificationRule {
     id: string;
@@ -43,6 +44,7 @@ export function Notifications() {
     const [showCreateReminder, setShowCreateReminder] = useState(false);
     const [newReminder, setNewReminder] = useState({ name: '', reminder_type: 'daily_summary', cron_expression: '0 9 * * *', message_template: '' });
     const zh = getLocale() === 'zh-TW';
+    const { orgId } = useOrg();
 
     useEffect(() => { loadData(); }, []);
 
@@ -62,7 +64,7 @@ export function Notifications() {
     async function createRule() {
         if (!newRule.name.trim()) return;
         await supabase.from('notification_rules').insert({
-            organization_id: '00000000-0000-0000-0000-000000000001',
+            organization_id: orgId,
             name: newRule.name,
             event_type: newRule.event_type,
             channel: newRule.channel,
@@ -87,7 +89,7 @@ export function Notifications() {
     async function createReminder() {
         if (!newReminder.name.trim()) return;
         await supabase.from('scheduled_reminders').insert({
-            organization_id: '00000000-0000-0000-0000-000000000001',
+            organization_id: orgId,
             name: newReminder.name,
             reminder_type: newReminder.reminder_type,
             cron_expression: newReminder.cron_expression || null,

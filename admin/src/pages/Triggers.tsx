@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { t, getLocale } from '../lib/i18n';
+import { useOrg } from '../lib/OrgContext';
 
 interface Trigger {
     id: string;
@@ -34,6 +35,7 @@ export function Triggers() {
         action_type: 'notify', action_channel: 'line', action_message: '',
     });
     const zh = getLocale() === 'zh-TW';
+    const { orgId } = useOrg();
 
     useEffect(() => { loadData(); }, []);
 
@@ -54,7 +56,7 @@ export function Triggers() {
     async function createTrigger() {
         if (!newTrigger.name.trim()) return;
         await supabase.from('workflow_triggers').insert({
-            organization_id: '00000000-0000-0000-0000-000000000001',
+            organization_id: orgId,
             name: newTrigger.name,
             trigger_type: newTrigger.trigger_type,
             event_source: newTrigger.event_source,

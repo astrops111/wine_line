@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { getLocale } from '../lib/i18n';
+import { useOrg } from '../lib/OrgContext';
 
 interface ModuleAccess {
     id: string; module_key: string; module_name_zh: string; module_name_en: string;
@@ -9,12 +10,13 @@ interface ModuleAccess {
 
 export function AdminSettings() {
     const zh = getLocale() === 'zh-TW';
+    const { orgId } = useOrg();
     const [modules, setModules] = useState<ModuleAccess[]>([]);
     const [loading, setLoading] = useState(true);
 
     const loadModules = async () => {
         const { data } = await supabase.from('module_access').select('*')
-            .eq('organization_id', '00000000-0000-0000-0000-000000000001')
+            .eq('organization_id', orgId)
             .order('sort_order');
         setModules(data || []);
     };

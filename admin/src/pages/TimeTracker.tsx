@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, FUNCTIONS_URL } from '../lib/supabase';
 import { getLocale } from '../lib/i18n';
+import { useOrg } from '../lib/OrgContext';
 
 interface TimeRecord {
     id: string; user_id: string; clock_in: string; clock_out: string | null;
@@ -13,15 +14,41 @@ interface TimeRecord {
 interface Employee { id: string; name: string; position: string | null; store_id: string | null; }
 interface Store { id: string; name: string; }
 
+interface PunchCorrection {
+    id: string;
+    organization_id: string;
+    store_id: string | null;
+    user_id: string;
+    time_record_id: string | null;
+    correction_type: string;
+    original_clock_in: string | null;
+    original_clock_out: string | null;
+    requested_clock_in: string | null;
+    requested_clock_out: string | null;
+    reason: string;
+    status: string;
+    approved_by: string | null;
+    approved_at: string | null;
+    rejection_reason: string | null;
+    created_at: string;
+    user?: { name: string };
+    store?: { name: string };
+}
+
 export function TimeTracker() {
     const zh = getLocale() === 'zh-TW';
+    const { orgId } = useOrg();
     const [records, setRecords] = useState<TimeRecord[]>([]);
     const [employees, setEmployees] = useState<Employee[]>([]);
     const [stores, setStores] = useState<Store[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedStore, setSelectedStore] = useState('all');
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-    const [tab, setTab] = useState<'today' | 'history' | 'mapping'>('today');
+    const [tab, setTab] = useState<'today' | 'history' | 'mapping' | 'corrections'>('today');
+    const [corrections, setCorrections] = useState<PunchCorrection[]>([]);
+    const [rejectingCorrectionId, setRejectingCorrectionId] = useState<string | null>(null);
+    const [correctionRejectReason, setCorrectionRejectReason] = useState('');
+    const [correctionFilter, setCorrectionFilter] = useState<'pending' | 'all'>('pending');
 
     // Admin edit record
     const [editForm, setEditForm] = useState<any>(null);
@@ -55,11 +82,86 @@ export function TimeTracker() {
     };
     useEffect(() => { if (tab === 'mapping') loadMappings(); }, [tab]);
 
+    const loadCorrections = async () => {
+        const query = supabase
+            .from('punch_corrections')
+            .select('*, user:users(name), store:stores(name)')
+            .eq('organization_id', orgId)
+            .order('created_at', { ascending: false });
+        if (correctionFilter === 'pending') query.eq('status', 'pending');
+        const { data } = await query;
+        setCorrections(data || []);
+    };
+    useEffect(() => { if (tab === 'corrections') loadCorrections(); }, [tab, correctionFilter]);
+
+    const notifyEmployee = async (userId: string, type: string, details: object) => {
+        if (!FUNCTIONS_URL) return;
+        try {
+            await fetch(`${FUNCTIONS_URL}/hr-notify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '' },
+                body: JSON.stringify({ user_id: userId, type, details }),
+            });
+        } catch (err) {
+            console.warn('HR notify failed:', err);
+        }
+    };
+
+    const approveCorrection = async (correction: PunchCorrection) => {
+        try {
+            if (correction.time_record_id) {
+                const updates: any = {};
+                if ((correction.correction_type === 'clock_in' || correction.correction_type === 'both') && correction.requested_clock_in) {
+                    updates.clock_in = correction.requested_clock_in;
+                }
+                if ((correction.correction_type === 'clock_out' || correction.correction_type === 'both') && correction.requested_clock_out) {
+                    updates.clock_out = correction.requested_clock_out;
+                }
+                if (Object.keys(updates).length > 0) {
+                    await supabase.from('time_records').update(updates).eq('id', correction.time_record_id);
+                }
+            } else if (correction.correction_type === 'missing') {
+                await supabase.from('time_records').insert({
+                    user_id: correction.user_id,
+                    store_id: correction.store_id,
+                    clock_in: correction.requested_clock_in,
+                    clock_out: correction.requested_clock_out,
+                    is_late: false,
+                    clock_in_method: 'correction',
+                    status: 'approved',
+                });
+            }
+            await supabase.from('punch_corrections').update({
+                status: 'approved',
+                approved_at: new Date().toISOString(),
+            }).eq('id', correction.id);
+            loadCorrections();
+            await notifyEmployee(correction.user_id, 'correction_approved', {
+                correction_type: correction.correction_type,
+                requested_clock_in: correction.requested_clock_in,
+                requested_clock_out: correction.requested_clock_out,
+            });
+        } catch (err: any) {
+            alert(`審核失敗：${err.message}`);
+        }
+    };
+
+    const rejectCorrection = async (id: string) => {
+        if (!correctionRejectReason.trim()) return;
+        await supabase.from('punch_corrections').update({
+            status: 'rejected',
+            rejection_reason: correctionRejectReason,
+        }).eq('id', id);
+        setRejectingCorrectionId(null);
+        setCorrectionRejectReason('');
+        loadCorrections();
+    };
+
     const clockIn = async (userId: string) => {
         const emp = employees.find(e => e.id === userId);
         await supabase.from('time_records').insert({
             user_id: userId, store_id: emp?.store_id || null,
-            organization_id: '00000000-0000-0000-0000-000000000001',
+            organization_id: orgId,
             clock_in: new Date().toISOString(), clock_in_method: 'admin',
         });
         await loadData();
@@ -93,7 +195,7 @@ export function TimeTracker() {
             await supabase.from('time_records').insert({
                 user_id: editForm.user_id,
                 store_id: emp?.store_id || null,
-                organization_id: '00000000-0000-0000-0000-000000000001',
+                organization_id: orgId,
                 clock_in: inDate.toISOString(),
                 clock_out: outDate ? outDate.toISOString() : null,
                 clock_in_method: 'admin',
@@ -162,6 +264,9 @@ export function TimeTracker() {
                 </button>
                 <button className={`tab-item ${tab === 'mapping' ? 'active' : ''}`} onClick={() => setTab('mapping')}>
                     🔗 {zh ? 'LINE 綁定' : 'LINE Mapping'}
+                </button>
+                <button className={`tab-item ${tab === 'corrections' ? 'active' : ''}`} onClick={() => setTab('corrections')}>
+                    {zh ? `補打審核${corrections.filter(c => c.status === 'pending').length > 0 ? ` (${corrections.filter(c => c.status === 'pending').length})` : ''}` : `Corrections${corrections.filter(c => c.status === 'pending').length > 0 ? ` (${corrections.filter(c => c.status === 'pending').length})` : ''}`}
                 </button>
             </div>
 
@@ -338,6 +443,118 @@ export function TimeTracker() {
                             )}
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* CORRECTIONS TAB */}
+            {tab === 'corrections' && (
+                <div>
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', alignItems: 'center' }}>
+                        <select
+                            className="input-field"
+                            style={{ width: 'auto' }}
+                            value={correctionFilter}
+                            onChange={e => setCorrectionFilter(e.target.value as 'pending' | 'all')}
+                        >
+                            <option value="pending">{zh ? '待審核' : 'Pending'}</option>
+                            <option value="all">{zh ? '所有記錄' : 'All Records'}</option>
+                        </select>
+                    </div>
+
+                    {corrections.length === 0 ? (
+                        <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                            ✅ {zh ? '沒有待審核的補打申請' : 'No punch correction requests'}
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {corrections.map(c => (
+                                <div key={c.id} className="card fade-in" style={{ padding: '16px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                                        <div>
+                                            <span style={{ fontWeight: 600, fontSize: '15px' }}>{c.user?.name || c.user_id}</span>
+                                            {c.store?.name && <span style={{ marginLeft: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>@ {c.store.name}</span>}
+                                            <span style={{
+                                                marginLeft: '8px',
+                                                fontSize: '11px',
+                                                padding: '2px 8px',
+                                                borderRadius: '12px',
+                                                background: c.correction_type === 'missing' ? '#f3f4f6' : '#eff6ff',
+                                                color: c.correction_type === 'missing' ? '#374151' : '#1d4ed8',
+                                            }}>
+                                                {c.correction_type === 'clock_in' ? (zh ? '更正上班' : 'Fix Clock-In')
+                                                : c.correction_type === 'clock_out' ? (zh ? '更正下班' : 'Fix Clock-Out')
+                                                : c.correction_type === 'both' ? (zh ? '上下班均更正' : 'Fix Both')
+                                                : (zh ? '補登' : 'Missing Punch')}
+                                            </span>
+                                        </div>
+                                        <span style={{
+                                            fontSize: '11px', padding: '2px 8px', borderRadius: '12px',
+                                            background: c.status === 'pending' ? '#fef3c7' : c.status === 'approved' ? '#dcfce7' : '#fee2e2',
+                                            color: c.status === 'pending' ? '#92400e' : c.status === 'approved' ? '#166534' : '#991b1b',
+                                        }}>
+                                            {c.status === 'pending' ? (zh ? '待審核' : 'Pending') : c.status === 'approved' ? (zh ? '已核准' : 'Approved') : (zh ? '已拒絕' : 'Rejected')}
+                                        </span>
+                                    </div>
+
+                                    <div style={{ fontSize: '13px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px' }}>
+                                        {c.original_clock_in && (
+                                            <div><span className="detail-label">{zh ? '原上班' : 'Orig In'}</span> {new Date(c.original_clock_in).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false })}</div>
+                                        )}
+                                        {c.requested_clock_in && (
+                                            <div><span className="detail-label">{zh ? '申請上班' : 'Req In'}</span> <strong>{new Date(c.requested_clock_in).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false })}</strong></div>
+                                        )}
+                                        {c.original_clock_out && (
+                                            <div><span className="detail-label">{zh ? '原下班' : 'Orig Out'}</span> {new Date(c.original_clock_out).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false })}</div>
+                                        )}
+                                        {c.requested_clock_out && (
+                                            <div><span className="detail-label">{zh ? '申請下班' : 'Req Out'}</span> <strong>{new Date(c.requested_clock_out).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false })}</strong></div>
+                                        )}
+                                    </div>
+
+                                    <div style={{ fontSize: '13px', marginBottom: '10px' }}>
+                                        <span className="detail-label">{zh ? '原因' : 'Reason'}: </span>{c.reason}
+                                    </div>
+
+                                    {c.status === 'pending' && (
+                                        <div>
+                                            {rejectingCorrectionId === c.id ? (
+                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                                    <input
+                                                        className="input-field"
+                                                        placeholder={zh ? '拒絕原因...' : 'Rejection reason...'}
+                                                        value={correctionRejectReason}
+                                                        onChange={e => setCorrectionRejectReason(e.target.value)}
+                                                        style={{ flex: 1, fontSize: '13px' }}
+                                                    />
+                                                    <button className="btn btn-sm" style={{ color: '#f43f5e' }} onClick={() => rejectCorrection(c.id)}>
+                                                        {zh ? '確認拒絕' : 'Confirm'}
+                                                    </button>
+                                                    <button className="btn btn-sm" onClick={() => { setRejectingCorrectionId(null); setCorrectionRejectReason(''); }}>
+                                                        {zh ? '取消' : 'Cancel'}
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button className="btn btn-sm" style={{ color: '#22c55e' }} onClick={() => approveCorrection(c)}>
+                                                        ✓ {zh ? '核准' : 'Approve'}
+                                                    </button>
+                                                    <button className="btn btn-sm" style={{ color: '#f43f5e' }} onClick={() => setRejectingCorrectionId(c.id)}>
+                                                        ✕ {zh ? '拒絕' : 'Reject'}
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {c.status === 'rejected' && c.rejection_reason && (
+                                        <div style={{ fontSize: '12px', color: '#f43f5e' }}>
+                                            {zh ? '拒絕原因' : 'Rejection reason'}: {c.rejection_reason}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 

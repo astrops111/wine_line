@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc --noEmit)",
+      "Bash(echo:*)",
+      "WebFetch(domain:qwen.ai)",
+      "Bash(npx supabase functions deploy:*)",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_f84f4f347002581559dd63ec0c3f5b5fe411fa8d npx supabase db push:*)",
+      "Bash(SUPABASE_ACCESS_TOKEN=sbp_f84f4f347002581559dd63ec0c3f5b5fe411fa8d npx supabase:*)",
+      "Bash(curl -s -X POST \"https://api.supabase.com/v1/projects/kzawtuvmchhtdsokrjys/database/query\" -H \"Authorization: Bearer sbp_f84f4f347002581559dd63ec0c3f5b5fe411fa8d\" -H \"Content-Type: application/json\" -d '{\"\"query\"\": \"\"SELECT column_name, data_type, udt_name FROM information_schema.columns WHERE table_name = ''''workflow_instances'''' AND table_schema = ''''public''''\"\"}')",
+      "Bash(curl -s -X POST \"https://api.supabase.com/v1/projects/kzawtuvmchhtdsokrjys/database/query\" -H \"Authorization: Bearer sbp_f84f4f347002581559dd63ec0c3f5b5fe411fa8d\" -H \"Content-Type: application/json\" -d '{\"\"query\"\": \"\"SELECT policyname, cmd, qual FROM pg_policies WHERE tablename = ''''workflow_instances'''' AND schemaname = ''''public''''\"\"}')",
+      "Bash(curl -s -X POST \"https://api.supabase.com/v1/projects/kzawtuvmchhtdsokrjys/database/query\" -H \"Authorization: Bearer sbp_f84f4f347002581559dd63ec0c3f5b5fe411fa8d\" -H \"Content-Type: application/json\" -d '{\"\"query\"\": \"\"SELECT cc.constraint_name, cc.check_clause FROM information_schema.check_constraints cc JOIN information_schema.constraint_column_usage ccu ON cc.constraint_name = ccu.constraint_name WHERE ccu.table_name = ''''workflow_instances'''' AND ccu.column_name = ''''status''''\"\"}')",
+      "Bash(curl:*)",
+      "Bash(npx skills:*)",
+      "Bash(npx supabase secrets:*)",
+      "Bash(npx supabase:*)",
+      "Bash(npm run build:*)",
+      "Bash(supabase functions list:*)",
+      "Bash(supabase functions deploy:*)",
+      "Bash(npx deno check:*)",
+      "Bash(python -m playwright:*)",
+      "Bash(ls:*)",
+      "Bash(pip install:*)",
+      "Bash(pip show:*)",
+      "Bash(python:*)",
+      "WebFetch(domain:twworkforce.com)",
+      "WebFetch(domain:blog.104.com.tw)",
+      "WebFetch(domain:www.swingvy.com)",
+      "WebFetch(domain:www.nhi.gov.tw)",
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Skill(claude-developer-platform)",
+      "Skill(claude-developer-platform:*)"
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+﻿node.exe : 
+Initialising login 
+role...
+At C:\Program Files\nod
+ejs\npx.ps1:28 char:12
++   $input | & 
+$NODE_EXE $NPX_CLI_JS 
+$args
++            ~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (Initialising    
+ login role...:Stri    
+ng) [], RemoteExce    
+ption
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+Connecting to remote 
+database...
+Found local migration 
+files to be inserted 
+before the last 
+migration on remote 
+database.
+
+Rerun the command with 
+--include-all flag to 
+apply these migrations:
+supabase\migrations\202
+60324200000_multi_agent
+_system.sql
+

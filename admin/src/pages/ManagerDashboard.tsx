@@ -63,6 +63,7 @@ export function ManagerDashboard() {
     const [delayedTasks, setDelayedTasks] = useState<DelayedTask[]>([]);
     const [todayActivity, setTodayActivity] = useState<ActivityItem[]>([]);
     const [summaryStats, setSummaryStats] = useState({ completed: 0, pending: 0, delayed: 0, total: 0 });
+    const [attendanceData, setAttendanceData] = useState<{ name: string; status: string; clockIn: string | null; hoursThisWeek: number; isOvertime: boolean }[]>([]);
 
     useEffect(() => { loadAll(); }, []);
 
@@ -208,6 +209,57 @@ export function ManagerDashboard() {
                 })
                 .sort((a, b) => b.time.localeCompare(a.time));
             setTodayActivity(actArr);
+
+            // ── Attendance & Overtime ──
+            const todayStr = new Date().toISOString().split('T')[0];
+            const weekStartDate = new Date();
+            weekStartDate.setDate(weekStartDate.getDate() - weekStartDate.getDay() + 1);
+            weekStartDate.setHours(0, 0, 0, 0);
+
+            const [todayRecordsRes, weekRecordsRes, allEmployeesRes] = await Promise.all([
+                supabase.from('time_records').select('user_id, clock_in, clock_out, status').gte('clock_in', todayStr + 'T00:00:00'),
+                supabase.from('time_records').select('user_id, total_hours').gte('clock_in', weekStartDate.toISOString()).not('total_hours', 'is', null),
+                supabase.from('users').select('id, name, max_hours_per_week').eq('status', 'active'),
+            ]);
+
+            const todayRecs = todayRecordsRes.data || [];
+            const weekRecs = weekRecordsRes.data || [];
+            const allEmps = allEmployeesRes.data || [];
+
+            // Build weekly hours map
+            const weeklyHoursMap: Record<string, number> = {};
+            weekRecs.forEach((r: any) => {
+                weeklyHoursMap[r.user_id] = (weeklyHoursMap[r.user_id] || 0) + (r.total_hours || 0);
+            });
+
+            const attList = allEmps.map((emp: any) => {
+                const todayRec = todayRecs.find((r: any) => r.user_id === emp.id);
+                const weekHrs = weeklyHoursMap[emp.id] || 0;
+                const maxHrs = emp.max_hours_per_week || 40;
+                let status = zh ? '尚未打卡' : 'Not clocked in';
+                let clockIn: string | null = null;
+                if (todayRec) {
+                    if (todayRec.clock_out) {
+                        status = zh ? '已下班' : 'Clocked out';
+                    } else if (todayRec.status === 'active') {
+                        status = zh ? '上班中' : 'Working';
+                    }
+                    clockIn = todayRec.clock_in ? new Date(todayRec.clock_in).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Taipei' }) : null;
+                }
+                return {
+                    name: emp.name,
+                    status,
+                    clockIn,
+                    hoursThisWeek: Math.round(weekHrs * 10) / 10,
+                    isOvertime: weekHrs > maxHrs,
+                };
+            }).sort((a: any, b: any) => {
+                if (a.isOvertime && !b.isOvertime) return -1;
+                if (!a.isOvertime && b.isOvertime) return 1;
+                return b.hoursThisWeek - a.hoursThisWeek;
+            });
+
+            setAttendanceData(attList);
 
         } catch (err) {
             console.error('ManagerDashboard load error:', err);
@@ -492,6 +544,113 @@ export function ManagerDashboard() {
                             ))}
                         </div>
                     )}
+                </div>
+            </div>
+
+            {/* ── Attendance & Overtime Report ── */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+                {/* Today's Attendance */}
+                <div className="card" style={{ padding: 0 }}>
+                    <div style={{
+                        padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    }}>
+                        <span style={{ fontWeight: 700, fontSize: '15px' }}>
+                            🕐 {zh ? '今日出勤狀態' : "Today's Attendance"}
+                        </span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                            {attendanceData.filter(a => a.status === (zh ? '上班中' : 'Working')).length}/{attendanceData.length} {zh ? '人在班' : 'on shift'}
+                        </span>
+                    </div>
+                    <div style={{ padding: '8px 20px', maxHeight: '350px', overflowY: 'auto' }}>
+                        {attendanceData.length === 0 ? (
+                            <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px', fontSize: '13px' }}>
+                                {zh ? '尚無員工資料' : 'No employee data'}
+                            </div>
+                        ) : attendanceData.map((att, i) => (
+                            <div key={i} style={{
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                padding: '8px 0', borderBottom: '1px solid var(--border-subtle)',
+                            }}>
+                                <div>
+                                    <div style={{ fontSize: '13px', fontWeight: 600 }}>{att.name}</div>
+                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                        {att.clockIn ? `⏰ ${att.clockIn}` : ''}
+                                    </div>
+                                </div>
+                                <span style={{
+                                    fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '12px',
+                                    background: att.status === (zh ? '上班中' : 'Working') ? '#22c55e20'
+                                        : att.status === (zh ? '已下班' : 'Clocked out') ? '#6366f120'
+                                            : '#f59e0b20',
+                                    color: att.status === (zh ? '上班中' : 'Working') ? '#22c55e'
+                                        : att.status === (zh ? '已下班' : 'Clocked out') ? '#6366f1'
+                                            : '#f59e0b',
+                                }}>
+                                    {att.status === (zh ? '上班中' : 'Working') ? '🟢' : att.status === (zh ? '已下班' : 'Clocked out') ? '🔵' : '🟡'} {att.status}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Weekly Hours & Overtime Alerts */}
+                <div className="card" style={{ padding: 0 }}>
+                    <div style={{
+                        padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    }}>
+                        <span style={{ fontWeight: 700, fontSize: '15px' }}>
+                            ⏱ {zh ? '本週工時 & 加班警報' : 'Weekly Hours & Overtime'}
+                        </span>
+                        {attendanceData.filter(a => a.isOvertime).length > 0 && (
+                            <span style={{
+                                background: '#ef444420', color: '#ef4444',
+                                padding: '2px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 700,
+                            }}>
+                                ⚠️ {attendanceData.filter(a => a.isOvertime).length} {zh ? '人超時' : 'overtime'}
+                            </span>
+                        )}
+                    </div>
+                    <div style={{ padding: '8px 20px', maxHeight: '350px', overflowY: 'auto' }}>
+                        {attendanceData.length === 0 ? (
+                            <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '30px', fontSize: '13px' }}>
+                                {zh ? '尚無工時資料' : 'No hours data'}
+                            </div>
+                        ) : attendanceData.map((att, i) => (
+                            <div key={i} style={{
+                                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                padding: '8px 0', borderBottom: '1px solid var(--border-subtle)',
+                                background: att.isOvertime ? 'rgba(239,68,68,0.06)' : undefined,
+                                marginBottom: att.isOvertime ? '2px' : 0,
+                                borderRadius: att.isOvertime ? '6px' : undefined,
+                                paddingLeft: att.isOvertime ? '8px' : undefined,
+                                paddingRight: att.isOvertime ? '8px' : undefined,
+                            }}>
+                                <div style={{ fontSize: '13px', fontWeight: att.isOvertime ? 700 : 500 }}>
+                                    {att.isOvertime ? '🔴 ' : ''}{att.name}
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <div style={{
+                                        width: '60px', height: '6px', borderRadius: '3px',
+                                        background: 'var(--border-subtle)', overflow: 'hidden',
+                                    }}>
+                                        <div style={{
+                                            height: '100%', width: `${Math.min(100, (att.hoursThisWeek / 40) * 100)}%`,
+                                            background: att.isOvertime ? '#ef4444' : att.hoursThisWeek > 32 ? '#f59e0b' : '#22c55e',
+                                            borderRadius: '3px',
+                                        }} />
+                                    </div>
+                                    <span style={{
+                                        fontSize: '12px', fontWeight: 600, minWidth: '36px', textAlign: 'right',
+                                        color: att.isOvertime ? '#ef4444' : 'var(--text-secondary)',
+                                    }}>
+                                        {att.hoursThisWeek}h
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
 

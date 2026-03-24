@@ -1,0 +1,67 @@
+﻿node.exe : Initialising 
+login role...
+At C:\Program 
+Files\nodejs\npx.ps1:28 
+char:12
++   $input | & $NODE_EXE 
+$NPX_CLI_JS $args
++            ~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecified: (Ini  
+  tialising login role..   
+ .:String) [], RemoteEx    
+ception
+    + FullyQualifiedErrorI 
+   d : NativeCommandError
+ 
+Connecting to remote 
+database...
+Do you want to push these 
+migrations to the remote 
+database?
+ ??20260324200000_multi_age
+nt_system.sql
+ ??20260324310000_audit_per
+formance.sql
+ ??20260324320000_hrm_gap_f
+ill.sql
+ ??20260325000000_audit_log
+s.sql
+ ??20260325010000_documents
+.sql
+ ??20260325020000_performan
+ce.sql
+ ??20260325030000_recruitme
+nt.sql
+ ??20260325100000_special_i
+dentities.sql
+
+ [Y/n] y
+Applying migration 20260324
+200000_multi_agent_system.s
+ql...
+NOTICE (42P07): relation 
+"agent_registry" already 
+exists, skipping
+ERROR: policy 
+"allow_all_agent_registry" 
+for table "agent_registry" 
+already exists (SQLSTATE 
+42710)
+At statement: 2            
+                           
+                           
+                  
+CREATE POLICY 
+"allow_all_agent_registry" 
+ON public.agent_registry   
+                           
+    
+    FOR ALL USING (true) 
+WITH CHECK (true)          
+                           
+                    
+Try rerunning the command 
+with --debug to 
+troubleshoot the error.

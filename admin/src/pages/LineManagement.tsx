@@ -7,6 +7,7 @@ interface LineUser {
     line_user_id: string;
     display_name: string;
     is_verified: boolean;
+    is_active: boolean;
     user_id: string | null;
     last_active_at: string;
     user: { id: string; name: string } | null;
@@ -31,7 +32,7 @@ export function LineManagement() {
     const [lineGroups, setLineGroups] = useState<LineGroup[]>([]);
     const [systemUsers, setSystemUsers] = useState<SystemUser[]>([]);
     const [loading, setLoading] = useState(true);
-    const [tab, setTab] = useState<'users' | 'groups' | 'webhook'>('users');
+    const [tab, setTab] = useState<'users' | 'groups' | 'archive' | 'webhook'>('users');
     const zh = getLocale() === 'zh-TW';
 
     const webhookUrl = `https://kzawtuvmchhtdsokrjys.supabase.co/functions/v1/line-webhook`;
@@ -57,6 +58,26 @@ export function LineManagement() {
         loadData();
     }
 
+    async function archiveLineUser(id: string) {
+        await supabase.from('line_users').update({ is_active: false }).eq('id', id);
+        setLineUsers(prev => prev.map(u => u.id === id ? { ...u, is_active: false } : u));
+    }
+
+    async function unarchiveLineUser(id: string) {
+        await supabase.from('line_users').update({ is_active: true }).eq('id', id);
+        setLineUsers(prev => prev.map(u => u.id === id ? { ...u, is_active: true } : u));
+    }
+
+    async function archiveLineGroup(id: string) {
+        await supabase.from('line_groups').update({ is_active: false }).eq('id', id);
+        setLineGroups(prev => prev.map(g => g.id === id ? { ...g, is_active: false } : g));
+    }
+
+    async function unarchiveLineGroup(id: string) {
+        await supabase.from('line_groups').update({ is_active: true }).eq('id', id);
+        setLineGroups(prev => prev.map(g => g.id === id ? { ...g, is_active: true } : g));
+    }
+
     async function updateGroupType(groupId: string, newType: string) {
         await supabase.from('line_groups').update({ group_type: newType }).eq('id', groupId);
         loadData();
@@ -74,6 +95,11 @@ export function LineManagement() {
         project: zh ? '專案' : 'Project',
     };
 
+    const activeUsers  = lineUsers.filter(u => u.is_active !== false);
+    const archivedUsers = lineUsers.filter(u => u.is_active === false);
+    const activeGroups  = lineGroups.filter(g => g.is_active !== false);
+    const archivedGroups = lineGroups.filter(g => g.is_active === false);
+
     return (
         <div className="fade-in">
             <div className="page-header">
@@ -85,10 +111,13 @@ export function LineManagement() {
                 {/* Tabs */}
                 <div className="tab-bar">
                     <button className={`tab-item ${tab === 'users' ? 'active' : ''}`} onClick={() => setTab('users')}>
-                        👤 {zh ? 'LINE 使用者' : 'LINE Users'} ({lineUsers.length})
+                        👤 {zh ? 'LINE 使用者' : 'LINE Users'} ({activeUsers.length})
                     </button>
                     <button className={`tab-item ${tab === 'groups' ? 'active' : ''}`} onClick={() => setTab('groups')}>
-                        👥 {zh ? 'LINE 群組' : 'LINE Groups'} ({lineGroups.length})
+                        👥 {zh ? 'LINE 群組' : 'LINE Groups'} ({activeGroups.length})
+                    </button>
+                    <button className={`tab-item ${tab === 'archive' ? 'active' : ''}`} onClick={() => setTab('archive')}>
+                        📦 {zh ? '封存' : 'Archive'} ({archivedUsers.length + archivedGroups.length})
                     </button>
                     <button className={`tab-item ${tab === 'webhook' ? 'active' : ''}`} onClick={() => setTab('webhook')}>
                         🔗 Webhook
@@ -100,7 +129,7 @@ export function LineManagement() {
                 ) : tab === 'users' ? (
                     /* ===== Users Tab ===== */
                     <div className="card">
-                        {lineUsers.length === 0 ? (
+                        {activeUsers.length === 0 ? (
                             <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px' }}>
                                 {zh ? '尚未有 LINE 使用者連接。使用者加入 Bot 後將自動出現。' : 'No LINE users connected. Users appear when they add the bot.'}
                             </p>
@@ -112,10 +141,11 @@ export function LineManagement() {
                                         <th>{zh ? '對應系統使用者' : 'Mapped System User'}</th>
                                         <th>{zh ? '狀態' : 'Status'}</th>
                                         <th>{zh ? '最後活動' : 'Last Active'}</th>
+                                        <th style={{ width: '80px' }}></th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {lineUsers.map(u => (
+                                    {activeUsers.map(u => (
                                         <tr key={u.id}>
                                             <td>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -142,6 +172,13 @@ export function LineManagement() {
                                             <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
                                                 {new Date(u.last_active_at).toLocaleString('zh-TW')}
                                             </td>
+                                            <td>
+                                                <button className="btn btn-sm btn-secondary" style={{ fontSize: '11px' }}
+                                                    title={zh ? '封存' : 'Archive'}
+                                                    onClick={() => archiveLineUser(u.id)}>
+                                                    📦
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -152,7 +189,7 @@ export function LineManagement() {
                 ) : tab === 'groups' ? (
                     /* ===== Groups Tab ===== */
                     <div className="card">
-                        {lineGroups.length === 0 ? (
+                        {activeGroups.length === 0 ? (
                             <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '40px' }}>
                                 {zh ? '尚未有 LINE 群組。將 Bot 加入群組後將自動出現。' : 'No groups. Groups appear when the bot is added.'}
                             </p>
@@ -164,10 +201,11 @@ export function LineManagement() {
                                         <th>{zh ? '類型' : 'Type'}</th>
                                         <th>{zh ? '狀態' : 'Status'}</th>
                                         <th>{zh ? '加入時間' : 'Joined'}</th>
+                                        <th style={{ width: '80px' }}></th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {lineGroups.map(g => (
+                                    {activeGroups.map(g => (
                                         <tr key={g.id}>
                                             <td>
                                                 <input className="input-field" style={{ fontSize: '13px', padding: '4px 8px' }}
@@ -187,11 +225,124 @@ export function LineManagement() {
                                             <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
                                                 {new Date(g.joined_at).toLocaleString('zh-TW')}
                                             </td>
+                                            <td>
+                                                <button className="btn btn-sm btn-secondary" style={{ fontSize: '11px' }}
+                                                    title={zh ? '封存' : 'Archive'}
+                                                    onClick={() => archiveLineGroup(g.id)}>
+                                                    📦
+                                                </button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         )}
+                    </div>
+
+                ) : tab === 'archive' ? (
+                    /* ===== Archive Tab ===== */
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        {/* Archived Users */}
+                        <div className="card">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                                <h3 style={{ fontSize: '14px', fontWeight: 600 }}>
+                                    👤 {zh ? '封存的使用者' : 'Archived Users'} ({archivedUsers.length})
+                                </h3>
+                            </div>
+                            {archivedUsers.length === 0 ? (
+                                <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
+                                    {zh ? '沒有封存的使用者。' : 'No archived users.'}
+                                </p>
+                            ) : (
+                                <table className="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>LINE {zh ? '名稱' : 'Name'}</th>
+                                            <th>{zh ? '對應系統使用者' : 'Mapped User'}</th>
+                                            <th>{zh ? '狀態' : 'Status'}</th>
+                                            <th>{zh ? '最後活動' : 'Last Active'}</th>
+                                            <th style={{ width: '90px' }}></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {archivedUsers.map(u => (
+                                            <tr key={u.id} style={{ opacity: 0.7 }}>
+                                                <td>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                        <span style={{ fontSize: '18px' }}>💬</span>
+                                                        <div>
+                                                            <div style={{ fontWeight: 500 }}>{u.display_name || 'Unknown'}</div>
+                                                            <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'monospace' }}>{u.line_user_id.substring(0, 16)}...</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                                                    {u.user?.name || <span style={{ opacity: 0.5 }}>—</span>}
+                                                </td>
+                                                <td>
+                                                    <span className={`status-badge ${u.is_verified ? 'completed' : 'pending'}`}>
+                                                        {u.is_verified ? (zh ? '✅ 已驗證' : '✅ Verified') : (zh ? '⏳ 未驗證' : '⏳ Unverified')}
+                                                    </span>
+                                                </td>
+                                                <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                                                    {new Date(u.last_active_at).toLocaleString('zh-TW')}
+                                                </td>
+                                                <td>
+                                                    <button className="btn btn-sm btn-secondary" style={{ fontSize: '11px' }}
+                                                        onClick={() => unarchiveLineUser(u.id)}>
+                                                        ↩ {zh ? '還原' : 'Restore'}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+
+                        {/* Archived Groups */}
+                        <div className="card">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                                <h3 style={{ fontSize: '14px', fontWeight: 600 }}>
+                                    👥 {zh ? '封存的群組' : 'Archived Groups'} ({archivedGroups.length})
+                                </h3>
+                            </div>
+                            {archivedGroups.length === 0 ? (
+                                <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
+                                    {zh ? '沒有封存的群組。' : 'No archived groups.'}
+                                </p>
+                            ) : (
+                                <table className="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>{zh ? '群組名稱' : 'Group Name'}</th>
+                                            <th>{zh ? '類型' : 'Type'}</th>
+                                            <th>{zh ? '加入時間' : 'Joined'}</th>
+                                            <th style={{ width: '90px' }}></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {archivedGroups.map(g => (
+                                            <tr key={g.id} style={{ opacity: 0.7 }}>
+                                                <td style={{ fontWeight: 500 }}>{g.group_name || '—'}</td>
+                                                <td style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                                                    {groupTypes[g.group_type] || g.group_type}
+                                                </td>
+                                                <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
+                                                    {new Date(g.joined_at).toLocaleString('zh-TW')}
+                                                </td>
+                                                <td>
+                                                    <button className="btn btn-sm btn-secondary" style={{ fontSize: '11px' }}
+                                                        onClick={() => unarchiveLineGroup(g.id)}>
+                                                        ↩ {zh ? '還原' : 'Restore'}
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
                     </div>
 
                 ) : (

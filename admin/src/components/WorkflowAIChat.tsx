@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { getLocale } from '../lib/i18n';
+import { supabase } from '../lib/supabase';
 
 interface WorkflowSuggestion {
     name: string;
@@ -20,6 +21,9 @@ interface SuggestedStep {
     estimated_minutes: number;
     suggested_role: string;
     description: string;
+    owner_name?: string;
+    trigger_refs?: string[];
+    trigger_step_orders?: number[];
 }
 
 interface ChatMessage {
@@ -40,6 +44,7 @@ export function WorkflowAIChat({ onApprove }: Props) {
     const [approving, setApproving] = useState(false);
     const [editingSteps, setEditingSteps] = useState<SuggestedStep[] | null>(null);
     const [editingSuggestion, setEditingSuggestion] = useState<WorkflowSuggestion | null>(null);
+    const [lastRawResponse, setLastRawResponse] = useState('');
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const zh = getLocale() === 'zh-TW';
 
@@ -49,9 +54,47 @@ export function WorkflowAIChat({ onApprove }: Props) {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    function safeJsonParse(input: string): any | null {
+        const trimmed = input.trim();
+        if (!trimmed) return null;
+        try {
+            return JSON.parse(trimmed);
+        } catch {
+            // Try to extract a JSON object/array from mixed text
+            const startObj = trimmed.indexOf('{');
+            const endObj = trimmed.lastIndexOf('}');
+            const startArr = trimmed.indexOf('[');
+            const endArr = trimmed.lastIndexOf(']');
+            const hasObj = startObj !== -1 && endObj !== -1 && endObj > startObj;
+            const hasArr = startArr !== -1 && endArr !== -1 && endArr > startArr;
+            let candidate = '';
+            if (hasObj && (!hasArr || endObj > endArr)) {
+                candidate = trimmed.slice(startObj, endObj + 1);
+            } else if (hasArr) {
+                candidate = trimmed.slice(startArr, endArr + 1);
+            }
+            if (!candidate) return null;
+            // Remove trailing commas before } or ]
+            let cleaned = candidate.replace(/,\s*([}\]])/g, '$1');
+            // Fix common missing comma between objects in arrays: } { -> }, {
+            cleaned = cleaned.replace(/}\s*{/g, '},{');
+            try {
+                return JSON.parse(cleaned);
+            } catch {
+                return null;
+            }
+        }
+    }
+
+    function extractSheetUrl(text: string): string | null {
+        const match = text.match(/https?:\/\/docs\.google\.com\/spreadsheets\/[^\s]+/i);
+        return match ? match[0] : null;
+    }
+
     async function sendMessage() {
         if (!input.trim() || loading) return;
         const userMsg = input.trim();
+        const sheetUrl = extractSheetUrl(userMsg);
         setInput('');
 
         const newMessages: ChatMessage[] = [...messages, { role: 'user', content: userMsg }];
@@ -66,19 +109,41 @@ export function WorkflowAIChat({ onApprove }: Props) {
                     content: m.suggestion ? JSON.stringify(m.suggestion) : m.content,
                 }));
 
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
+
             const res = await fetch(FUNCTION_URL, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt: userMsg, context }),
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({
+                    prompt: userMsg,
+                    context,
+                    strict: Boolean(sheetUrl),
+                    source_sheet_url: sheetUrl || undefined,
+                    instruction: sheetUrl
+                        ? 'Use the exact list from the provided Google Sheet. Do not add, remove, or reorder items unless explicitly instructed.'
+                        : undefined,
+                }),
             });
 
             if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.error || `HTTP ${res.status}`);
+                const errText = await res.text();
+                const errJson = safeJsonParse(errText) || {};
+                throw new Error((errJson as any).error || `HTTP ${res.status}`);
             }
 
-            const data = await res.json();
-            const suggestion = data.workflow as WorkflowSuggestion;
+            const text = await res.text();
+            setLastRawResponse(text);
+            const data = safeJsonParse(text);
+            if (!data) {
+                console.error('Workflow AI raw response:', text);
+                throw new Error(zh ? 'AI 回傳非 JSON 格式' : 'AI returned non-JSON response');
+            }
+            const suggestion = (data.workflow ?? data) as WorkflowSuggestion;
+            if (!suggestion || !suggestion.steps || !Array.isArray(suggestion.steps)) {
+                console.error('Workflow AI parsed data:', data);
+                throw new Error(zh ? 'AI 回傳格式不正確' : 'AI returned invalid format');
+            }
 
             setMessages([
                 ...newMessages,
@@ -91,7 +156,12 @@ export function WorkflowAIChat({ onApprove }: Props) {
         } catch (err: any) {
             setMessages([
                 ...newMessages,
-                { role: 'assistant', content: `❌ ${zh ? '發生錯誤' : 'Error'}: ${err.message}` },
+                {
+                    role: 'assistant',
+                    content: `❌ ${zh ? '發生錯誤' : 'Error'}: ${err.message}${
+                        lastRawResponse ? `\n\n${zh ? '原始回應(前1000字)' : 'Raw response (first 1000 chars)'}:\n${lastRawResponse.slice(0, 1000)}` : ''
+                    }`,
+                },
             ]);
         } finally {
             setLoading(false);
@@ -151,8 +221,25 @@ export function WorkflowAIChat({ onApprove }: Props) {
                 estimated_minutes: 30,
                 suggested_role: 'staff',
                 description: '',
+                owner_name: '',
+                trigger_refs: [],
+                trigger_step_orders: [],
             },
         ]);
+    }
+
+    function addTriggerOrder(idx: number, order: number) {
+        if (!editingSteps) return;
+        const step = editingSteps[idx];
+        const current = step.trigger_step_orders || [];
+        if (current.includes(order)) return;
+        updateEditStep(idx, 'trigger_step_orders', [...current, order]);
+    }
+
+    function removeTriggerOrder(idx: number, order: number) {
+        if (!editingSteps) return;
+        const current = editingSteps[idx].trigger_step_orders || [];
+        updateEditStep(idx, 'trigger_step_orders', current.filter(n => n !== order));
     }
 
     async function approveEdited() {
@@ -280,22 +367,34 @@ export function WorkflowAIChat({ onApprove }: Props) {
                                         </div>
                                         {msg.suggestion.steps.map((step) => (
                                             <div key={step.step_order} style={{
-                                                display: 'flex', alignItems: 'center', gap: '10px', padding: '6px 8px',
+                                                display: 'flex', alignItems: 'center', gap: '8px', padding: '5px 8px',
                                                 borderRadius: 'var(--radius-sm)', marginBottom: '3px',
                                                 background: step.step_order % 2 === 0 ? 'transparent' : 'var(--bg-primary)',
                                             }}>
-                                                <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '20px', textAlign: 'center', fontWeight: 600 }}>
+                                                <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '20px', textAlign: 'center', fontWeight: 600, flexShrink: 0 }}>
                                                     {step.step_order}
                                                 </span>
-                                                <span style={{ flex: 1, fontSize: '12px' }}>{step.name}</span>
+                                                <span style={{ flex: 1, fontSize: '12px', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {step.name}
+                                                </span>
+                                                {step.owner_name && (
+                                                    <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: '6px', background: 'rgba(59,130,246,0.12)', color: '#3b82f6', flexShrink: 0, maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={step.owner_name}>
+                                                        👤 {step.owner_name}
+                                                    </span>
+                                                )}
+                                                {(step.trigger_step_orders?.length || step.trigger_refs?.length) ? (
+                                                    <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: '6px', background: 'rgba(245,158,11,0.12)', color: '#d97706', flexShrink: 0 }}>
+                                                        →步驟{(step.trigger_step_orders?.length ? step.trigger_step_orders : step.trigger_refs || []).join(',')}
+                                                    </span>
+                                                ) : null}
                                                 <span style={{
-                                                    fontSize: '10px', padding: '1px 6px', borderRadius: '6px',
+                                                    fontSize: '10px', padding: '1px 6px', borderRadius: '6px', flexShrink: 0,
                                                     background: `${roleColors[step.suggested_role] || '#666'}20`,
                                                     color: roleColors[step.suggested_role] || '#666',
                                                 }}>
                                                     {roleLabels[step.suggested_role] || step.suggested_role}
                                                 </span>
-                                                <span style={{ fontSize: '10px', color: 'var(--text-muted)', minWidth: '40px', textAlign: 'right' }}>
+                                                <span style={{ fontSize: '10px', color: 'var(--text-muted)', minWidth: '36px', textAlign: 'right', flexShrink: 0 }}>
                                                     {step.estimated_minutes}min
                                                 </span>
                                             </div>
@@ -359,30 +458,78 @@ export function WorkflowAIChat({ onApprove }: Props) {
                             📋 {editingSuggestion.name} — {editingSteps.length} {zh ? '個步驟' : 'steps'}
                         </div>
 
-                        <div style={{ maxHeight: '50vh', overflowY: 'auto', marginBottom: '16px' }}>
+                        <div style={{ maxHeight: '55vh', overflowY: 'auto', marginBottom: '16px' }}>
                             {editingSteps.map((step, idx) => (
                                 <div key={idx} style={{
-                                    display: 'flex', gap: '8px', alignItems: 'center', padding: '8px',
+                                    padding: '8px 10px',
                                     background: idx % 2 === 0 ? 'var(--bg-primary)' : 'transparent',
-                                    borderRadius: 'var(--radius-sm)', marginBottom: '2px',
+                                    borderRadius: 'var(--radius-sm)', marginBottom: '4px',
+                                    border: '1px solid var(--border-color)',
                                 }}>
-                                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', width: '20px', textAlign: 'center' }}>
-                                        {step.step_order}
-                                    </span>
-                                    <input className="input-field" style={{ flex: 1, padding: '4px 8px', fontSize: '12px' }}
-                                        value={step.name} onChange={e => updateEditStep(idx, 'name', e.target.value)} />
-                                    <select className="select" style={{ fontSize: '11px', padding: '4px' }} value={step.suggested_role}
-                                        onChange={e => updateEditStep(idx, 'suggested_role', e.target.value)}>
-                                        <option value="admin">{zh ? '管理員' : 'Admin'}</option>
-                                        <option value="manager">{zh ? '主管' : 'Manager'}</option>
-                                        <option value="staff">{zh ? '人員' : 'Staff'}</option>
-                                        <option value="operations">{zh ? '營運' : 'Operations'}</option>
-                                    </select>
-                                    <input className="input-field" type="number" style={{ width: '60px', padding: '4px', fontSize: '12px', textAlign: 'center' }}
-                                        value={step.estimated_minutes} onChange={e => updateEditStep(idx, 'estimated_minutes', parseInt(e.target.value) || 0)} />
-                                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>min</span>
-                                    <button className="btn btn-sm" style={{ padding: '2px 6px', color: 'var(--accent-red)' }}
-                                        onClick={() => removeEditStep(idx)}>✕</button>
+                                    {/* Row 1: number | name | role | minutes | remove */}
+                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginBottom: '6px' }}>
+                                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', width: '20px', textAlign: 'center', flexShrink: 0, fontWeight: 600 }}>
+                                            {step.step_order}
+                                        </span>
+                                        <input className="input-field" style={{ flex: 1, padding: '4px 8px', fontSize: '12px' }}
+                                            value={step.name} onChange={e => updateEditStep(idx, 'name', e.target.value)}
+                                            placeholder={zh ? '步驟名稱' : 'Step name'} />
+                                        <select className="select" style={{ fontSize: '11px', padding: '4px', flexShrink: 0 }} value={step.suggested_role}
+                                            onChange={e => updateEditStep(idx, 'suggested_role', e.target.value)}>
+                                            <option value="admin">{zh ? '管理員' : 'Admin'}</option>
+                                            <option value="manager">{zh ? '主管' : 'Manager'}</option>
+                                            <option value="staff">{zh ? '人員' : 'Staff'}</option>
+                                            <option value="operations">{zh ? '營運' : 'Operations'}</option>
+                                        </select>
+                                        <input className="input-field" type="number" style={{ width: '52px', padding: '4px', fontSize: '12px', textAlign: 'center', flexShrink: 0 }}
+                                            value={step.estimated_minutes} onChange={e => updateEditStep(idx, 'estimated_minutes', parseInt(e.target.value) || 0)} />
+                                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', flexShrink: 0 }}>min</span>
+                                        <button className="btn btn-sm" style={{ padding: '2px 6px', color: 'var(--accent-red)', flexShrink: 0 }}
+                                            onClick={() => removeEditStep(idx)}>✕</button>
+                                    </div>
+
+                                    {/* Row 2: owner | triggers */}
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', paddingLeft: '26px' }}>
+                                        {/* Owner name */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>👤</span>
+                                            <input className="input-field" style={{ width: '90px', padding: '2px 6px', fontSize: '11px' }}
+                                                value={step.owner_name || ''} onChange={e => updateEditStep(idx, 'owner_name', e.target.value)}
+                                                placeholder={zh ? '負責人' : 'Owner'} />
+                                        </div>
+
+                                        {/* Trigger step orders */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: 1, flexWrap: 'wrap' }}>
+                                            <span style={{ fontSize: '10px', color: 'var(--text-muted)', flexShrink: 0 }}>🔔</span>
+                                            {(step.trigger_step_orders || []).map(order => (
+                                                <span key={order} style={{
+                                                    display: 'inline-flex', alignItems: 'center', gap: '2px',
+                                                    fontSize: '10px', padding: '1px 5px', borderRadius: '6px',
+                                                    background: 'rgba(245,158,11,0.15)', color: '#d97706',
+                                                }}>
+                                                    步驟{order}
+                                                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#d97706', padding: '0 1px', fontSize: '10px', lineHeight: 1 }}
+                                                        onClick={() => removeTriggerOrder(idx, order)}>✕</button>
+                                                </span>
+                                            ))}
+                                            <select className="select" style={{ fontSize: '10px', padding: '1px 4px', height: '20px' }}
+                                                value=""
+                                                onChange={e => {
+                                                    const val = parseInt(e.target.value);
+                                                    if (!isNaN(val)) addTriggerOrder(idx, val);
+                                                    e.currentTarget.value = '';
+                                                }}>
+                                                <option value="">➕ {zh ? '後續步驟' : 'Next step'}</option>
+                                                {editingSteps
+                                                    .filter(s => s.step_order !== step.step_order && !(step.trigger_step_orders || []).includes(s.step_order))
+                                                    .map(s => (
+                                                        <option key={s.step_order} value={s.step_order}>
+                                                            步驟{s.step_order}: {s.name || '(未命名)'}
+                                                        </option>
+                                                    ))}
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                             ))}
                         </div>
