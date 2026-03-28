@@ -177,7 +177,7 @@ export function BusinessTrips() {
                 ) : (
                     <table className="data-table" style={{ width: '100%', minWidth: '800px', borderCollapse: 'collapse' }}>
                         <thead>
-                            <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
+                            <tr style={{ borderBottom: '1px solid var(--outline-variant)', textAlign: 'left' }}>
                                 <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontWeight: 500 }}>{zh ? '員工' : 'Employee'}</th>
                                 <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontWeight: 500 }}>{zh ? '日期' : 'Date'}</th>
                                 <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontWeight: 500 }}>{zh ? '目的地' : 'Destination'}</th>
@@ -191,7 +191,7 @@ export function BusinessTrips() {
                             {trips.length === 0 ? (
                                 <tr><td colSpan={7} style={{ padding: '20px', textAlign: 'center', color: '#888' }}>{zh ? '沒有紀錄' : 'No records found'}</td></tr>
                             ) : trips.map(trip => (
-                                <tr key={trip.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                <tr key={trip.id} style={{ borderBottom: '1px solid var(--outline-variant)' }}>
                                     <td style={{ padding: '12px 16px' }}>{trip.user?.name || 'Unknown'}</td>
                                     <td style={{ padding: '12px 16px' }}>
                                         {trip.trip_date} {trip.return_date && `~ ${trip.return_date}`}
@@ -217,7 +217,7 @@ export function BusinessTrips() {
                                             </div>
                                         )}
                                         {!isAdminOrManager && trip.status === 'pending' && (
-                                            <button onClick={() => updateStatus(trip.id, 'cancelled')} style={{ background: 'transparent', color: '#6b7280', border: '1px solid #d1d5db', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                                            <button onClick={() => updateStatus(trip.id, 'cancelled')} style={{ background: 'transparent', color: '#6b7280', border: '1px solid var(--outline)', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
                                                 {zh ? '取消' : 'Cancel'}
                                             </button>
                                         )}
@@ -230,41 +230,41 @@ export function BusinessTrips() {
             </div>
 
             {showModal && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-                    <div className="card" style={{ width: '100%', maxWidth: '500px', background: 'var(--bg-primary)', padding: '24px', borderRadius: '12px', maxHeight: '90vh', overflowY: 'auto' }}>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px', overscrollBehavior: 'contain' }}>
+                    <div role="dialog" aria-modal="true" className="card" style={{ width: '100%', maxWidth: '500px', background: 'var(--bg-primary)', padding: '24px', borderRadius: '12px', maxHeight: '90vh', overflowY: 'auto' }}>
                         <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px' }}>{zh ? '新增公出單' : 'New Business Trip'}</h2>
                         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>{zh ? '出發日期*' : 'Start Date*'}</label>
-                                    <input type="date" required value={tripDate} onChange={e => setTripDate(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                                    <input type="date" required value={tripDate} onChange={e => setTripDate(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--outline-variant)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>{zh ? '返回日期' : 'Return Date'}</label>
-                                    <input type="date" value={returnDate} onChange={e => setReturnDate(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                                    <input type="date" value={returnDate} onChange={e => setReturnDate(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--outline-variant)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                                 </div>
                             </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>{zh ? '目的地*' : 'Destination*'}</label>
-                                <input type="text" required value={destination} onChange={e => setDestination(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                                <input type="text" required value={destination} onChange={e => setDestination(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--outline-variant)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                             </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>{zh ? '事由*' : 'Purpose*'}</label>
-                                <textarea required value={purpose} onChange={e => setPurpose(e.target.value)} rows={3} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                                <textarea name="notes" required value={purpose} onChange={e => setPurpose(e.target.value)} rows={3} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--outline-variant)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>{zh ? '預估交通費' : 'Transport Budget'}</label>
-                                    <input type="number" min="0" value={transportBudget} onChange={e => setTransportBudget(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                                    <input type="number" min="0" value={transportBudget} onChange={e => setTransportBudget(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--outline-variant)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>{zh ? '預估住宿費' : 'Accomm. Budget'}</label>
-                                    <input type="number" min="0" value={accommodationBudget} onChange={e => setAccommodationBudget(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                                    <input type="number" min="0" value={accommodationBudget} onChange={e => setAccommodationBudget(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--outline-variant)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                                 </div>
                             </div>
 
                             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '16px' }}>
-                                <button type="button" onClick={() => setShowModal(false)} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '6px', cursor: 'pointer' }}>
+                                <button type="button" onClick={() => setShowModal(false)} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--outline-variant)', color: 'var(--text-primary)', borderRadius: '6px', cursor: 'pointer' }}>
                                     {zh ? '取消' : 'Cancel'}
                                 </button>
                                 <button type="submit" style={{ padding: '8px 16px', background: 'var(--accent-primary)', border: 'none', color: 'white', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}>

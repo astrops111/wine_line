@@ -266,7 +266,7 @@ export function PerformanceManagement() {
         <div style={{ display: 'flex', gap: '16px' }}>
           <div style={{ flex: '1 1 0', minWidth: 0 }}>
             {loading ? (
-              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>{zh ? '載入中...' : 'Loading...'}</div>
+              <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>{zh ? '載入中…' : 'Loading…'}</div>
             ) : reviews.length === 0 ? (
               <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
                 <div style={{ fontSize: '36px', marginBottom: '8px' }}>📝</div>
@@ -491,7 +491,7 @@ export function PerformanceManagement() {
 
       {/* ── Modal: Create Review ── */}
       {showCreateReview && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', overscrollBehavior: 'contain' }}
           onClick={e => { if (e.target === e.currentTarget) setShowCreateReview(false); }}>
           <div className="card" style={{ padding: '24px', width: '100%', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 16px' }}>{zh ? '新增績效考核' : 'New Performance Review'}</h2>
@@ -561,7 +561,7 @@ export function PerformanceManagement() {
             {error && <div style={{ color: '#dc2626', fontSize: '13px', marginTop: '8px' }}>{error}</div>}
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
               <button className="btn btn-secondary" onClick={() => setShowCreateReview(false)}>{zh ? '取消' : 'Cancel'}</button>
-              <button className="btn btn-primary" onClick={saveReview} disabled={saving}>{saving ? '...' : (zh ? '儲存' : 'Save')}</button>
+              <button className="btn btn-primary" onClick={saveReview} disabled={saving}>{saving ? '…' : (zh ? '儲存' : 'Save')}</button>
             </div>
           </div>
         </div>

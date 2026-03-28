@@ -101,8 +101,8 @@ export function ShiftRules() {
             {/* Full text links */}
             <div className="card" style={{ padding: '12px 16px', marginBottom: '16px', display: 'flex', gap: '16px', alignItems: 'center', fontSize: '13px' }}>
                 <span style={{ fontWeight: 600 }}>{zh ? currentLaw.title : currentLaw.titleEn}</span>
-                <a href={currentLaw.fullTextZh} target="_blank" rel="noopener" style={{ color: 'var(--accent-primary)' }}>📖 {zh ? '中文全文' : 'Chinese Full Text'}</a>
-                <a href={currentLaw.fullTextEn} target="_blank" rel="noopener" style={{ color: 'var(--accent-primary)' }}>📖 {zh ? '英文全文' : 'English Full Text'}</a>
+                <a href={currentLaw.fullTextZh} target="_blank" rel="noopener" style={{ color: 'var(--accent-primary)' }}><span aria-hidden="true">📖</span> {zh ? '中文全文' : 'Chinese Full Text'}</a>
+                <a href={currentLaw.fullTextEn} target="_blank" rel="noopener" style={{ color: 'var(--accent-primary)' }}><span aria-hidden="true">📖</span> {zh ? '英文全文' : 'English Full Text'}</a>
                 <span style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>{currentLaw.rules.length} {zh ? '條規定' : 'rules'}</span>
             </div>
 
@@ -120,19 +120,19 @@ export function ShiftRules() {
 
             {/* Rules table */}
             <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <table aria-label={zh ? '排班規則表' : 'Shift rules table'} style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                     <thead>
                         <tr style={{ background: 'var(--bg-primary)' }}>
-                            <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)', width: '120px' }}>{zh ? '類別' : 'Category'}</th>
-                            <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)', width: '200px' }}>{zh ? '規則' : 'Rule'}</th>
-                            <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '規定內容' : 'Regulation'}</th>
-                            <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)', width: '120px' }}>{zh ? '條文' : 'Article'}</th>
-                            <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)', width: '60px' }}>{zh ? '連結' : 'Link'}</th>
+                            <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none', width: '120px' }}>{zh ? '類別' : 'Category'}</th>
+                            <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none', width: '200px' }}>{zh ? '規則' : 'Rule'}</th>
+                            <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '規定內容' : 'Regulation'}</th>
+                            <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none', width: '120px' }}>{zh ? '條文' : 'Article'}</th>
+                            <th style={{ padding: '10px 14px', textAlign: 'center', fontWeight: 600, borderBottom: 'none', width: '60px' }}>{zh ? '連結' : 'Link'}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filtered.map((rule, i) => (
-                            <tr key={i} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                            <tr key={i} style={{ borderBottom: 'none' }}>
                                 <td style={{ padding: '8px 14px', color: 'var(--text-secondary)' }}>
                                     <span>{categoryIcons[rule.category] || '📌'} {rule.category}</span>
                                 </td>
@@ -144,7 +144,7 @@ export function ShiftRules() {
                                 </td>
                                 <td style={{ padding: '8px 14px', fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>{rule.article}</td>
                                 <td style={{ padding: '8px 14px', textAlign: 'center' }}>
-                                    <a href={rule.link} target="_blank" rel="noopener" style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>🔗</a>
+                                    <a href={rule.link} target="_blank" rel="noopener" aria-label={zh ? '查看法規' : 'View regulation'} style={{ color: 'var(--accent-primary)', textDecoration: 'none' }}>🔗</a>
                                 </td>
                             </tr>
                         ))}

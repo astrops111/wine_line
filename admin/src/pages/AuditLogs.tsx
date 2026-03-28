@@ -187,24 +187,24 @@ export function AuditLogs() {
         <input
           className="input-field"
           style={{ flex: '1 1 200px', minWidth: '160px' }}
-          placeholder={zh ? '搜尋名稱、用戶...' : 'Search name, user...'}
+          aria-label="搜尋" name="search" autoComplete="off" placeholder={zh ? '搜尋名稱、用戶…' : 'Search name, user…'}
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
-        <select className="input-field" style={{ flex: '0 0 130px' }} value={filterAction} onChange={e => setFilterAction(e.target.value)}>
+        <select className="input-field" style={{ flex: '0 0 130px' }} name="filter" value={filterAction} onChange={e => setFilterAction(e.target.value)}>
           <option value="">{zh ? '所有動作' : 'All Actions'}</option>
           {Object.entries(ACTION_LABELS).map(([k, v]) => (
             <option key={k} value={k}>{zh ? v.zh : v.en}</option>
           ))}
         </select>
-        <select className="input-field" style={{ flex: '0 0 130px' }} value={filterModule} onChange={e => setFilterModule(e.target.value)}>
+        <select className="input-field" style={{ flex: '0 0 130px' }} name="filter" value={filterModule} onChange={e => setFilterModule(e.target.value)}>
           <option value="">{zh ? '所有模組' : 'All Modules'}</option>
           {Object.entries(MODULE_LABELS).map(([k, v]) => (
             <option key={k} value={k}>{zh ? v.zh : v.en}</option>
           ))}
         </select>
-        <input type="date" className="input-field" style={{ flex: '0 0 140px' }} value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-        <input type="date" className="input-field" style={{ flex: '0 0 140px' }} value={dateTo} onChange={e => setDateTo(e.target.value)} />
+        <input type="date" className="input-field" style={{ flex: '0 0 140px' }} name="dateFilter" autoComplete="off" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+        <input type="date" className="input-field" style={{ flex: '0 0 140px' }} name="dateFilter" autoComplete="off" value={dateTo} onChange={e => setDateTo(e.target.value)} />
         <button className="btn btn-secondary btn-sm" onClick={() => { setSearch(''); setFilterAction(''); setFilterModule(''); setDateFrom(''); setDateTo(''); }}>
           {zh ? '清除' : 'Clear'}
         </button>
@@ -214,7 +214,7 @@ export function AuditLogs() {
       <div className="card" style={{ overflow: 'hidden' }}>
         {loading ? (
           <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-            {zh ? '載入中...' : 'Loading...'}
+            {zh ? '載入中…' : 'Loading…'}
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>

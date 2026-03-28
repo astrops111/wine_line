@@ -158,14 +158,14 @@ export function AgentConsole() {
                     <input
                         className="input-field"
                         style={{ width: '260px', fontSize: '13px' }}
-                        placeholder={zh ? '自訂任務說明（選填）' : 'Custom task description (optional)'}
+                        aria-label="Custom task" name="customTask" autoComplete="off" placeholder={zh ? '自訂任務說明（選填）' : 'Custom task description (optional)'}
                         value={customTask}
                         onChange={e => setCustomTask(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && !running && triggerOrchestration()}
                     />
                     <button className="btn btn-primary" onClick={triggerOrchestration} disabled={running}>
                         {running
-                            ? (zh ? '⏳ 執行中...' : '⏳ Running...')
+                            ? (zh ? '⏳ 執行中…' : '⏳ Running…')
                             : `🚀 ${zh ? '啟動編排' : 'Run Orchestration'}`}
                     </button>
                 </div>
@@ -202,7 +202,7 @@ export function AgentConsole() {
 
                     {/* Team Status Grid */}
                     <div className="card" style={{ padding: '0' }}>
-                        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border-color)', fontWeight: 600, fontSize: '14px' }}>
+                        <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--outline-variant)', fontWeight: 600, fontSize: '14px' }}>
                             {zh ? 'Agent 團隊狀態' : 'Agent Team Status'}
                         </div>
                         {teamNames.map(team => {
@@ -210,7 +210,7 @@ export function AgentConsole() {
                             const available = teamAgents.length > 0 && teamAgents.some(a => a.status === 'active');
                             return (
                                 <div key={team} style={{
-                                    padding: '14px 16px', borderBottom: '1px solid var(--border-color)',
+                                    padding: '14px 16px', borderBottom: '1px solid var(--outline-variant)',
                                     display: 'flex', alignItems: 'center', gap: '14px',
                                 }}>
                                     <div style={{
@@ -249,7 +249,7 @@ export function AgentConsole() {
                         </div>
                         <pre style={{
                             fontSize: '11px', color: 'var(--text-secondary)', lineHeight: 1.6,
-                            fontFamily: 'DM Mono, monospace', whiteSpace: 'pre-wrap',
+                            fontFamily: "'SF Mono', 'Fira Code', monospace", whiteSpace: 'pre-wrap',
                         }}>
 {zh
 ? `使用者觸發任務
@@ -339,7 +339,7 @@ Documentation Team (sequential pipeline):
                                     </div>
 
                                     {isSelected && (
-                                        <div style={{ borderTop: '1px solid var(--border-color)', padding: '8px 16px 12px' }}>
+                                        <div style={{ borderTop: '1px solid var(--outline-variant)', padding: '8px 16px 12px' }}>
                                             {orchTasks.map((t, i) => (
                                                 <div key={t.id} style={{
                                                     display: 'flex', alignItems: 'flex-start', gap: '12px',
@@ -417,7 +417,7 @@ Documentation Team (sequential pipeline):
                         <thead>
                             <tr style={{ background: 'var(--bg-primary)' }}>
                                 {[zh ? '團隊' : 'Team', zh ? 'Agent' : 'Agent', zh ? '說明' : 'Description', zh ? '端點' : 'Endpoint', zh ? '模型' : 'Model', zh ? '狀態' : 'Status'].map(h => (
-                                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: '12px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border-color)' }}>
+                                    <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: '12px', color: 'var(--text-muted)', borderBottom: '1px solid var(--outline-variant)' }}>
                                         {h}
                                     </th>
                                 ))}

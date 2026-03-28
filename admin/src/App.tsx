@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { t, setLocale, getLocale, initLocale, type Locale } from './lib/i18n';
+import { initTheme, getTheme, setTheme, type Theme } from './lib/theme';
 import { OrgProvider, useOrg } from './lib/OrgContext';
 import { canAccess, getModuleForPath } from './lib/permissions';
 import { Dashboard } from './pages/Dashboard';
@@ -29,6 +30,7 @@ import { PayrollManagement } from './pages/PayrollManagement';
 import { HelpCenter } from './pages/HelpCenter';
 import { AgentConsole } from './pages/AgentConsole';
 import { AuditLogs } from './pages/AuditLogs';
+import { LineLogs } from './pages/LineLogs';
 import { PerformanceManagement } from './pages/PerformanceManagement';
 import { DocumentManagement } from './pages/DocumentManagement';
 import { RecruitmentATS } from './pages/RecruitmentATS';
@@ -37,6 +39,7 @@ import { ExpenseClaims } from './pages/ExpenseClaims';
 import './index.css';
 
 initLocale();
+initTheme();
 
 // ── Permission Guard ──────────────────────────────────────────────────────────
 // Reads current route, checks module_access config + user roles from OrgContext.
@@ -102,6 +105,7 @@ function PermissionGuard({ children }: { children: React.ReactNode }) {
 
 function Sidebar() {
   const [locale, setCurrentLocale] = useState<Locale>(getLocale());
+  const [theme, setCurrentTheme] = useState<Theme>(getTheme());
   const location = useLocation();
   const { userRoles, modules } = useOrg();
 
@@ -123,6 +127,12 @@ function Sidebar() {
     setLocale(next);
     setCurrentLocale(next);
     window.location.reload();
+  };
+
+  const toggleTheme = () => {
+    const next = theme === 'light' ? 'dark' : 'light';
+    setTheme(next);
+    setCurrentTheme(next);
   };
 
   const zh = locale === 'zh-TW';
@@ -324,6 +334,11 @@ function Sidebar() {
               <span className="icon">🔍</span>{zh ? '操作紀錄' : 'Audit Logs'}
             </NavLink>
           )}
+          {isAccessible('line-logs') && (
+            <NavLink to="/line-logs" className={`nav-item ${location.pathname === '/line-logs' ? 'active' : ''}`}>
+              <span className="icon">📊</span>{zh ? 'LINE 記錄' : 'LINE Logs'}
+            </NavLink>
+          )}
           {isAccessible('performance') && (
             <NavLink to="/performance" className={`nav-item ${location.pathname === '/performance' ? 'active' : ''}`}>
               <span className="icon">⭐</span>{zh ? '績效管理' : 'Performance'}
@@ -352,9 +367,12 @@ function Sidebar() {
         </div>
       </nav>
 
-      <div className="locale-switcher">
+      <div className="sidebar-footer-btns">
         <button className="locale-btn" onClick={toggleLocale}>
-          🌐 {zh ? '切換為 English' : 'Switch to 中文'}
+          🌐 {zh ? 'English' : '中文'}
+        </button>
+        <button className="theme-btn" aria-label={zh ? '切換主題' : 'Toggle theme'} onClick={toggleTheme}>
+          {theme === 'light' ? '🌙' : '☀️'}
         </button>
       </div>
     </aside>
@@ -392,6 +410,7 @@ function AppContent() {
             <Route path="/help-center" element={<HelpCenter />} />
             <Route path="/agent-console" element={<AgentConsole />} />
             <Route path="/audit-logs" element={<AuditLogs />} />
+            <Route path="/line-logs" element={<LineLogs />} />
             <Route path="/performance" element={<PerformanceManagement />} />
             <Route path="/documents" element={<DocumentManagement />} />
             <Route path="/recruitment" element={<RecruitmentATS />} />

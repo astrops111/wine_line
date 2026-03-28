@@ -166,6 +166,7 @@ export function OrgManagement() {
     }
 
     async function deleteDepartment(id: string) {
+        if (!confirm(zh ? '確定要刪除此部門？' : 'Delete this department?')) return;
         await supabase.from('departments').delete().eq('id', id);
         await loadDepartments();
     }
@@ -316,7 +317,7 @@ export function OrgManagement() {
     if (loading) return (
         <div className="fade-in">
             <div className="page-header"><h2>🏢 {zh ? '組織管理' : 'Org Management'}</h2></div>
-            <div className="page-body"><p className="loading-pulse">{zh ? '載入中...' : 'Loading...'}</p></div>
+            <div className="page-body"><p className="loading-pulse">{zh ? '載入中…' : 'Loading…'}</p></div>
         </div>
     );
 
@@ -343,25 +344,25 @@ export function OrgManagement() {
                         <div className="stats-grid" style={{ marginBottom: '24px' }}>
                             <div className="stat-card emerald">
                                 <div className="stat-label">{zh ? '組織' : 'Orgs'}</div>
-                                <div className="stat-value">{orgs.filter(o => o.status === 'active').length}</div>
+                                <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{orgs.filter(o => o.status === 'active').length}</div>
                                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{orgs.length} {zh ? '總計' : 'total'}</div>
                             </div>
                             <div className="stat-card blue">
                                 <div className="stat-label">{zh ? '公司' : 'Companies'}</div>
-                                <div className="stat-value">{companies.length}</div>
+                                <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{companies.length}</div>
                             </div>
                             <div className="stat-card purple">
                                 <div className="stat-label">{zh ? '門市' : 'Locations'}</div>
-                                <div className="stat-value">{stores.filter(s => s.is_active).length}</div>
+                                <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{stores.filter(s => s.is_active).length}</div>
                                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{stores.length} {zh ? '總計' : 'total'}</div>
                             </div>
                             <div className="stat-card orange">
                                 <div className="stat-label">{zh ? '部門' : 'Departments'}</div>
-                                <div className="stat-value">{departments.length}</div>
+                                <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{departments.length}</div>
                             </div>
                             <div className="stat-card emerald">
                                 <div className="stat-label">{zh ? '在職員工' : 'Active Staff'}</div>
-                                <div className="stat-value">{employees.filter(e => e.status === 'active').length}</div>
+                                <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{employees.filter(e => e.status === 'active').length}</div>
                                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{employees.length} {zh ? '總計' : 'total'}</div>
                             </div>
                         </div>
@@ -372,8 +373,9 @@ export function OrgManagement() {
                                 const orgEmps = employees.filter(e => (e as any).organization_id === org.id);
                                 const sub = subscriptions.find(s => s.organization_id === org.id && s.status === 'active');
                                 return (
-                                    <div key={org.id} className="card" style={{ cursor: 'pointer', borderColor: selectedOrg?.id === org.id ? 'var(--accent-primary)' : undefined }}
-                                        onClick={() => { selectOrg(org); switchTab('orgs'); }}>
+                                    <div key={org.id} className="card" role="button" tabIndex={0} style={{ cursor: 'pointer', borderColor: selectedOrg?.id === org.id ? 'var(--accent-primary)' : undefined }}
+                                        onClick={() => { selectOrg(org); switchTab('orgs'); }}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectOrg(org); switchTab('orgs'); } }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                                             <div>
                                                 <div style={{ fontWeight: 600, fontSize: '14px' }}>{org.name}</div>
@@ -400,14 +402,14 @@ export function OrgManagement() {
                     <div>
                         <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: '16px' }}>
                             <div className="card" style={{ padding: 0 }}>
-                                <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--outline-variant)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <span style={{ fontWeight: 600, fontSize: '13px' }}>{zh ? '組織列表' : 'Organizations'}</span>
                                     <button onClick={() => { setShowCreateOrg(true); setEditForm({}); }} className="btn btn-sm btn-primary">+ {zh ? '新增' : 'Add'}</button>
                                 </div>
                                 <div style={{ maxHeight: '560px', overflowY: 'auto' }}>
                                     {orgs.map(org => (
                                         <div key={org.id} onClick={() => selectOrg(org)} style={{
-                                            padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid var(--border-light)',
+                                            padding: '10px 14px', cursor: 'pointer', borderBottom: '1px solid var(--outline-variant)',
                                             background: selectedOrg?.id === org.id ? 'var(--accent-primary-dim)' : undefined,
                                             borderLeft: `3px solid ${selectedOrg?.id === org.id ? 'var(--accent-primary)' : 'transparent'}`,
                                         }}>
@@ -424,7 +426,7 @@ export function OrgManagement() {
                             <div className="card" style={{ padding: 0 }}>
                                 {showCreateOrg ? (
                                     <>
-                                        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border-color)' }}>
+                                        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--outline-variant)' }}>
                                             <span style={{ fontWeight: 600, fontSize: '14px' }}>➕ {zh ? '新增組織' : 'Create Organization'}</span>
                                         </div>
                                         <div style={{ padding: '18px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
@@ -442,7 +444,7 @@ export function OrgManagement() {
                                     </>
                                 ) : selectedOrg ? (
                                     <>
-                                        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--outline-variant)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <span style={{ fontWeight: 600, fontSize: '14px' }}>
                                                 {editMode ? `✏️ ${zh ? '編輯組織' : 'Edit Org'}` : `🏢 ${selectedOrg.name}`}
                                             </span>
@@ -519,14 +521,14 @@ export function OrgManagement() {
                 {/* ═══ COMPANIES ═══ */}
                 {tab === 'companies' && (
                     <div className="card" style={{ padding: 0 }}>
-                        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--outline-variant)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontWeight: 600, fontSize: '13px' }}>🏛️ {zh ? '公司管理' : 'Company Management'}</span>
                             <button className="btn btn-sm btn-primary" onClick={() => { setShowCreateCompany(!showCreateCompany); setCompanyForm({}); setEditingCompany(null); }}>
                                 {showCreateCompany ? (zh ? '取消' : 'Cancel') : `+ ${zh ? '新增' : 'Add'}`}
                             </button>
                         </div>
                         {showCreateCompany && (
-                            <div style={{ padding: '14px 16px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)' }}>
+                            <div style={{ padding: '14px 16px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--outline-variant)' }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                                     <div>
                                         <label className="detail-label">{zh ? '公司名稱' : 'Name'}</label>
@@ -566,7 +568,7 @@ export function OrgManagement() {
                 {/* ═══ LOCATIONS ═══ */}
                 {tab === 'locations' && (
                     <div className="card" style={{ padding: 0 }}>
-                        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--outline-variant)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontWeight: 600, fontSize: '13px' }}>📍 {zh ? '門市管理' : 'Locations'}</span>
                             <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{stores.length} {zh ? '間' : 'total'}</span>
                         </div>
@@ -614,7 +616,7 @@ export function OrgManagement() {
                                                         </div>
 
                                                         {/* GPS Clock-In Configuration */}
-                                                        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+                                                        <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--outline-variant)' }}>
                                                             <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '12px', color: 'var(--text-muted)' }}>
                                                                 {zh ? 'GPS 打卡設定' : 'GPS Clock-In Config'}
                                                             </div>
@@ -747,7 +749,7 @@ export function OrgManagement() {
                                         })}
                                     </div>
                                     <select className="input-field" style={{ width: 'auto' }} value="" onChange={e => { const v = e.target.value; if (v && !deptForm.line_group_ids.includes(v)) setDeptForm({ ...deptForm, line_group_ids: [...deptForm.line_group_ids, v] }); e.currentTarget.value = ''; }}>
-                                        <option value="">➕ {zh ? '新增群組...' : 'Add group...'}</option>
+                                        <option value="">➕ {zh ? '新增群組…' : 'Add group…'}</option>
                                         {lineGroups.filter(g => !deptForm.line_group_ids.includes(g.id)).map(g => <option key={g.id} value={g.id}>{g.group_name}</option>)}
                                     </select>
                                 </div>
@@ -831,9 +833,9 @@ export function OrgManagement() {
                                                             </div>
                                                         )}
                                                         {members.length > 0 && (
-                                                            <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '7px', marginTop: '2px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                                            <div style={{ borderTop: '1px solid var(--outline-variant)', paddingTop: '7px', marginTop: '2px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                                                                 {members.map(e => (
-                                                                    <span key={e.id} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '2px 8px', fontSize: '11px' }}>
+                                                                    <span key={e.id} style={{ background: 'var(--bg-primary)', border: '1px solid var(--outline-variant)', borderRadius: '12px', padding: '2px 8px', fontSize: '11px' }}>
                                                                         {e.name}{e.is_manager ? ' ★' : ''}
                                                                     </span>
                                                                 ))}
@@ -881,7 +883,7 @@ export function OrgManagement() {
 
                                 {/* ── Subscriptions ── */}
                                 <div className="card" style={{ padding: 0 }}>
-                                    <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--outline-variant)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <span style={{ fontWeight: 600, fontSize: '13px' }}>📋 {zh ? '訂閱方案' : 'Subscriptions'}</span>
                                         <button className="btn btn-sm btn-primary" onClick={() => { setShowAddSub(s => !s); setEditingSub(null); setSubForm({ plan: 'starter', status: 'active', price_monthly: 0, max_users: 50, max_stores: 5 } as any); }}>
                                             {showAddSub ? (zh ? '取消' : 'Cancel') : `+ ${zh ? '新增' : 'Add'}`}
@@ -889,7 +891,7 @@ export function OrgManagement() {
                                     </div>
 
                                     {showAddSub && (
-                                        <div style={{ padding: '14px 16px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                        <div style={{ padding: '14px 16px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--outline-variant)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                             <div>
                                                 <label className="detail-label">{zh ? '方案' : 'Plan'}</label>
                                                 <select className="select" style={{ width: '100%' }} value={subForm.plan || 'starter'} onChange={e => setSubForm(f => ({ ...f, plan: e.target.value }))}>
@@ -972,7 +974,7 @@ export function OrgManagement() {
 
                                 {/* ── Payments ── */}
                                 <div className="card" style={{ padding: 0 }}>
-                                    <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--outline-variant)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <span style={{ fontWeight: 600, fontSize: '13px' }}>💰 {zh ? '付款紀錄' : 'Payment History'}</span>
                                         <button className="btn btn-sm btn-primary" onClick={() => { setShowAddPayment(p => !p); setPayForm({ status: 'paid', currency: 'TWD', amount: 0, payment_method: 'bank_transfer' } as any); }}>
                                             {showAddPayment ? (zh ? '取消' : 'Cancel') : `+ ${zh ? '新增' : 'Log'}`}
@@ -980,7 +982,7 @@ export function OrgManagement() {
                                     </div>
 
                                     {showAddPayment && (
-                                        <div style={{ padding: '14px 16px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                        <div style={{ padding: '14px 16px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--outline-variant)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                             <div>
                                                 <label className="detail-label">{zh ? '金額' : 'Amount'}</label>
                                                 <input type="number" className="input-field" value={payForm.amount || 0} onChange={e => setPayForm(f => ({ ...f, amount: Number(e.target.value) }))} />

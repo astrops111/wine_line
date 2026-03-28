@@ -461,7 +461,7 @@ export function Checklists() {
                         </div>
 
                         {/* Actions */}
-                        <div style={{ display: 'flex', gap: '8px', paddingTop: '4px', borderTop: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', gap: '8px', paddingTop: '4px', borderTop: '1px solid var(--outline-variant)' }}>
                             <button className="btn btn-primary" onClick={createChecklist} disabled={!createForm.name.trim()}>
                                 ✅ {zh ? '建立清單' : 'Create Checklist'}
                             </button>
@@ -471,7 +471,7 @@ export function Checklists() {
                 )}
 
                 {loading ? (
-                    <p className="loading-pulse">{zh ? '載入中...' : 'Loading...'}</p>
+                    <p className="loading-pulse">{zh ? '載入中…' : 'Loading…'}</p>
                 ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: selected ? '320px 1fr' : '1fr', gap: '16px' }}>
 
@@ -496,7 +496,7 @@ export function Checklists() {
                                             background: isActive ? 'var(--accent-primary-dim)' : 'var(--bg-card)',
                                             border: `1px solid ${isActive ? 'var(--accent-primary)' : 'var(--border-color)'}`,
                                             borderLeft: `3px solid ${isActive ? 'var(--accent-primary)' : 'transparent'}`,
-                                            transition: 'all 0.15s ease',
+                                            transition: 'background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease',
                                         }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
                                             <div style={{ fontWeight: 600, fontSize: '13px' }}>{cl.name}</div>
@@ -513,8 +513,8 @@ export function Checklists() {
                                         {/* Dept / Store tags */}
                                         {(dept || store) && (
                                             <div style={{ display: 'flex', gap: '5px', marginBottom: '6px', flexWrap: 'wrap' }}>
-                                                {dept && <span style={{ fontSize: '10px', padding: '1px 7px', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>🏢 {dept.name}</span>}
-                                                {store && <span style={{ fontSize: '10px', padding: '1px 7px', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>📍 {store.name}</span>}
+                                                {dept && <span style={{ fontSize: '10px', padding: '1px 7px', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--outline-variant)' }}>🏢 {dept.name}</span>}
+                                                {store && <span style={{ fontSize: '10px', padding: '1px 7px', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--outline-variant)' }}>📍 {store.name}</span>}
                                             </div>
                                         )}
                                         {/* Progress */}
@@ -545,7 +545,7 @@ export function Checklists() {
                         {selected && (
                             <div className="card" style={{ padding: 0, alignSelf: 'start' }}>
                                 {/* Header */}
-                                <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border-color)' }}>
+                                <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--outline-variant)' }}>
                                     {editingHeader ? (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                             <input className="input-field" value={headerForm.name}
@@ -569,17 +569,17 @@ export function Checklists() {
                                                 {(selected.department_id || selected.store_id || selected.workflow_instance_id) && (
                                                     <div style={{ display: 'flex', gap: '5px', marginTop: '6px', flexWrap: 'wrap' }}>
                                                         {selected.department_id && departments.find(d => d.id === selected.department_id) && (
-                                                            <span style={{ fontSize: '10px', padding: '1px 7px', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
+                                                            <span style={{ fontSize: '10px', padding: '1px 7px', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--outline-variant)' }}>
                                                                 🏢 {departments.find(d => d.id === selected.department_id)!.name}
                                                             </span>
                                                         )}
                                                         {selected.store_id && stores.find(s => s.id === selected.store_id) && (
-                                                            <span style={{ fontSize: '10px', padding: '1px 7px', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
+                                                            <span style={{ fontSize: '10px', padding: '1px 7px', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--outline-variant)' }}>
                                                                 📍 {stores.find(s => s.id === selected.store_id)!.name}
                                                             </span>
                                                         )}
                                                         {selected.workflow_instance_id && workflowInstances.find(w => w.id === selected.workflow_instance_id) && (
-                                                            <span style={{ fontSize: '10px', padding: '1px 7px', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--border-color)' }}>
+                                                            <span style={{ fontSize: '10px', padding: '1px 7px', borderRadius: '4px', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', border: '1px solid var(--outline-variant)' }}>
                                                                 🔄 {workflowInstances.find(w => w.id === selected.workflow_instance_id)!.name}
                                                             </span>
                                                         )}
@@ -594,7 +594,7 @@ export function Checklists() {
                                 </div>
 
                                 {/* Sub-tabs */}
-                                <div className="tab-bar" style={{ padding: '0 18px', borderBottom: '1px solid var(--border-color)', margin: 0 }}>
+                                <div className="tab-bar" style={{ padding: '0 18px', borderBottom: '1px solid var(--outline-variant)', margin: 0 }}>
                                     {([
                                         { key: 'items',  label: `${zh ? '項目' : 'Items'} (${selected.items.length})` },
                                         { key: 'owners', label: `${zh ? '負責人' : 'Owners'} (${selected.owner_ids.length})` },
@@ -754,7 +754,7 @@ export function Checklists() {
                                                     {zh ? '尚未連結任何任務' : 'Not linked to any tasks'}
                                                 </p>
                                             ) : linkedTasks.map(task => (
-                                                <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 12px', borderRadius: '8px', marginBottom: '5px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+                                                <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 12px', borderRadius: '8px', marginBottom: '5px', background: 'var(--bg-secondary)', border: '1px solid var(--outline-variant)' }}>
                                                     <div>
                                                         <div style={{ fontSize: '13px', fontWeight: 500 }}>{task.title}</div>
                                                         {task.workflow_instance && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>🔄 {task.workflow_instance.name}</div>}

@@ -409,11 +409,11 @@ export function Scheduling() {
                     {/* Week navigation */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            <button className="btn btn-sm btn-secondary" onClick={() => changeWeek(-1)}>◀</button>
+                            <button className="btn btn-sm btn-secondary" aria-label={zh ? '上一週' : 'Previous week'} onClick={() => changeWeek(-1)}>◀</button>
                             <span style={{ fontWeight: 600, fontSize: '15px', minWidth: '200px', textAlign: 'center' }}>
                                 {weekDates[0]} ~ {weekDates[6]}
                             </span>
-                            <button className="btn btn-sm btn-secondary" onClick={() => changeWeek(1)}>▶</button>
+                            <button className="btn btn-sm btn-secondary" aria-label={zh ? '下一週' : 'Next week'} onClick={() => changeWeek(1)}>▶</button>
                         </div>
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                             {schedule && (
@@ -426,14 +426,14 @@ export function Scheduling() {
                             )}
                             {!schedule && (
                                 <button className="btn btn-sm btn-secondary" onClick={copyPreviousWeek} disabled={copyLoading}>
-                                    {copyLoading ? '⏳...' : (zh ? '📋 複製上週' : '📋 Copy Last Week')}
+                                    {copyLoading ? '⏳…' : (zh ? '📋 複製上週' : '📋 Copy Last Week')}
                                 </button>
                             )}
-                            <button className="btn btn-sm" style={{ background: showAiPanel ? 'var(--accent-indigo)' : 'var(--bg-secondary)', color: showAiPanel ? '#fff' : 'var(--text-primary)', border: '1px solid var(--border-subtle)' }} onClick={() => setShowAiPanel(!showAiPanel)}>
+                            <button className="btn btn-sm" style={{ background: showAiPanel ? 'var(--accent-indigo)' : 'var(--bg-secondary)', color: showAiPanel ? '#fff' : 'var(--text-primary)', border: '1px solid var(--outline-variant)' }} onClick={() => setShowAiPanel(!showAiPanel)}>
                                 💡 {zh ? '排班條件' : 'AI Criteria'}
                             </button>
                             <button className="btn btn-primary" onClick={runAiSchedule} disabled={aiLoading}>
-                                {aiLoading ? '⏳...' : '🤖 ' + t('schedule.ai_generate')}
+                                {aiLoading ? '⏳…' : '🤖 ' + t('schedule.ai_generate')}
                             </button>
                         </div>
                     </div>
@@ -477,11 +477,11 @@ export function Scheduling() {
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                             <thead>
                                 <tr style={{ background: 'var(--bg-primary)' }}>
-                                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)', minWidth: '120px' }}>
+                                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none', minWidth: '120px' }}>
                                         {zh ? '員工' : 'Employee'}
                                     </th>
                                     {weekDates.map((d, i) => (
-                                        <th key={d} style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)', minWidth: '100px' }}>
+                                        <th key={d} style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 600, borderBottom: 'none', minWidth: '100px' }}>
                                             <div>{dayNames[i]}</div>
                                             <div style={{ fontWeight: 400, fontSize: '11px', color: 'var(--text-muted)' }}>{d.slice(5)}</div>
                                         </th>
@@ -494,7 +494,7 @@ export function Scheduling() {
                                         {zh ? '此門市尚無員工。請在「員工管理」中指派員工至此門市。' : 'No employees assigned to this store.'}
                                     </td></tr>
                                 ) : employees.map(emp => (
-                                    <tr key={emp.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                    <tr key={emp.id} style={{ borderBottom: 'none' }}>
                                         <td style={{ padding: '8px 14px' }}>
                                             <div style={{ fontWeight: 600 }}>{emp.name}</div>
                                             <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
@@ -556,7 +556,7 @@ export function Scheduling() {
                             <input className="input-field" type="time" value={newShift.end_time} onChange={e => setNewShift({ ...newShift, end_time: e.target.value })} style={{ width: '100px' }} />
                             <input className="input-field" type="number" value={newShift.break_minutes} onChange={e => setNewShift({ ...newShift, break_minutes: e.target.value })} style={{ width: '70px' }} placeholder={zh ? '休息' : 'Break'} />
                             <input className="input-field" type="color" value={newShift.color} onChange={e => setNewShift({ ...newShift, color: e.target.value })} style={{ width: '42px', padding: '2px' }} />
-                            <button className="btn btn-primary btn-sm" onClick={addShiftTemplate}>➕</button>
+                            <button className="btn btn-primary btn-sm" aria-label={zh ? '新增班次' : 'Add shift'} onClick={addShiftTemplate}>➕</button>
                         </div>
                     </div>
 
@@ -568,7 +568,7 @@ export function Scheduling() {
                             const hours = store?.operating_hours || {};
                             const dayKeys = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
                             return dayKeys.map((dk, i) => (
-                                <div key={dk} style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+                                <div key={dk} style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '6px 0', borderBottom: 'none' }}>
                                     <span style={{ fontWeight: 600, width: '36px', textAlign: 'center' }}>{dayNames[i]}</span>
                                     <span style={{ fontSize: '13px', color: hours[dk]?.open === 'closed' ? 'var(--text-muted)' : 'var(--text-primary)' }}>
                                         {hours[dk]?.open === 'closed' ? (zh ? '休息日' : 'Closed') : `${hours[dk]?.open || '—'} – ${hours[dk]?.close || '—'}`}
@@ -585,9 +585,9 @@ export function Scheduling() {
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                         <thead>
                             <tr style={{ background: 'var(--bg-primary)' }}>
-                                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '員工' : 'Employee'}</th>
+                                <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '員工' : 'Employee'}</th>
                                 {dayNames.map((d, i) => (
-                                    <th key={i} style={{ padding: '10px', textAlign: 'center', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{d}</th>
+                                    <th key={i} style={{ padding: '10px', textAlign: 'center', fontWeight: 600, borderBottom: 'none' }}>{d}</th>
                                 ))}
                             </tr>
                         </thead>
@@ -597,7 +597,7 @@ export function Scheduling() {
                                     {zh ? '此門市尚無員工' : 'No employees for this store'}
                                 </td></tr>
                             ) : employees.map(emp => (
-                                <tr key={emp.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                <tr key={emp.id} style={{ borderBottom: 'none' }}>
                                     <td style={{ padding: '8px 14px', fontWeight: 600 }}>{emp.name}</td>
                                     {[1, 2, 3, 4, 5, 6, 0].map(dow => {
                                         const av = availability.find(a => a.user_id === emp.id && a.day_of_week === dow);
@@ -607,7 +607,7 @@ export function Scheduling() {
                                         return (
                                             <td key={dow} style={{ padding: '6px', textAlign: 'center' }}>
                                                 <button style={{
-                                                    background: 'none', border: '1px solid var(--border-subtle)', borderRadius: '6px',
+                                                    background: 'none', border: '1px solid var(--outline-variant)', borderRadius: '6px',
                                                     padding: '6px 12px', cursor: 'pointer', fontSize: '16px',
                                                     opacity: val === 'unavailable' ? 0.4 : 1,
                                                 }} onClick={() => setAvail(emp.id, dow, nextVal)} title={val}>
@@ -638,7 +638,7 @@ export function Scheduling() {
                     </div>
 
                     {swapLoading ? (
-                        <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>{zh ? '載入中...' : 'Loading...'}</div>
+                        <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>{zh ? '載入中…' : 'Loading…'}</div>
                     ) : swapRequests.length === 0 ? (
                         <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
                             <div style={{ fontSize: '36px', marginBottom: '8px' }}>🔄</div>
@@ -716,7 +716,7 @@ export function Scheduling() {
 
                     {/* Create Swap Modal */}
                     {showCreateSwap && (
-                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+                        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', overscrollBehavior: 'contain' }}
                             onClick={e => { if (e.target === e.currentTarget) setShowCreateSwap(false); }}>
                             <div className="card" style={{ padding: '24px', width: '100%', maxWidth: '480px' }}>
                                 <h3 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 16px' }}>{zh ? '新增換班申請' : 'New Shift Swap Request'}</h3>
@@ -771,7 +771,7 @@ export function Scheduling() {
                                 <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
                                     <button className="btn btn-secondary" onClick={() => setShowCreateSwap(false)}>{zh ? '取消' : 'Cancel'}</button>
                                     <button className="btn btn-primary" onClick={createSwap} disabled={swapSaving || !swapForm.requester_id || !swapForm.requester_shift_id}>
-                                        {swapSaving ? '...' : (zh ? '送出' : 'Submit')}
+                                        {swapSaving ? '…' : (zh ? '送出' : 'Submit')}
                                     </button>
                                 </div>
                             </div>
@@ -782,7 +782,7 @@ export function Scheduling() {
 
             {/* Labor Law Violation Warning Modal */}
             {showViolationModal && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', overscrollBehavior: 'contain' }}>
                     <div className="card" style={{ maxWidth: '560px', width: '90%', padding: '28px', maxHeight: '80vh', overflowY: 'auto' }}>
                         <h3 style={{ marginBottom: '16px', color: '#f59e0b' }}>
                             ⚠️ {zh ? '勞基法違規警示' : 'Labor Law Violations Detected'}

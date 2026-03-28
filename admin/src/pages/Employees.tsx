@@ -673,7 +673,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                     {mainTab === 'employees'
                         ? (
                             <>
-                                <label className="btn" style={{ background: '#fff', border: '1px solid #d1d5db', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', padding: '6px 12px' }}>
+                                <label className="btn" style={{ background: '#fff', border: '1px solid var(--outline)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', padding: '6px 12px' }}>
                                     📁 {zh ? '匯入 CSV' : 'Import CSV'}
                                     <input type="file" accept=".csv" style={{ display: 'none' }} onChange={handleCsvImport} />
                                 </label>
@@ -709,11 +709,11 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                         </div>
                         <div>
                             <label className="detail-label">Email</label>
-                            <input className="input-field" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" />
+                            <input className="input-field" type="email" name="email" autoComplete="email" spellCheck={false} value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="email@example.com" />
                         </div>
                         <div>
                             <label className="detail-label">{t('employee.phone')}</label>
-                            <input className="input-field" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="0912-345-678" />
+                            <input className="input-field" type="tel" name="phone" autoComplete="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} placeholder="0912-345-678" />
                         </div>
                         <div>
                             <label className="detail-label">{t('employee.type')}</label>
@@ -789,7 +789,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                     </div>
 
                     {/* Name fields */}
-                    <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '14px', paddingTop: '14px' }}>
+                    <div style={{ borderTop: '1px solid var(--outline-variant)', marginTop: '14px', paddingTop: '14px' }}>
                         <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>👤 {zh ? '姓名欄位' : 'Name Fields'}</div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
                             <div><label className="detail-label">{zh ? '姓' : 'Last Name'}</label><input className="input-field" value={form.last_name} onChange={e => setForm({ ...form, last_name: e.target.value })} placeholder={zh ? '王' : 'Smith'} /></div>
@@ -800,7 +800,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                     </div>
 
                     {/* Personal info */}
-                    <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '14px', paddingTop: '14px' }}>
+                    <div style={{ borderTop: '1px solid var(--outline-variant)', marginTop: '14px', paddingTop: '14px' }}>
                         <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📋 {zh ? '個人資料' : 'Personal Info'}</div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
                             <div><label className="detail-label">{zh ? '出生日期' : 'Birth Date'}</label><input className="input-field" type="date" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} /></div>
@@ -814,12 +814,12 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                             </div>
                             <div><label className="detail-label">{zh ? '國籍' : 'Nationality'}</label><input className="input-field" value={form.nationality} onChange={e => setForm({ ...form, nationality: e.target.value })} placeholder="TW" /></div>
                             <div><label className="detail-label">{zh ? '身分證字號' : 'ID Number'}</label><input className="input-field" value={form.id_number} onChange={e => setForm({ ...form, id_number: e.target.value })} placeholder="A123456789" /></div>
-                            <div style={{ gridColumn: '1/-1' }}><label className="detail-label">{zh ? '地址' : 'Address'}</label><input className="input-field" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder={zh ? '縣市 + 鄉鎮市區 + 路街...' : 'Full address'} /></div>
+                            <div style={{ gridColumn: '1/-1' }}><label className="detail-label">{zh ? '地址' : 'Address'}</label><input className="input-field" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder={zh ? '縣市 + 鄉鎮市區 + 路街…' : 'Full address'} /></div>
                         </div>
                     </div>
 
                     {/* Emergency contact */}
-                    <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '14px', paddingTop: '14px' }}>
+                    <div style={{ borderTop: '1px solid var(--outline-variant)', marginTop: '14px', paddingTop: '14px' }}>
                         <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🚨 {zh ? '緊急聯絡人' : 'Emergency Contact'}</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                             <div><label className="detail-label">{zh ? '姓名' : 'Name'}</label><input className="input-field" value={form.emergency_contact_name} onChange={e => setForm({ ...form, emergency_contact_name: e.target.value })} placeholder={zh ? '緊急聯絡人姓名' : 'Contact name'} /></div>
@@ -828,7 +828,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                     </div>
 
                     {/* Banking */}
-                    <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '14px', paddingTop: '14px' }}>
+                    <div style={{ borderTop: '1px solid var(--outline-variant)', marginTop: '14px', paddingTop: '14px' }}>
                         <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🏦 {zh ? '銀行帳戶' : 'Bank Account'}</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px' }}>
                             <div><label className="detail-label">{zh ? '銀行代碼' : 'Bank Code'}</label><input className="input-field" value={form.bank_code} onChange={e => setForm({ ...form, bank_code: e.target.value })} placeholder="004" /></div>
@@ -837,7 +837,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                     </div>
 
                     {/* Special Employment Identity */}
-                    <div style={{ borderTop: '1px solid var(--border-color)', marginTop: '14px', paddingTop: '14px' }}>
+                    <div style={{ borderTop: '1px solid var(--outline-variant)', marginTop: '14px', paddingTop: '14px' }}>
                         <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                             🏷️ {zh ? '特殊身分類別' : 'Special Employment Identity'}
                         </div>
@@ -881,11 +881,12 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                     <div style={{ flex: selected ? '0 0 50%' : '1' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
                             {filteredEmployees.map(emp => (
-                                <div key={emp.id} className="card" style={{
+                                <div key={emp.id} className="card" role="button" tabIndex={0} style={{
                                     cursor: 'pointer', padding: '16px',
                                     borderColor: selected?.id === emp.id ? 'var(--accent-primary)' : undefined,
                                     transition: 'border-color 0.2s',
-                                }} onClick={() => setSelected(emp)}>
+                                }} onClick={() => setSelected(emp)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(emp); } }}>
                                     <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
                                         <div style={{
                                             width: '44px', height: '44px', borderRadius: '50%', background: getColor(emp.name),
@@ -1042,7 +1043,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                                         </select>
                                     </div>
                                     {/* ── Names ── */}
-                                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                                    <div style={{ borderTop: '1px solid var(--outline-variant)', paddingTop: '12px' }}>
                                         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>👤 {zh ? '姓名' : 'Names'}</div>
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                             <div><label className="detail-label">{zh ? '姓' : 'Last Name'}</label><input className="input-field" value={editForm.last_name} onChange={e => patchForm({ last_name: e.target.value })} /></div>
@@ -1053,7 +1054,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                                     </div>
 
                                     {/* ── Personal ── */}
-                                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                                    <div style={{ borderTop: '1px solid var(--outline-variant)', paddingTop: '12px' }}>
                                         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📋 {zh ? '個人資料' : 'Personal Info'}</div>
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                             <div><label className="detail-label">{zh ? '出生日期' : 'Birth Date'}</label><input className="input-field" type="date" value={editForm.birth_date} onChange={e => patchForm({ birth_date: e.target.value })} /></div>
@@ -1075,7 +1076,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                                     </div>
 
                                     {/* ── Emergency Contact ── */}
-                                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                                    <div style={{ borderTop: '1px solid var(--outline-variant)', paddingTop: '12px' }}>
                                         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🚨 {zh ? '緊急聯絡人' : 'Emergency Contact'}</div>
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                                             <div><label className="detail-label">{zh ? '姓名' : 'Name'}</label><input className="input-field" value={editForm.emergency_contact_name} onChange={e => patchForm({ emergency_contact_name: e.target.value })} /></div>
@@ -1084,7 +1085,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                                     </div>
 
                                     {/* ── Banking ── */}
-                                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                                    <div style={{ borderTop: '1px solid var(--outline-variant)', paddingTop: '12px' }}>
                                         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🏦 {zh ? '銀行帳戶' : 'Bank Account'}</div>
                                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '10px' }}>
                                             <div><label className="detail-label">{zh ? '銀行代碼' : 'Bank Code'}</label><input className="input-field" value={editForm.bank_code} onChange={e => patchForm({ bank_code: e.target.value })} placeholder="004" /></div>
@@ -1093,7 +1094,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                                     </div>
 
                                     {/* ── Insurance ── */}
-                                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                                    <div style={{ borderTop: '1px solid var(--outline-variant)', paddingTop: '12px' }}>
                                         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>🏥 {zh ? '勞健保' : 'Insurance'}</div>
                                         <div style={{ display: 'grid', gap: '10px' }}>
                                             {/* 勞保 */}
@@ -1143,7 +1144,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                                     </div>
 
                                     {/* ── Special Employment Identity ── */}
-                                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                                    <div style={{ borderTop: '1px solid var(--outline-variant)', paddingTop: '12px' }}>
                                         <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                             🏷️ {zh ? '特殊身分類別' : 'Special Identity'}
                                         </div>
@@ -1307,7 +1308,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                                         )}
                                         <div style={{ marginTop: '8px' }}>
                                             <label className="detail-label">{zh ? '備註' : 'Notes'}</label>
-                                            <input className="input-field" value={availForm.notes} onChange={e => setAvailForm({ ...availForm, notes: e.target.value })} placeholder={zh ? '例如: 只能做早班...' : 'e.g. Morning shift preferred...'} />
+                                            <input className="input-field" value={availForm.notes} onChange={e => setAvailForm({ ...availForm, notes: e.target.value })} placeholder={zh ? '例如: 只能做早班…' : 'e.g. Morning shift preferred…'} />
                                         </div>
                                         <button className="btn btn-primary btn-sm" style={{ marginTop: '10px' }} onClick={saveAvailability}>
                                             {zh ? '儲存設定' : 'Save Preference'}
@@ -1373,7 +1374,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                                         </div>
                                         <div style={{ marginTop: '8px' }}>
                                             <label className="detail-label">{zh ? '評語 / 備註' : 'Comments'}</label>
-                                            <textarea className="input-field" value={reviewForm.comment} onChange={e => setReviewForm({ ...reviewForm, comment: e.target.value })} placeholder={zh ? '輸入針對此員工的評語...' : 'Enter review comments...'} rows={3} style={{ resize: 'vertical' }} />
+                                            <textarea className="input-field" value={reviewForm.comment} onChange={e => setReviewForm({ ...reviewForm, comment: e.target.value })} placeholder={zh ? '輸入針對此員工的評語…' : 'Enter review comments…'} rows={3} style={{ resize: 'vertical' }} />
                                         </div>
                                         <button className="btn btn-primary btn-sm" style={{ marginTop: '10px' }} onClick={createReview}>
                                             {zh ? '提交評估' : 'Submit Review'}
@@ -1680,7 +1681,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                                 </div>
                                 <select className="input-field" style={{ width: 'auto' }} value=""
                                     onChange={e => { const v = e.target.value; if (v && !deptForm.line_group_ids.includes(v)) setDeptForm({ ...deptForm, line_group_ids: [...deptForm.line_group_ids, v] }); e.currentTarget.value = ''; }}>
-                                    <option value="">➕ {zh ? '新增群組...' : 'Add group...'}</option>
+                                    <option value="">➕ {zh ? '新增群組…' : 'Add group…'}</option>
                                     {lineGroups.filter(g => !deptForm.line_group_ids.includes(g.id)).map(g => <option key={g.id} value={g.id}>{g.group_name}</option>)}
                                 </select>
                             </div>
@@ -1739,7 +1740,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                                                         </div>
                                                         <select className="input-field" style={{ width: 'auto' }} value=""
                                                             onChange={e => { const v = e.target.value; if (v && !editDeptForm.line_group_ids.includes(v)) setEditDeptForm({ ...editDeptForm, line_group_ids: [...editDeptForm.line_group_ids, v] }); e.currentTarget.value = ''; }}>
-                                                            <option value="">➕ {zh ? '新增...' : 'Add...'}</option>
+                                                            <option value="">➕ {zh ? '新增…' : 'Add…'}</option>
                                                             {lineGroups.filter(g => !editDeptForm.line_group_ids.includes(g.id)).map(g => <option key={g.id} value={g.id}>{g.group_name}</option>)}
                                                         </select>
                                                     </div>
@@ -1787,9 +1788,9 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                                                         </div>
                                                     )}
                                                     {members.length > 0 && (
-                                                        <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '8px', marginTop: '2px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                                        <div style={{ borderTop: '1px solid var(--outline-variant)', paddingTop: '8px', marginTop: '2px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
                                                             {members.map(e => (
-                                                                <span key={e.id} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '2px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                <span key={e.id} style={{ background: 'var(--bg-primary)', border: '1px solid var(--outline-variant)', borderRadius: '12px', padding: '2px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                                     <span style={{ width: '14px', height: '14px', borderRadius: '50%', background: getColor(e.name), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '8px', fontWeight: 700, color: '#fff', flexShrink: 0 }}>{e.name[0]}</span>
                                                                     {e.name}
                                                                     {e.is_manager && <span style={{ color: 'var(--accent-yellow)', fontSize: '10px' }}>★</span>}

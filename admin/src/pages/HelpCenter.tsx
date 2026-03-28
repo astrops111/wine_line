@@ -194,7 +194,7 @@ export function HelpCenter() {
                     </button>
                     <button className="btn btn-primary" onClick={triggerRegeneration} disabled={generating}>
                         {generating
-                            ? (zh ? '⏳ 生成中...' : '⏳ Generating...')
+                            ? (zh ? '⏳ 生成中…' : '⏳ Generating…')
                             : `🔄 ${zh ? '重新生成文件' : 'Re-generate Docs'}`}
                     </button>
                 </div>
@@ -207,7 +207,7 @@ export function HelpCenter() {
                 <div style={{ width: '240px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <input
                         className="input-field"
-                        placeholder={zh ? '🔍 搜尋文件...' : '🔍 Search docs...'}
+                         aria-label="搜尋文件" name="search" autoComplete="off"placeholder={zh ? '🔍 搜尋文件…' : '🔍 Search docs…'}
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                     />
@@ -235,7 +235,7 @@ export function HelpCenter() {
                     <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         {loading ? (
                             <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
-                                ⏳ {zh ? '載入中...' : 'Loading...'}
+                                ⏳ {zh ? '載入中…' : 'Loading…'}
                             </div>
                         ) : articles.length === 0 ? (
                             <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px', lineHeight: 1.6 }}>
@@ -251,7 +251,7 @@ export function HelpCenter() {
                                         padding: '9px 12px', borderRadius: '6px', cursor: 'pointer',
                                         background: selected?.id === a.id ? 'rgba(45,212,191,0.1)' : 'transparent',
                                         borderLeft: `2px solid ${selected?.id === a.id ? 'var(--accent-primary)' : 'transparent'}`,
-                                        transition: 'all 0.15s',
+                                        transition: 'background-color 0.15s, border-color 0.15s, color 0.15s',
                                     }}
                                     onMouseEnter={e => { if (selected?.id !== a.id) (e.currentTarget as HTMLElement).style.background = 'var(--bg-card)'; }}
                                     onMouseLeave={e => { if (selected?.id !== a.id) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
@@ -278,7 +278,7 @@ export function HelpCenter() {
                 <div className="card" style={{ flex: 1, overflow: 'auto', minHeight: '500px', padding: '24px' }}>
                     {selected ? (
                         <div>
-                            <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--border-color)' }}>
+                            <div style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--outline-variant)' }}>
                                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                                     <div>
                                         <h3 style={{ fontSize: '20px', fontWeight: 700, marginBottom: '6px' }}>
@@ -314,13 +314,13 @@ export function HelpCenter() {
                             {/* Render Markdown as formatted text */}
                             <div style={{
                                 fontSize: '13.5px', lineHeight: 1.8, color: 'var(--text-primary)',
-                                fontFamily: "'DM Sans', 'Noto Sans TC', sans-serif",
+                                fontFamily: "'Inter', 'Noto Sans TC', sans-serif",
                             }}>
                                 {(zh ? selected.content : selected.content_en)
                                     .split('\n')
                                     .map((line, i) => {
                                         if (line.startsWith('## ')) return (
-                                            <h3 key={i} style={{ fontSize: '16px', fontWeight: 700, marginTop: '20px', marginBottom: '8px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '6px' }}>
+                                            <h3 key={i} style={{ fontSize: '16px', fontWeight: 700, marginTop: '20px', marginBottom: '8px', color: 'var(--text-primary)', borderBottom: '1px solid var(--outline-variant)', paddingBottom: '6px' }}>
                                                 {line.replace('## ', '')}
                                             </h3>
                                         );
@@ -372,13 +372,13 @@ export function HelpCenter() {
                     <div style={{
                         width: '340px', flexShrink: 0,
                         display: 'flex', flexDirection: 'column',
-                        background: 'var(--bg-card)', border: '1px solid var(--border-color)',
+                        background: 'var(--bg-card)', border: '1px solid var(--outline-variant)',
                         borderRadius: '10px', overflow: 'hidden',
                         height: '600px', position: 'sticky', top: '0',
                     }}>
                         {/* Chat Header */}
                         <div style={{
-                            padding: '12px 16px', borderBottom: '1px solid var(--border-color)',
+                            padding: '12px 16px', borderBottom: '1px solid var(--outline-variant)',
                             background: 'linear-gradient(135deg, rgba(45,212,191,0.08), rgba(59,130,246,0.08))',
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         }}>
@@ -429,7 +429,7 @@ export function HelpCenter() {
                                                 key={i}
                                                 onClick={() => { setInput(q); }}
                                                 style={{
-                                                    background: 'var(--bg-primary)', border: '1px solid var(--border-color)',
+                                                    background: 'var(--bg-primary)', border: '1px solid var(--outline-variant)',
                                                     borderRadius: '8px', padding: '6px 10px', cursor: 'pointer',
                                                     fontSize: '11px', color: 'var(--text-secondary)', textAlign: 'left',
                                                 }}
@@ -450,7 +450,7 @@ export function HelpCenter() {
                                         border: msg.role !== 'user' ? '1px solid var(--border-color)' : 'none',
                                     }}>
                                         {msg.isLoading
-                                            ? <span style={{ opacity: 0.7 }}>🤔 {zh ? '思考中...' : 'Thinking...'}</span>
+                                            ? <span style={{ opacity: 0.7 }}>🤔 {zh ? '思考中…' : 'Thinking…'}</span>
                                             : msg.content}
                                     </div>
                                     {msg.sources && msg.sources.length > 0 && (
@@ -480,14 +480,14 @@ export function HelpCenter() {
                         </div>
 
                         {/* Input */}
-                        <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border-color)', display: 'flex', gap: '6px' }}>
+                        <div style={{ padding: '10px 12px', borderTop: '1px solid var(--outline-variant)', display: 'flex', gap: '6px' }}>
                             <input
                                 className="input-field"
                                 style={{ flex: 1, borderRadius: '16px', padding: '7px 14px', fontSize: '12.5px' }}
                                 value={input}
                                 onChange={e => setInput(e.target.value)}
                                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                                placeholder={zh ? '輸入問題...' : 'Ask a question...'}
+                                placeholder={zh ? '輸入問題…' : 'Ask a question…'}
                                 disabled={chatLoading}
                             />
                             <button

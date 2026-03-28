@@ -225,22 +225,22 @@ export function HrDashboard() {
             <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <div>
                     <label className="detail-label">{zh ? '開始日期' : 'Start Date'}</label>
-                    <input className="input-field" type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                    <input className="input-field" type="date" name="dateFilter" value={startDate} onChange={e => setStartDate(e.target.value)} />
                 </div>
                 <div>
                     <label className="detail-label">{zh ? '結束日期' : 'End Date'}</label>
-                    <input className="input-field" type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
+                    <input className="input-field" type="date" name="dateFilter" value={endDate} onChange={e => setEndDate(e.target.value)} />
                 </div>
                 <div>
                     <label className="detail-label">{zh ? '門市過濾' : 'Store Filter'}</label>
-                    <select className="input-field" value={selectedStore} onChange={e => setSelectedStore(e.target.value)} style={{ minWidth: '150px' }}>
+                    <select className="input-field" name="filter" value={selectedStore} onChange={e => setSelectedStore(e.target.value)} style={{ minWidth: '150px' }}>
                         <option value="all">{zh ? '所有門市' : 'All Stores'}</option>
                         {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                     </select>
                 </div>
                 <div>
                     <label className="detail-label">{zh ? '員工類型' : 'Employee Type'}</label>
-                    <select className="input-field" value={employeeType} onChange={e => setEmployeeType(e.target.value)} style={{ minWidth: '150px' }}>
+                    <select className="input-field" name="filter" value={employeeType} onChange={e => setEmployeeType(e.target.value)} style={{ minWidth: '150px' }}>
                         <option value="all">{zh ? '全部' : 'All'}</option>
                         <option value="full_time">{typeLabel.full_time}</option>
                         <option value="part_time">{typeLabel.part_time}</option>
@@ -249,7 +249,7 @@ export function HrDashboard() {
                 </div>
                 <div>
                     <label className="detail-label">{zh ? '員工過濾' : 'Employee'}</label>
-                    <select className="input-field" value={selectedEmployee} onChange={e => setSelectedEmployee(e.target.value)} style={{ minWidth: '150px' }}>
+                    <select className="input-field" name="filter" value={selectedEmployee} onChange={e => setSelectedEmployee(e.target.value)} style={{ minWidth: '150px' }}>
                         <option value="all">{zh ? '所有員工' : 'All Employees'}</option>
                         {employees.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                     </select>
@@ -261,22 +261,22 @@ export function HrDashboard() {
 
     const hoursTable = (
         <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
-            {loading ? <div style={{ padding: '40px', textAlign: 'center' }}>{zh ? '計算中...' : 'Calculating...'}</div> : (
+            {loading ? <div style={{ padding: '40px', textAlign: 'center' }}>{zh ? '計算中…' : 'Calculating…'}</div> : (
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                     <thead>
                         <tr style={{ background: 'var(--bg-primary)' }}>
-                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '員工姓名' : 'Employee'}</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '類型' : 'Type'}</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '門市' : 'Store'}</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '出勤天數' : 'Days Worked'}</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '遲到次數' : 'Late Count'}</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '區間總工時' : 'Actual Hours'}</th>
-                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '參考預期工時' : 'Expected Hours'}</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '員工姓名' : 'Employee'}</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '類型' : 'Type'}</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '門市' : 'Store'}</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '出勤天數' : 'Days Worked'}</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '遲到次數' : 'Late Count'}</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '區間總工時' : 'Actual Hours'}</th>
+                            <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '參考預期工時' : 'Expected Hours'}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {data.map(d => (
-                            <tr key={d.user_id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                            <tr key={d.user_id} style={{ borderBottom: 'none' }}>
                                 <td style={{ padding: '12px 16px', fontWeight: 600 }}>{d.name}</td>
                                 <td style={{ padding: '12px 16px' }}><span className="badge" style={{ fontSize: '11px' }}>{typeLabel[d.employee_type]}</span></td>
                                 <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>{d.store_name || '—'}</td>
@@ -335,7 +335,7 @@ export function HrDashboard() {
             </div>
 
             {/* Tab Bar */}
-            <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', borderBottom: '2px solid var(--border-subtle)', paddingBottom: '0' }}>
+            <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', borderBottom: '2px solid var(--outline-variant)', paddingBottom: '0' }}>
                 {([
                     { key: 'report', label: zh ? '工時報表' : 'Hours Report' },
                     { key: 'export', label: zh ? 'CSV 匯出' : 'Payroll Export' },
@@ -354,7 +354,7 @@ export function HrDashboard() {
                             color: tab === t.key ? 'var(--accent-primary)' : 'var(--text-muted)',
                             fontSize: '14px',
                             marginBottom: '-2px',
-                            transition: 'all 0.15s',
+                            transition: 'background-color 0.15s, border-color 0.15s, color 0.15s',
                         }}
                     >
                         {t.label}
@@ -442,11 +442,11 @@ export function HrDashboard() {
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                                         <thead>
                                             <tr style={{ background: 'var(--bg-primary)' }}>
-                                                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '姓名' : 'Name'}</th>
-                                                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '門市' : 'Store'}</th>
-                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '實際(h)' : 'Actual(h)'}</th>
-                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '預期(h)' : 'Expected(h)'}</th>
-                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '超時%' : '% Over'}</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '姓名' : 'Name'}</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '門市' : 'Store'}</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: 'none' }}>{zh ? '實際(h)' : 'Actual(h)'}</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: 'none' }}>{zh ? '預期(h)' : 'Expected(h)'}</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: 'none' }}>{zh ? '超時%' : '% Over'}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -454,7 +454,7 @@ export function HrDashboard() {
                                                 const pct = d.expected_hours > 0 ? (d.total_hours / d.expected_hours) * 100 : 0;
                                                 const isRed = pct > 150;
                                                 return (
-                                                    <tr key={d.user_id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                                    <tr key={d.user_id} style={{ borderBottom: 'none' }}>
                                                         <td style={{ padding: '8px 12px', fontWeight: 600 }}>{d.name}</td>
                                                         <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{d.store_name || '—'}</td>
                                                         <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: 'var(--accent-primary)' }}>{d.total_hours.toFixed(1)}</td>
@@ -500,11 +500,11 @@ export function HrDashboard() {
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                                         <thead>
                                             <tr style={{ background: 'var(--bg-primary)' }}>
-                                                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '姓名' : 'Name'}</th>
-                                                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '門市' : 'Store'}</th>
-                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '遲到次數' : 'Late Count'}</th>
-                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '總出勤' : 'Total Shifts'}</th>
-                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '遲到率' : 'Late Rate'}</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '姓名' : 'Name'}</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '門市' : 'Store'}</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: 'none' }}>{zh ? '遲到次數' : 'Late Count'}</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: 'none' }}>{zh ? '總出勤' : 'Total Shifts'}</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: 'none' }}>{zh ? '遲到率' : 'Late Rate'}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -512,7 +512,7 @@ export function HrDashboard() {
                                                 const rate = d.records_count > 0 ? (d.late_count / d.records_count) * 100 : 0;
                                                 const isRed = rate > 30;
                                                 return (
-                                                    <tr key={d.user_id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                                    <tr key={d.user_id} style={{ borderBottom: 'none' }}>
                                                         <td style={{ padding: '8px 12px', fontWeight: 600 }}>{d.name}</td>
                                                         <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{d.store_name || '—'}</td>
                                                         <td style={{ padding: '8px 12px', textAlign: 'right', color: '#f43f5e', fontWeight: 700 }}>{d.late_count}</td>
@@ -558,15 +558,15 @@ export function HrDashboard() {
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                                         <thead>
                                             <tr style={{ background: 'var(--bg-primary)' }}>
-                                                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '姓名' : 'Name'}</th>
-                                                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '門市' : 'Store'}</th>
-                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '實際(h)' : 'Actual(h)'}</th>
-                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '預期(h)' : 'Expected(h)'}</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '姓名' : 'Name'}</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '門市' : 'Store'}</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: 'none' }}>{zh ? '實際(h)' : 'Actual(h)'}</th>
+                                                <th style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 600, borderBottom: 'none' }}>{zh ? '預期(h)' : 'Expected(h)'}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {undertimeAlerts.map(d => (
-                                                <tr key={d.user_id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                                <tr key={d.user_id} style={{ borderBottom: 'none' }}>
                                                     <td style={{ padding: '8px 12px', fontWeight: 600 }}>{d.name}</td>
                                                     <td style={{ padding: '8px 12px', color: 'var(--text-muted)' }}>{d.store_name || '—'}</td>
                                                     <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#f43f5e' }}>{d.total_hours.toFixed(1)}</td>
@@ -596,19 +596,19 @@ export function HrDashboard() {
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                                         <thead>
                                             <tr style={{ background: '#fef2f2' }}>
-                                                <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid #eee' }}>{zh ? '員工' : 'Employee'}</th>
-                                                <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid #eee' }}>{zh ? '門市' : 'Store'}</th>
-                                                <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid #eee' }}>{zh ? '日期' : 'Date'}</th>
-                                                <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid #eee' }}>{zh ? '班別' : 'Shift'}</th>
+                                                <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid var(--outline-variant)' }}>{zh ? '員工' : 'Employee'}</th>
+                                                <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid var(--outline-variant)' }}>{zh ? '門市' : 'Store'}</th>
+                                                <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid var(--outline-variant)' }}>{zh ? '日期' : 'Date'}</th>
+                                                <th style={{ padding: '6px 8px', textAlign: 'left', borderBottom: '1px solid var(--outline-variant)' }}>{zh ? '班別' : 'Shift'}</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {absenceAlerts.map((a, i) => (
                                                 <tr key={i} style={{ background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                                                    <td style={{ padding: '6px 8px', borderBottom: '1px solid #f3f4f6' }}>{a.employee_name}</td>
-                                                    <td style={{ padding: '6px 8px', borderBottom: '1px solid #f3f4f6' }}>{a.store_name}</td>
-                                                    <td style={{ padding: '6px 8px', borderBottom: '1px solid #f3f4f6' }}>{a.shift_date}</td>
-                                                    <td style={{ padding: '6px 8px', borderBottom: '1px solid #f3f4f6' }}>
+                                                    <td style={{ padding: '6px 8px', borderBottom: 'none' }}>{a.employee_name}</td>
+                                                    <td style={{ padding: '6px 8px', borderBottom: 'none' }}>{a.store_name}</td>
+                                                    <td style={{ padding: '6px 8px', borderBottom: 'none' }}>{a.shift_date}</td>
+                                                    <td style={{ padding: '6px 8px', borderBottom: 'none' }}>
                                                         {a.shift_start && a.shift_end ? `${a.shift_start}–${a.shift_end}` : a.shift_start || '—'}
                                                     </td>
                                                 </tr>

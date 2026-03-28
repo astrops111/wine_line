@@ -122,36 +122,36 @@ export function WorkflowManagement() {
                 {tab === 'dashboard' && (
                     <div>
                         {loading ? (
-                            <p className="loading-pulse">{zh ? '載入中...' : 'Loading...'}</p>
+                            <p className="loading-pulse">{zh ? '載入中…' : 'Loading…'}</p>
                         ) : (
                             <>
                                 {/* Stat cards */}
                                 <div className="stats-grid" style={{ marginBottom: '24px' }}>
                                     <div className="stat-card blue">
                                         <div className="stat-label">{zh ? '流程範本' : 'Templates'}</div>
-                                        <div className="stat-value">{templateCount}</div>
+                                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{templateCount}</div>
                                     </div>
                                     <div className="stat-card emerald">
                                         <div className="stat-label">{zh ? '進行中流程' : 'Running'}</div>
-                                        <div className="stat-value">{wfStat.running}</div>
+                                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{wfStat.running}</div>
                                         <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{wfStat.total} {zh ? '總計' : 'total'}</div>
                                     </div>
                                     <div className="stat-card orange">
                                         <div className="stat-label">{zh ? '待處理任務' : 'Pending Tasks'}</div>
-                                        <div className="stat-value">{taskStat.pending}</div>
+                                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{taskStat.pending}</div>
                                         <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{taskStat.total} {zh ? '總計' : 'total'}</div>
                                     </div>
                                     <div className="stat-card purple">
                                         <div className="stat-label">{zh ? '已完成任務' : 'Done Tasks'}</div>
-                                        <div className="stat-value">{taskStat.completed}</div>
+                                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{taskStat.completed}</div>
                                     </div>
                                     <div className="stat-card red" style={{ '--card-accent': '#ef4444' } as any}>
                                         <div className="stat-label">{zh ? '阻塞任務' : 'Blocked'}</div>
-                                        <div className="stat-value">{taskStat.blocked}</div>
+                                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{taskStat.blocked}</div>
                                     </div>
                                     <div className="stat-card blue">
                                         <div className="stat-label">{zh ? '查核清單' : 'Checklists'}</div>
-                                        <div className="stat-value">{checklistCount}</div>
+                                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{checklistCount}</div>
                                     </div>
                                 </div>
 
@@ -199,7 +199,7 @@ export function WorkflowManagement() {
 
                                 {/* Recent instances */}
                                 <div className="card" style={{ padding: 0 }}>
-                                    <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', fontWeight: 600, fontSize: '13px' }}>
+                                    <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--outline-variant)', fontWeight: 600, fontSize: '13px' }}>
                                         🕐 {zh ? '最近流程' : 'Recent Instances'}
                                     </div>
                                     {recentInstances.length === 0

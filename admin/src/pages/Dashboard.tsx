@@ -149,7 +149,7 @@ export function Dashboard() {
         return (
             <div className="fade-in">
                 <div className="page-header">
-                    <h2>📊 {t('dashboard.title')}</h2>
+                    <h1>📊 {t('dashboard.title')}</h1>
                 </div>
                 <div className="page-body">
                     <p className="loading-pulse">{t('common.loading')}</p>
@@ -164,7 +164,7 @@ export function Dashboard() {
     return (
         <div className="fade-in">
             <div className="page-header">
-                <h2>📊 {t('dashboard.title')}</h2>
+                <h1>📊 {t('dashboard.title')}</h1>
                 <p>{zh ? '所有門市營運概覽' : 'Overview of all store operations'}</p>
             </div>
 
@@ -177,23 +177,23 @@ export function Dashboard() {
                     <div className="stats-grid">
                         <div className="stat-card emerald">
                             <div className="stat-label">{zh ? '在職人數' : 'ACTIVE'}</div>
-                            <div className="stat-value">{headcount.active}</div>
+                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{headcount.active}</div>
                         </div>
                         <div className="stat-card blue">
                             <div className="stat-label">{zh ? '全職' : 'FULL-TIME'}</div>
-                            <div className="stat-value">{headcount.fullTime}</div>
+                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{headcount.fullTime}</div>
                         </div>
                         <div className="stat-card orange">
                             <div className="stat-label">{zh ? '兼職' : 'PART-TIME'}</div>
-                            <div className="stat-value">{headcount.partTime}</div>
+                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{headcount.partTime}</div>
                         </div>
                         <div className="stat-card purple">
                             <div className="stat-label">{zh ? '約聘' : 'CONTRACT'}</div>
-                            <div className="stat-value">{headcount.contract}</div>
+                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{headcount.contract}</div>
                         </div>
                         <div className="stat-card red">
                             <div className="stat-label">{zh ? '離職' : 'INACTIVE'}</div>
-                            <div className="stat-value">{headcount.inactive}</div>
+                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{headcount.inactive}</div>
                         </div>
                     </div>
                 </div>
@@ -270,39 +270,39 @@ export function Dashboard() {
                 <div className="stats-grid">
                     <div className="stat-card emerald">
                         <div className="stat-label">{t('dashboard.active_workflows')}</div>
-                        <div className="stat-value">{activeWorkflowCount}</div>
+                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{activeWorkflowCount}</div>
                     </div>
                     <div className="stat-card emerald">
                         <div className="stat-label">{t('dashboard.total_tasks')}</div>
-                        <div className="stat-value">{stats.total}</div>
+                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{stats.total}</div>
                     </div>
                     <div className="stat-card orange">
                         <div className="stat-label">{t('dashboard.pending')}</div>
-                        <div className="stat-value">{stats.pending}</div>
+                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{stats.pending}</div>
                     </div>
                     <div className="stat-card blue">
                         <div className="stat-label">{t('dashboard.in_progress')}</div>
-                        <div className="stat-value">{stats.in_progress}</div>
+                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{stats.in_progress}</div>
                     </div>
                     <div className="stat-card purple">
                         <div className="stat-label">{t('dashboard.completed')}</div>
-                        <div className="stat-value">{stats.completed}</div>
+                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{stats.completed}</div>
                     </div>
                     <div className="stat-card red">
                         <div className="stat-label">{t('dashboard.blocked')}</div>
-                        <div className="stat-value">{stats.blocked}</div>
+                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{stats.blocked}</div>
                     </div>
                     <div className="stat-card orange">
                         <div className="stat-label">{zh ? '待審假單' : 'Pending Leave'}</div>
-                        <div className="stat-value">{pendingLeave}</div>
+                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{pendingLeave}</div>
                     </div>
                     <div className="stat-card orange">
                         <div className="stat-label">{zh ? '待審加班' : 'Pending OT'}</div>
-                        <div className="stat-value">{pendingOT}</div>
+                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{pendingOT}</div>
                     </div>
                     <div className="stat-card red">
                         <div className="stat-label">{zh ? '待審補打' : 'Corrections'}</div>
-                        <div className="stat-value">{pendingCorrections}</div>
+                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{pendingCorrections}</div>
                     </div>
                 </div>
 
@@ -316,7 +316,7 @@ export function Dashboard() {
                             </span>
                         </div>
                         <div className="progress-bar" style={{ marginBottom: '12px' }}>
-                            <div className="progress-bar-fill" style={{ width: `${progress}%` }} />
+                            <div className="progress-bar-fill" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} style={{ width: `${progress}%` }} />
                         </div>
                         <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
                             {workflows.map(w => w.name).join(' · ')}
@@ -339,6 +339,9 @@ export function Dashboard() {
                             </tr>
                         </thead>
                         <tbody>
+                            {recentTasks.length === 0 && (
+                                <tr><td colSpan={4} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>{zh ? '尚無任務' : 'No tasks yet'}</td></tr>
+                            )}
                             {recentTasks.map(task => (
                                 <tr key={task.id}>
                                     <td style={{ color: 'var(--text-muted)', width: '40px' }}>{task.sort_order}</td>

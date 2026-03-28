@@ -151,20 +151,20 @@ export function Notifications() {
                             <div className="card" style={{ marginBottom: '16px' }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                                     <div>
-                                        <label className="detail-label">{zh ? '規則名稱' : 'Rule Name'}</label>
-                                        <input className="input-field" value={newRule.name} onChange={e => setNewRule({ ...newRule, name: e.target.value })}
+                                        <label className="detail-label" htmlFor="rule-name">{zh ? '規則名稱' : 'Rule Name'}</label>
+                                        <input id="rule-name" className="input-field" name="ruleName" autoComplete="off" value={newRule.name} onChange={e => setNewRule({ ...newRule, name: e.target.value })}
                                             placeholder={zh ? '例：任務完成通知' : 'e.g.: Task Completion Alert'} />
                                     </div>
                                     <div>
-                                        <label className="detail-label">{zh ? '觸發事件' : 'Event Type'}</label>
-                                        <select className="select" style={{ width: '100%' }} value={newRule.event_type}
+                                        <label className="detail-label" htmlFor="rule-event">{zh ? '觸發事件' : 'Event Type'}</label>
+                                        <select id="rule-event" className="select" name="eventType" style={{ width: '100%' }} value={newRule.event_type}
                                             onChange={e => setNewRule({ ...newRule, event_type: e.target.value })}>
                                             {Object.entries(eventTypes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="detail-label">{zh ? '發送通道' : 'Channel'}</label>
-                                        <select className="select" style={{ width: '100%' }} value={newRule.channel}
+                                        <label className="detail-label" htmlFor="rule-channel">{zh ? '發送通道' : 'Channel'}</label>
+                                        <select id="rule-channel" className="select" name="channel" style={{ width: '100%' }} value={newRule.channel}
                                             onChange={e => setNewRule({ ...newRule, channel: e.target.value })}>
                                             <option value="line">💬 LINE</option>
                                             <option value="email">📧 Email</option>
@@ -172,8 +172,8 @@ export function Notifications() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="detail-label">{zh ? '訊息模板' : 'Message Template'}</label>
-                                        <input className="input-field" value={newRule.message_template} onChange={e => setNewRule({ ...newRule, message_template: e.target.value })}
+                                        <label className="detail-label" htmlFor="rule-message">{zh ? '訊息模板' : 'Message Template'}</label>
+                                        <input id="rule-message" className="input-field" name="messageTemplate" autoComplete="off" value={newRule.message_template} onChange={e => setNewRule({ ...newRule, message_template: e.target.value })}
                                             placeholder="{user} {action} {task}" />
                                     </div>
                                 </div>
@@ -236,13 +236,13 @@ export function Notifications() {
                             <div className="card" style={{ marginBottom: '16px' }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                                     <div>
-                                        <label className="detail-label">{zh ? '提醒名稱' : 'Reminder Name'}</label>
-                                        <input className="input-field" value={newReminder.name} onChange={e => setNewReminder({ ...newReminder, name: e.target.value })}
+                                        <label className="detail-label" htmlFor="reminder-name">{zh ? '提醒名稱' : 'Reminder Name'}</label>
+                                        <input id="reminder-name" className="input-field" name="reminderName" autoComplete="off" value={newReminder.name} onChange={e => setNewReminder({ ...newReminder, name: e.target.value })}
                                             placeholder={zh ? '例：每日任務摘要' : 'e.g.: Daily Task Summary'} />
                                     </div>
                                     <div>
-                                        <label className="detail-label">{zh ? '類型' : 'Type'}</label>
-                                        <select className="select" style={{ width: '100%' }} value={newReminder.reminder_type}
+                                        <label className="detail-label" htmlFor="reminder-type">{zh ? '類型' : 'Type'}</label>
+                                        <select id="reminder-type" className="select" name="reminderType" style={{ width: '100%' }} value={newReminder.reminder_type}
                                             onChange={e => setNewReminder({ ...newReminder, reminder_type: e.target.value })}>
                                             <option value="daily_summary">{zh ? '每日摘要' : 'Daily Summary'}</option>
                                             <option value="overdue_check">{zh ? '逾期檢查' : 'Overdue Check'}</option>
@@ -251,13 +251,13 @@ export function Notifications() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="detail-label">Cron {zh ? '表達式' : 'Expression'}</label>
-                                        <input className="input-field" value={newReminder.cron_expression} onChange={e => setNewReminder({ ...newReminder, cron_expression: e.target.value })}
+                                        <label className="detail-label" htmlFor="reminder-cron">Cron {zh ? '表達式' : 'Expression'}</label>
+                                        <input id="reminder-cron" className="input-field" name="cronExpression" autoComplete="off" spellCheck={false} value={newReminder.cron_expression} onChange={e => setNewReminder({ ...newReminder, cron_expression: e.target.value })}
                                             placeholder="0 9 * * *" />
                                     </div>
                                     <div>
-                                        <label className="detail-label">{zh ? '訊息模板' : 'Message'}</label>
-                                        <input className="input-field" value={newReminder.message_template} onChange={e => setNewReminder({ ...newReminder, message_template: e.target.value })} />
+                                        <label className="detail-label" htmlFor="reminder-message">{zh ? '訊息模板' : 'Message'}</label>
+                                        <input id="reminder-message" className="input-field" name="reminderMessage" autoComplete="off" value={newReminder.message_template} onChange={e => setNewReminder({ ...newReminder, message_template: e.target.value })} />
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '8px' }}>

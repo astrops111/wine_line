@@ -45,32 +45,32 @@ export function AdminSettings() {
             {/* Stats */}
             <div style={{ display: 'flex', gap: '16px', marginBottom: '20px' }}>
                 <div className="card" style={{ flex: 1, padding: '16px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--accent-primary)' }}>{enabledCount}</div>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--accent-primary)', fontVariantNumeric: 'tabular-nums' }}>{enabledCount}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{zh ? '已啟用模組' : 'Enabled Modules'}</div>
                 </div>
                 <div className="card" style={{ flex: 1, padding: '16px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-muted)' }}>{modules.length - enabledCount}</div>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-muted)', fontVariantNumeric: 'tabular-nums' }}>{modules.length - enabledCount}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{zh ? '已停用模組' : 'Disabled Modules'}</div>
                 </div>
                 <div className="card" style={{ flex: 1, padding: '16px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--accent-secondary)' }}>{modules.length}</div>
+                    <div style={{ fontSize: '28px', fontWeight: 700, color: 'var(--accent-secondary)', fontVariantNumeric: 'tabular-nums' }}>{modules.length}</div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{zh ? '總模組數' : 'Total Modules'}</div>
                 </div>
             </div>
 
             {/* Module list */}
             <div className="card" style={{ padding: '0' }}>
-                <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontSize: '14px' }}>
+                <div style={{ padding: '14px 18px', borderBottom: 'none', fontWeight: 600, fontSize: '14px' }}>
                     🧩 {zh ? '模組存取控制' : 'Module Access Control'}
                 </div>
                 {loading ? (
-                    <div style={{ padding: '40px', textAlign: 'center' }} className="loading-pulse">{zh ? '載入中...' : 'Loading...'}</div>
+                    <div style={{ padding: '40px', textAlign: 'center' }} className="loading-pulse">{zh ? '載入中\u2026' : 'Loading\u2026'}</div>
                 ) : (
                     <div>
                         {modules.map((mod, i) => (
                             <div key={mod.id} style={{
                                 display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 18px',
-                                borderBottom: i < modules.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+                                borderBottom: i < modules.length - 1 ? '1px solid var(--outline-variant)' : 'none',
                                 opacity: mod.is_enabled ? 1 : 0.5,
                                 transition: 'opacity 0.2s',
                             }}>
@@ -82,6 +82,8 @@ export function AdminSettings() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                     <select
                                         className="input-field"
+                                        aria-label={zh ? '選擇角色' : 'Select role'}
+                                        name="requiredRole"
                                         style={{ width: '100px', fontSize: '12px', padding: '4px 8px' }}
                                         value={mod.required_role}
                                         onChange={e => updateRole(mod.id, e.target.value)}
@@ -91,26 +93,31 @@ export function AdminSettings() {
                                         <option value="staff">{zh ? '員工' : 'Staff'}</option>
                                         <option value="all">{zh ? '所有人' : 'Everyone'}</option>
                                     </select>
-                                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                                        <div
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <button
+                                            type="button"
+                                            role="switch"
+                                            aria-checked={mod.is_enabled}
+                                            aria-label={zh ? '切換模組' : 'Toggle module'}
                                             onClick={() => toggleModule(mod.id, !mod.is_enabled)}
                                             style={{
                                                 width: '44px', height: '24px', borderRadius: '12px',
                                                 background: mod.is_enabled ? 'var(--accent-primary)' : '#555',
-                                                position: 'relative', cursor: 'pointer', transition: 'background 0.2s',
+                                                position: 'relative', cursor: 'pointer', transition: 'background-color 0.2s',
+                                                border: 'none', padding: 0,
                                             }}
                                         >
                                             <div style={{
                                                 width: '20px', height: '20px', borderRadius: '50%', background: '#fff',
-                                                position: 'absolute', top: '2px',
-                                                left: mod.is_enabled ? '22px' : '2px',
-                                                transition: 'left 0.2s',
+                                                position: 'absolute', top: '2px', left: '2px',
+                                                transform: mod.is_enabled ? 'translateX(20px)' : 'translateX(0)',
+                                                transition: 'transform 0.2s',
                                             }} />
-                                        </div>
+                                        </button>
                                         <span style={{ fontSize: '12px', minWidth: '36px', color: mod.is_enabled ? '#22c55e' : 'var(--text-muted)' }}>
                                             {mod.is_enabled ? (zh ? '啟用' : 'ON') : (zh ? '停用' : 'OFF')}
                                         </span>
-                                    </label>
+                                    </div>
                                 </div>
                             </div>
                         ))}

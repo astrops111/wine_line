@@ -157,7 +157,7 @@ export function LineManagement() {
                                                 </div>
                                             </td>
                                             <td>
-                                                <select className="select" style={{ width: '100%', fontSize: '12px' }}
+                                                <select className="select" aria-label="對應系統使用者" name="mappedUser" style={{ width: '100%', fontSize: '12px' }}
                                                     value={u.user_id || ''}
                                                     onChange={e => mapLineUser(u.id, e.target.value || null)}>
                                                     <option value="">{zh ? '— 未對應 —' : '— Not mapped —'}</option>
@@ -175,6 +175,7 @@ export function LineManagement() {
                                             <td>
                                                 <button className="btn btn-sm btn-secondary" style={{ fontSize: '11px' }}
                                                     title={zh ? '封存' : 'Archive'}
+                                                    aria-label={zh ? '封存' : 'Archive'}
                                                     onClick={() => archiveLineUser(u.id)}>
                                                     📦
                                                 </button>
@@ -208,11 +209,11 @@ export function LineManagement() {
                                     {activeGroups.map(g => (
                                         <tr key={g.id}>
                                             <td>
-                                                <input className="input-field" style={{ fontSize: '13px', padding: '4px 8px' }}
+                                                <input className="input-field" aria-label="群組名稱" name="groupName" autoComplete="off" style={{ fontSize: '13px', padding: '4px 8px' }}
                                                     defaultValue={g.group_name || ''} onBlur={e => updateGroupName(g.id, e.target.value)} />
                                             </td>
                                             <td>
-                                                <select className="select" style={{ fontSize: '12px' }} value={g.group_type}
+                                                <select className="select" aria-label="群組類型" name="groupType" style={{ fontSize: '12px' }} value={g.group_type}
                                                     onChange={e => updateGroupType(g.id, e.target.value)}>
                                                     {Object.entries(groupTypes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                                                 </select>
@@ -228,6 +229,7 @@ export function LineManagement() {
                                             <td>
                                                 <button className="btn btn-sm btn-secondary" style={{ fontSize: '11px' }}
                                                     title={zh ? '封存' : 'Archive'}
+                                                    aria-label={zh ? '封存' : 'Archive'}
                                                     onClick={() => archiveLineGroup(g.id)}>
                                                     📦
                                                 </button>

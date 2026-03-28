@@ -107,28 +107,28 @@ export function Holidays() {
                     </h3>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
                         <div>
-                            <label className="detail-label">{zh ? '日期' : 'Date'} *</label>
-                            <input className="input-field" type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+                            <label className="detail-label" htmlFor="holiday-date">{zh ? '日期' : 'Date'} *</label>
+                            <input id="holiday-date" className="input-field" type="date" name="date" autoComplete="off" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
                         </div>
                         <div>
-                            <label className="detail-label">{zh ? '中文名稱' : 'Chinese Name'} *</label>
-                            <input className="input-field" value={form.name_zh} onChange={e => setForm({ ...form, name_zh: e.target.value })} placeholder="元旦" />
+                            <label className="detail-label" htmlFor="holiday-name-zh">{zh ? '中文名稱' : 'Chinese Name'} *</label>
+                            <input id="holiday-name-zh" className="input-field" name="nameZh" autoComplete="off" value={form.name_zh} onChange={e => setForm({ ...form, name_zh: e.target.value })} placeholder="元旦…" />
                         </div>
                         <div>
-                            <label className="detail-label">{zh ? '英文名稱' : 'English Name'}</label>
-                            <input className="input-field" value={form.name_en} onChange={e => setForm({ ...form, name_en: e.target.value })} placeholder="New Year's Day" />
+                            <label className="detail-label" htmlFor="holiday-name-en">{zh ? '英文名稱' : 'English Name'}</label>
+                            <input id="holiday-name-en" className="input-field" name="nameEn" autoComplete="off" spellCheck={false} value={form.name_en} onChange={e => setForm({ ...form, name_en: e.target.value })} placeholder="New Year’s Day…" />
                         </div>
                         <div>
-                            <label className="detail-label">{zh ? '類型' : 'Type'}</label>
-                            <select className="input-field" value={form.holiday_type} onChange={e => setForm({ ...form, holiday_type: e.target.value })}>
+                            <label className="detail-label" htmlFor="holiday-type">{zh ? '類型' : 'Type'}</label>
+                            <select id="holiday-type" className="input-field" name="holidayType" value={form.holiday_type} onChange={e => setForm({ ...form, holiday_type: e.target.value })}>
                                 <option value="national">{typeLabel.national}</option>
                                 <option value="company">{typeLabel.company}</option>
                                 <option value="custom">{typeLabel.custom}</option>
                             </select>
                         </div>
                         <div>
-                            <label className="detail-label">{t('holiday.pay_multiplier')}</label>
-                            <input className="input-field" type="number" step="0.1" value={form.pay_multiplier} onChange={e => setForm({ ...form, pay_multiplier: e.target.value })} />
+                            <label className="detail-label" htmlFor="holiday-multiplier">{t('holiday.pay_multiplier')}</label>
+                            <input id="holiday-multiplier" className="input-field" type="number" name="payMultiplier" autoComplete="off" step="0.1" value={form.pay_multiplier} onChange={e => setForm({ ...form, pay_multiplier: e.target.value })} />
                         </div>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
@@ -161,8 +161,8 @@ export function Holidays() {
                                         <span style={{ fontSize: '11px' }}>{typeIcon[h.holiday_type]}</span>
                                         <span style={{ flex: 1, fontSize: '13px' }}>{zh ? h.name_zh : (h.name_en || h.name_zh)}</span>
                                         <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{h.pay_multiplier}×</span>
-                                        <button className="btn btn-sm" style={{ padding: '2px 6px', fontSize: '11px' }} onClick={() => startEdit(h)}>✏️</button>
-                                        <button className="btn btn-sm" style={{ padding: '2px 6px', fontSize: '11px', color: 'var(--accent-red)' }} onClick={() => deleteHoliday(h.id)}>✕</button>
+                                        <button className="btn btn-sm" style={{ padding: '2px 6px', fontSize: '11px' }} onClick={() => startEdit(h)} aria-label="編輯">✏️</button>
+                                        <button className="btn btn-sm" style={{ padding: '2px 6px', fontSize: '11px', color: 'var(--accent-red)' }} onClick={() => deleteHoliday(h.id)} aria-label="刪除">✕</button>
                                     </div>
                                 ))
                             )}

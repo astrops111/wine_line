@@ -245,7 +245,7 @@ export function TimeTracker() {
         return d.toISOString().slice(0, 16);
     };
 
-    if (loading) return <div className="loading-pulse" style={{ padding: '40px' }}>{zh ? '載入中...' : 'Loading...'}</div>;
+    if (loading) return <div className="loading-pulse" style={{ padding: '40px' }}>{zh ? '載入中…' : 'Loading…'}</div>;
 
     return (
         <div className="fade-in" style={{ position: 'relative' }}>
@@ -314,11 +314,11 @@ export function TimeTracker() {
                     {/* Active records — currently clocked in */}
                     {activeRecords.length > 0 && (
                         <div className="card" style={{ marginBottom: '16px', padding: 0 }}>
-                            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontSize: '13px', color: '#22c55e' }}>
+                            <div style={{ padding: '12px 16px', borderBottom: 'none', fontWeight: 600, fontSize: '13px', color: '#22c55e' }}>
                                 🟢 {zh ? '目前在班' : 'Currently Working'} ({activeRecords.length})
                             </div>
                             {activeRecords.map(r => (
-                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 16px', borderBottom: '1px solid var(--border-subtle)' }}>
+                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 16px', borderBottom: 'none' }}>
                                     <span style={{ fontWeight: 600, fontSize: '14px', minWidth: '80px' }}>{(r.user as any)?.name}</span>
                                     <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>🕐 {formatTime(r.clock_in)}</span>
                                     <span className="badge" style={{ background: '#22c55e33', color: '#22c55e', fontSize: '10px' }}>{methodLabel[r.clock_in_method]}</span>
@@ -334,11 +334,11 @@ export function TimeTracker() {
                     {/* Completed records */}
                     {completedRecords.length > 0 && (
                         <div className="card" style={{ padding: 0 }}>
-                            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontSize: '13px' }}>
+                            <div style={{ padding: '12px 16px', borderBottom: 'none', fontWeight: 600, fontSize: '13px' }}>
                                 ✅ {zh ? '已完成' : 'Completed'} ({completedRecords.length})
                             </div>
                             {completedRecords.map(r => (
-                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', borderBottom: '1px solid var(--border-subtle)', fontSize: '12px' }}>
+                                <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 16px', borderBottom: 'none', fontSize: '12px' }}>
                                     <span style={{ fontWeight: 600, minWidth: '80px' }}>{(r.user as any)?.name}</span>
                                     <span style={{ color: 'var(--text-muted)' }}>🕐 {formatTime(r.clock_in)} → {r.clock_out ? formatTime(r.clock_out) : '—'}</span>
                                     <span style={{ color: 'var(--accent-primary)', fontWeight: 600 }}>{r.total_hours?.toFixed(1)}h</span>
@@ -354,7 +354,7 @@ export function TimeTracker() {
             {tab === 'history' && (
                 <>
                     <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'center' }}>
-                        <input className="input-field" type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} style={{ width: '180px' }} />
+                        <input className="input-field" type="date" name="dateFilter" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} style={{ width: '180px' }} />
                         <select className="input-field" value={selectedStore} onChange={e => setSelectedStore(e.target.value)} style={{ width: '180px' }}>
                             <option value="all">{zh ? '所有門市' : 'All Stores'}</option>
                             {stores.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -374,16 +374,16 @@ export function TimeTracker() {
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                             <thead>
                                 <tr style={{ background: 'var(--bg-primary)' }}>
-                                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '員工' : 'Employee'}</th>
-                                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '上班' : 'Clock In'}</th>
-                                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '下班' : 'Clock Out'}</th>
-                                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '工時' : 'Hours'}</th>
-                                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: '1px solid var(--border-subtle)' }}>{zh ? '管理' : 'Actions'}</th>
+                                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '員工' : 'Employee'}</th>
+                                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '上班' : 'Clock In'}</th>
+                                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '下班' : 'Clock Out'}</th>
+                                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '工時' : 'Hours'}</th>
+                                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '管理' : 'Actions'}</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {records.map(r => (
-                                    <tr key={r.id} style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                                    <tr key={r.id} style={{ borderBottom: 'none' }}>
                                         <td style={{ padding: '8px 14px', fontWeight: 600 }}>{(r.user as any)?.name}</td>
                                         <td style={{ padding: '8px 14px' }}>{formatTime(r.clock_in)} ({methodLabel[r.clock_in_method]})</td>
                                         <td style={{ padding: '8px 14px' }}>{r.clock_out ? `${formatTime(r.clock_out)} (${methodLabel[r.clock_out_method || 'admin']})` : <span style={{ color: '#22c55e' }}>🟢 {zh ? '在班' : 'Working'}</span>}</td>
@@ -521,7 +521,7 @@ export function TimeTracker() {
                                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                                     <input
                                                         className="input-field"
-                                                        placeholder={zh ? '拒絕原因...' : 'Rejection reason...'}
+                                                        placeholder={zh ? '拒絕原因…' : 'Rejection reason…'}
                                                         value={correctionRejectReason}
                                                         onChange={e => setCorrectionRejectReason(e.target.value)}
                                                         style={{ flex: 1, fontSize: '13px' }}
@@ -566,7 +566,7 @@ export function TimeTracker() {
                         <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
                             <div>
                                 <label className="detail-label">LINE User ID</label>
-                                <input className="input-field" value={mapForm.line_user_id} onChange={e => setMapForm({ ...mapForm, line_user_id: e.target.value })} placeholder="U..." style={{ width: '260px' }} />
+                                <input className="input-field" value={mapForm.line_user_id} onChange={e => setMapForm({ ...mapForm, line_user_id: e.target.value })} placeholder="U…" style={{ width: '260px' }} />
                             </div>
                             <div>
                                 <label className="detail-label">{zh ? '員工' : 'Employee'}</label>
@@ -579,11 +579,11 @@ export function TimeTracker() {
                         </div>
                     </div>
                     <div className="card" style={{ padding: 0 }}>
-                        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)', fontWeight: 600, fontSize: '13px' }}>
+                        <div style={{ padding: '12px 16px', borderBottom: 'none', fontWeight: 600, fontSize: '13px' }}>
                             {zh ? '已綁定帳號' : 'Linked Accounts'} ({mappings.length})
                         </div>
                         {mappings.map(m => (
-                            <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 16px', borderBottom: '1px solid var(--border-subtle)', fontSize: '13px' }}>
+                            <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 16px', borderBottom: 'none', fontSize: '13px' }}>
                                 <span style={{ fontWeight: 600 }}>{m.user?.name}</span>
                                 <span style={{ fontFamily: 'monospace', fontSize: '11px', color: 'var(--text-muted)' }}>{m.line_user_id}</span>
                                 <span className="badge" style={{ background: m.is_verified ? '#22c55e33' : '#f59e0b33', color: m.is_verified ? '#22c55e' : '#f59e0b', fontSize: '10px' }}>

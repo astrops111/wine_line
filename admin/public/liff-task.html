@@ -1,11 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-serve(async (_req: Request) => {
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const liffId = Deno.env.get("LIFF_TASK_ID") ?? "";
-
-  const html = `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8"/>
@@ -126,9 +119,9 @@ textarea::placeholder{color:#555}
 <div class="toast" id="toast"></div>
 
 <script>
-const SUPABASE_URL = '${supabaseUrl}';
-const SUPABASE_ANON_KEY = '${supabaseAnonKey}';
-const LIFF_ID = '${liffId}';
+const SUPABASE_URL = 'https://kzawtuvmchhtdsokrjys.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_j4d5NBq-JxIBz-F8GpOLog_u8bEkynM';
+const LIFF_ID = '2009567492-Hpa3NSAi';
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let taskId = null;
@@ -158,12 +151,10 @@ function fmt(dateStr) {
 
 function renderNotes(notesData) {
   const el = document.getElementById('existingNotes');
-  // Support both structured JSON array and legacy plain text
   let entries = [];
   if (Array.isArray(notesData)) {
     entries = notesData;
   } else if (typeof notesData === 'string' && notesData.trim()) {
-    // Legacy plain text: render as single entry
     el.textContent = notesData;
     el.className = 'notes-existing';
     return;
@@ -177,10 +168,10 @@ function renderNotes(notesData) {
   }
 
   el.className = 'notes-existing';
-  el.innerHTML = entries.map(e => {
-    const time = e.time ? new Date(e.time).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false }) : '';
-    const author = e.author || '';
-    const text = (e.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  el.innerHTML = entries.map(function(e) {
+    var time = e.time ? new Date(e.time).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false }) : '';
+    var author = e.author || '';
+    var text = (e.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     return '<div class="note-entry">'
       + (time ? '<div class="note-time">' + time + (author ? ' — <span class="note-author">' + author + '</span>' : '') + '</div>' : '')
       + '<div class="note-text">' + text + '</div>'
@@ -189,11 +180,11 @@ function renderNotes(notesData) {
 }
 
 async function loadTask() {
-  const params = new URLSearchParams(window.location.search);
+  var params = new URLSearchParams(window.location.search);
   taskId = params.get('task_id');
   if (!taskId) { showError('缺少任務 ID', '此連結無效，請從 LINE 訊息中重新開啟。'); return; }
 
-  const { data, error } = await sb
+  var { data, error } = await sb
     .from('tasks')
     .select('id, title, status, priority, due_date, notes, metadata, created_at, organization_id, assigned_to, workflow_instance_id, assignee:users!tasks_assigned_to_fkey(name), workflow_instance:workflow_instances(name)')
     .eq('id', taskId)
@@ -201,7 +192,6 @@ async function loadTask() {
 
   if (error || !data) { showError('載入失敗', error?.message ?? '找不到此任務'); return; }
 
-  // Verify org match
   if (currentOrgId && data.organization_id && data.organization_id !== currentOrgId) {
     showError('無權存取', '此任務不屬於您的組織。');
     return;
@@ -217,8 +207,7 @@ async function loadTask() {
   document.getElementById('priority').value = data.priority ?? 'medium';
   document.getElementById('dueDate').value = data.due_date ? data.due_date.slice(0, 10) : '';
 
-  // Render notes: prefer structured metadata.note_entries, fallback to plain text notes
-  const noteEntries = data.metadata?.note_entries;
+  var noteEntries = data.metadata?.note_entries;
   if (noteEntries && Array.isArray(noteEntries) && noteEntries.length > 0) {
     renderNotes(noteEntries);
   } else {
@@ -230,18 +219,18 @@ async function loadTask() {
 }
 
 async function saveTask() {
-  const btn = document.getElementById('saveBtn');
+  var btn = document.getElementById('saveBtn');
   btn.disabled = true;
   btn.textContent = '儲存中…';
 
-  const status = document.getElementById('status').value;
-  const priority = document.getElementById('priority').value;
-  const dueDate = document.getElementById('dueDate').value || null;
-  const newNote = document.getElementById('newNote').value.trim();
+  var status = document.getElementById('status').value;
+  var priority = document.getElementById('priority').value;
+  var dueDate = document.getElementById('dueDate').value || null;
+  var newNote = document.getElementById('newNote').value.trim();
 
-  const updates = {
-    status,
-    priority,
+  var updates = {
+    status: status,
+    priority: priority,
     due_date: dueDate,
     updated_at: new Date().toISOString(),
   };
@@ -252,12 +241,10 @@ async function saveTask() {
     updates.completed_at = null;
   }
 
-  // Build structured note entry
   if (newNote) {
-    const existingMeta = taskData.metadata || {};
-    const existingEntries = Array.isArray(existingMeta.note_entries) ? existingMeta.note_entries : [];
+    var existingMeta = taskData.metadata || {};
+    var existingEntries = Array.isArray(existingMeta.note_entries) ? existingMeta.note_entries : [];
 
-    // Migrate legacy plain text notes into structured format
     if (existingEntries.length === 0 && taskData.notes && taskData.notes.trim()) {
       existingEntries.push({
         time: taskData.created_at,
@@ -272,15 +259,14 @@ async function saveTask() {
       text: newNote,
     });
 
-    updates.metadata = { ...existingMeta, note_entries: existingEntries };
+    updates.metadata = Object.assign({}, existingMeta, { note_entries: existingEntries });
 
-    // Also update plain text notes for backward compat with admin panel
-    const ts = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false });
-    const existing = taskData.notes ? taskData.notes + '\\n' : '';
+    var ts = new Date().toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', hour12: false });
+    var existing = taskData.notes ? taskData.notes + '\n' : '';
     updates.notes = existing + '[' + ts + ' ' + (currentUserName || '') + '] ' + newNote;
   }
 
-  const { error } = await sb.from('tasks').update(updates).eq('id', taskId);
+  var { error } = await sb.from('tasks').update(updates).eq('id', taskId);
 
   btn.disabled = false;
   btn.textContent = '💾 儲存更新';
@@ -290,13 +276,10 @@ async function saveTask() {
   } else {
     showToast('✅ 已儲存！');
     document.getElementById('newNote').value = '';
-    // Update local data
-    taskData = { ...taskData, ...updates };
-    // Re-render notes
-    const entries = updates.metadata?.note_entries || taskData.metadata?.note_entries;
+    taskData = Object.assign({}, taskData, updates);
+    var entries = updates.metadata?.note_entries || taskData.metadata?.note_entries;
     if (entries) renderNotes(entries);
-    // Close LIFF after short delay
-    setTimeout(() => {
+    setTimeout(function() {
       try { liff.closeWindow(); } catch(e) { window.close(); }
     }, 1500);
   }
@@ -304,40 +287,36 @@ async function saveTask() {
 
 async function init() {
   try {
-    if (LIFF_ID) {
-      await liff.init({ liffId: LIFF_ID });
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
-      }
-      const profile = await liff.getProfile();
-      currentUserName = profile.displayName || '';
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return;
+    }
+    var profile = await liff.getProfile();
+    currentUserName = profile.displayName || '';
 
-      // Look up employee via line_users (same table used by line-webhook)
-      const { data: lu } = await sb
-        .from('line_users')
-        .select('user_id')
-        .eq('line_user_id', profile.userId)
-        .maybeSingle();
+    var { data: lu } = await sb
+      .from('line_users')
+      .select('user_id')
+      .eq('line_user_id', profile.userId)
+      .maybeSingle();
 
-      if (!lu?.user_id) {
-        showError('帳號未綁定', '您的 LINE 帳號尚未綁定員工資料，請先使用 /註冊 指令進行綁定。');
-        return;
-      }
+    if (!lu?.user_id) {
+      showError('帳號未綁定', '您的 LINE 帳號尚未綁定員工資料，請先使用 /註冊 指令進行綁定。');
+      return;
+    }
 
-      currentUserId = lu.user_id;
+    currentUserId = lu.user_id;
 
-      // Get employee org
-      const { data: user } = await sb
-        .from('users')
-        .select('organization_id, name')
-        .eq('id', currentUserId)
-        .maybeSingle();
+    var { data: user } = await sb
+      .from('users')
+      .select('organization_id, name')
+      .eq('id', currentUserId)
+      .maybeSingle();
 
-      if (user) {
-        currentOrgId = user.organization_id;
-        if (user.name) currentUserName = user.name;
-      }
+    if (user) {
+      currentOrgId = user.organization_id;
+      if (user.name) currentUserName = user.name;
     }
   } catch (e) {
     console.warn('LIFF init:', e);
@@ -348,12 +327,4 @@ async function init() {
 init();
 </script>
 </body>
-</html>`;
-
-  return new Response(html, {
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "no-cache",
-    },
-  });
-});
+</html>

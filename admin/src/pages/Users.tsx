@@ -92,16 +92,16 @@ export function Users() {
                     <div className="card" style={{ marginBottom: '16px' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                             <div>
-                                <label className="detail-label">{zh ? '姓名' : 'Name'}</label>
-                                <input className="input-field" value={newUser.name} onChange={e => setNewUser({ ...newUser, name: e.target.value })} />
+                                <label className="detail-label" htmlFor="new-user-name">{zh ? '姓名' : 'Name'}</label>
+                                <input id="new-user-name" className="input-field" name="name" autoComplete="off" value={newUser.name} onChange={e => setNewUser({ ...newUser, name: e.target.value })} />
                             </div>
                             <div>
-                                <label className="detail-label">Email</label>
-                                <input className="input-field" value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} />
+                                <label className="detail-label" htmlFor="new-user-email">Email</label>
+                                <input id="new-user-email" className="input-field" type="email" name="email" autoComplete="email" spellCheck={false} value={newUser.email} onChange={e => setNewUser({ ...newUser, email: e.target.value })} />
                             </div>
                             <div>
-                                <label className="detail-label">{zh ? '角色' : 'Role'}</label>
-                                <select className="select" style={{ width: '100%' }} value={newUser.role}
+                                <label className="detail-label" htmlFor="new-user-role">{zh ? '角色' : 'Role'}</label>
+                                <select id="new-user-role" className="select" name="role" style={{ width: '100%' }} value={newUser.role}
                                     onChange={e => setNewUser({ ...newUser, role: e.target.value })}>
                                     <option value="">{zh ? '選擇角色' : 'Select role'}</option>
                                     <option value="admin">{zh ? '管理員' : 'Admin'}</option>

@@ -600,7 +600,7 @@ export function Workflows() {
 
                 {/* Inline assignment editor */}
                 {isEditingAssign && (
-                    <div style={{ background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', padding: '10px', marginBottom: '10px', border: '1px solid var(--border-color)' }}
+                    <div style={{ background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', padding: '10px', marginBottom: '10px', border: '1px solid var(--outline-variant)' }}
                         onClick={e => e.stopPropagation()}>
                         <div style={{ marginBottom: '8px' }}>
                             <label className="detail-label">👤 {zh ? '指定負責人' : 'Assigned User'}</label>
@@ -616,7 +616,7 @@ export function Workflows() {
                                 {editInstGroups.map(gid => {
                                     const g = lineGroups.find(lg => lg.id === gid);
                                     return (
-                                        <span key={gid} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '2px 7px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                        <span key={gid} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--outline-variant)', borderRadius: '10px', padding: '2px 7px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}>
                                             {g?.group_name || gid}
                                             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0', lineHeight: 1 }}
                                                 onClick={() => setEditInstGroups(p => p.filter(id => id !== gid))}>✕</button>
@@ -630,7 +630,7 @@ export function Workflows() {
                                     if (val && !editInstGroups.includes(val)) setEditInstGroups(p => [...p, val]);
                                     e.currentTarget.value = '';
                                 }}>
-                                <option value="">➕ {zh ? '新增群組...' : 'Add group...'}</option>
+                                <option value="">➕ {zh ? '新增群組…' : 'Add group…'}</option>
                                 {lineGroups.filter(g => !editInstGroups.includes(g.id)).map(g =>
                                     <option key={g.id} value={g.id}>{g.group_name}</option>
                                 )}
@@ -711,7 +711,7 @@ export function Workflows() {
                                     <div style={{ marginBottom: '10px' }}>
                                         <label className="detail-label">{zh ? '說明' : 'Description'}</label>
                                         <textarea className="input-field" value={newDesc} onChange={e => setNewDesc(e.target.value)}
-                                            placeholder={zh ? '流程說明...' : 'Description...'} />
+                                            placeholder={zh ? '流程說明…' : 'Description…'} />
                                     </div>
                                     <div style={{ display: 'flex', gap: '8px' }}>
                                         <button className="btn btn-primary" onClick={createTemplate}>{t('common.save')}</button>
@@ -816,7 +816,7 @@ export function Workflows() {
                                                             {editAssignedGroups.map(gid => {
                                                                 const g = lineGroups.find(lg => lg.id === gid);
                                                                 return (
-                                                                    <span key={gid} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '2px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                    <span key={gid} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--outline-variant)', borderRadius: '10px', padding: '2px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                                         {g?.group_name || gid}
                                                                         <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0 2px', lineHeight: 1 }}
                                                                             onClick={() => setEditAssignedGroups(p => p.filter(id => id !== gid))}>✕</button>
@@ -831,7 +831,7 @@ export function Workflows() {
                                                                     setEditAssignedGroups(p => [...p, val]);
                                                                 e.currentTarget.value = '';
                                                             }}>
-                                                            <option value="">➕ {zh ? '新增群組...' : 'Add group...'}</option>
+                                                            <option value="">➕ {zh ? '新增群組…' : 'Add group…'}</option>
                                                             {lineGroups.filter(g => !editAssignedGroups.includes(g.id)).map(g =>
                                                                 <option key={g.id} value={g.id}>{g.group_name}</option>
                                                             )}
@@ -981,7 +981,7 @@ export function Workflows() {
                                                 <div style={{ marginBottom: '8px' }}>
                                                     <label className="detail-label">{zh ? '說明' : 'Description'}</label>
                                                     <textarea className="input-field" value={editStep.description} onChange={e => setEditStep(p => ({ ...p, description: e.target.value }))}
-                                                        style={{ minHeight: '56px', fontSize: '12px' }} placeholder={zh ? '步驟說明...' : 'Step description...'} />
+                                                        style={{ minHeight: '56px', fontSize: '12px' }} placeholder={zh ? '步驟說明…' : 'Step description…'} />
                                                 </div>
                                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '10px' }}>
                                                     <div>
@@ -1017,7 +1017,7 @@ export function Workflows() {
                                                         {editStep.triggers.map(stepId => {
                                                             const ts = selectedTemplate.steps.find(s => s.id === stepId);
                                                             return (
-                                                                <span key={stepId} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '2px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                                <span key={stepId} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--outline-variant)', borderRadius: '10px', padding: '2px 8px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                                     {ts ? `步驟${ts.step_order}: ${ts.name}` : stepId}
                                                                     <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0 2px', lineHeight: 1 }}
                                                                         onClick={() => setEditStep(p => ({ ...p, triggers: p.triggers.filter(id => id !== stepId) }))}>✕</button>
@@ -1033,7 +1033,7 @@ export function Workflows() {
                                                             }
                                                             e.currentTarget.value = '';
                                                         }}>
-                                                        <option value="">➕ {zh ? '新增觸發步驟...' : 'Add trigger step...'}</option>
+                                                        <option value="">➕ {zh ? '新增觸發步驟…' : 'Add trigger step…'}</option>
                                                         {selectedTemplate.steps
                                                             .filter(s => s.id !== editingStepId && !editStep.triggers.includes(s.id))
                                                             .map(s => <option key={s.id} value={s.id}>步驟{s.step_order}: {s.name}</option>)}
@@ -1050,8 +1050,8 @@ export function Workflows() {
                                     <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                                         <input className="input-field" style={{ flex: 1 }} value={newStepName}
                                             onChange={e => setNewStepName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addStep()}
-                                            placeholder={zh ? '新增步驟名稱...' : 'Add step name...'} />
-                                        <button className="btn btn-primary btn-sm" onClick={addStep}>➕</button>
+                                            placeholder={zh ? '新增步驟名稱…' : 'Add step name…'} />
+                                        <button className="btn btn-primary btn-sm" aria-label="新增" onClick={addStep}>➕</button>
                                     </div>
                                 </div>
                             </div>
@@ -1156,7 +1156,7 @@ export function Workflows() {
                                         </div>
 
                                         {/* Assignment section */}
-                                        <div style={{ marginBottom: '14px', padding: '10px 12px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+                                        <div style={{ marginBottom: '14px', padding: '10px 12px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--outline-variant)' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: editingInstAssign === selectedInstance.id ? '10px' : '6px' }}>
                                                 <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                                     {zh ? '指派' : 'Assignment'}
@@ -1191,7 +1191,7 @@ export function Workflows() {
                                                             {editInstGroups.map(gid => {
                                                                 const g = lineGroups.find(lg => lg.id === gid);
                                                                 return (
-                                                                    <span key={gid} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', padding: '2px 7px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                                                    <span key={gid} style={{ background: 'var(--bg-secondary)', border: '1px solid var(--outline-variant)', borderRadius: '10px', padding: '2px 7px', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}>
                                                                         {g?.group_name || gid}
                                                                         <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0', lineHeight: 1 }}
                                                                             onClick={() => setEditInstGroups(p => p.filter(id => id !== gid))}>✕</button>
@@ -1205,7 +1205,7 @@ export function Workflows() {
                                                                 if (val && !editInstGroups.includes(val)) setEditInstGroups(p => [...p, val]);
                                                                 e.currentTarget.value = '';
                                                             }}>
-                                                            <option value="">➕ {zh ? '新增群組...' : 'Add group...'}</option>
+                                                            <option value="">➕ {zh ? '新增群組…' : 'Add group…'}</option>
                                                             {lineGroups.filter(g => !editInstGroups.includes(g.id)).map(g =>
                                                                 <option key={g.id} value={g.id}>{g.group_name}</option>
                                                             )}
@@ -1359,8 +1359,8 @@ export function Workflows() {
                                                                                 </div>
                                                                                 <textarea
                                                                                     rows={2}
-                                                                                    placeholder={zh ? '記錄後續行動、注意事項或備忘...' : 'Record follow-up actions, notes or reminders...'}
-                                                                                    style={{ width: '100%', fontSize: '12px', padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-primary)', resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5, boxSizing: 'border-box' }}
+                                                                                    placeholder={zh ? '記錄後續行動、注意事項或備忘…' : 'Record follow-up actions, notes or reminders…'}
+                                                                                    style={{ width: '100%', fontSize: '12px', padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--outline-variant)', background: 'var(--bg-card)', color: 'var(--text-primary)', resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5, boxSizing: 'border-box' }}
                                                                                     value={edit.notes ?? ''}
                                                                                     onChange={e => setTaskEdits(p => ({ ...p, [task.id]: { ...edit, notes: e.target.value || null } }))}
                                                                                 />

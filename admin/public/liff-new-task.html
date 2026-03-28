@@ -1,11 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-serve(async (_req: Request) => {
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const liffId = Deno.env.get("LIFF_NEW_TASK_ID") ?? "";
-
-  const html = `<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8"/>
@@ -137,9 +130,9 @@ select option{background:#0f3460;color:#e0e0e0}
 <div class="toast" id="toast"></div>
 
 <script>
-const SUPABASE_URL = '${supabaseUrl}';
-const SUPABASE_ANON_KEY = '${supabaseAnonKey}';
-const LIFF_ID = '${liffId}';
+const SUPABASE_URL = 'https://kzawtuvmchhtdsokrjys.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_j4d5NBq-JxIBz-F8GpOLog_u8bEkynM';
+const LIFF_ID = '2009567492-C5Gv3cJ5';
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUserId = null;
@@ -173,56 +166,50 @@ function populateSelect(id, items, valueKey, labelKey) {
 
 async function init() {
   try {
-    if (LIFF_ID) {
-      await liff.init({ liffId: LIFF_ID });
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
-      }
-      const profile = await liff.getProfile();
-      currentUserName = profile.displayName || '';
-
-      // Look up employee via line_users
-      const { data: lu } = await sb
-        .from('line_users')
-        .select('user_id')
-        .eq('line_user_id', profile.userId)
-        .maybeSingle();
-
-      if (!lu?.user_id) {
-        showError('帳號未綁定', '您的 LINE 帳號尚未綁定員工資料，請先使用 /註冊 指令進行綁定。');
-        return;
-      }
-
-      currentUserId = lu.user_id;
-
-      // Get employee org and name
-      const { data: user } = await sb
-        .from('users')
-        .select('organization_id, name')
-        .eq('id', currentUserId)
-        .maybeSingle();
-
-      if (!user?.organization_id) {
-        showError('帳號異常', '找不到您的組織資料，請聯絡管理員。');
-        return;
-      }
-
-      currentOrgId = user.organization_id;
-      if (user.name) currentUserName = user.name;
-      document.getElementById('headerSubtitle').textContent = currentUserName + ' — 填寫任務資訊並提交';
+    await liff.init({ liffId: LIFF_ID });
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return;
     }
+    const profile = await liff.getProfile();
+    currentUserName = profile.displayName || '';
+
+    const { data: lu } = await sb
+      .from('line_users')
+      .select('user_id')
+      .eq('line_user_id', profile.userId)
+      .maybeSingle();
+
+    if (!lu?.user_id) {
+      showError('帳號未綁定', '您的 LINE 帳號尚未綁定員工資料，請先使用 /註冊 指令進行綁定。');
+      return;
+    }
+
+    currentUserId = lu.user_id;
+
+    const { data: user } = await sb
+      .from('users')
+      .select('organization_id, name')
+      .eq('id', currentUserId)
+      .maybeSingle();
+
+    if (!user?.organization_id) {
+      showError('帳號異常', '找不到您的組織資料，請聯絡管理員。');
+      return;
+    }
+
+    currentOrgId = user.organization_id;
+    if (user.name) currentUserName = user.name;
+    document.getElementById('headerSubtitle').textContent = currentUserName + ' — 填寫任務資訊並提交';
   } catch (e) {
     console.warn('LIFF init:', e);
   }
 
-  // Load workflow instances and users filtered by org
   const queries = [
     sb.from('workflow_instances').select('id, name').in('status', ['running', 'paused']).order('name'),
     sb.from('users').select('id, name').eq('is_active', true).order('name'),
   ];
 
-  // Add org filter if available
   if (currentOrgId) {
     queries[0] = sb.from('workflow_instances').select('id, name').eq('organization_id', currentOrgId).in('status', ['running', 'paused']).order('name');
     queries[1] = sb.from('users').select('id, name').eq('organization_id', currentOrgId).eq('is_active', true).order('name');
@@ -233,7 +220,6 @@ async function init() {
   populateSelect('workflowInstance', wiRes.data, 'id', 'name');
   populateSelect('assignee', usersRes.data, 'id', 'name');
 
-  // Pre-select current user as assignee if available
   if (currentUserId) {
     const sel = document.getElementById('assignee');
     for (let i = 0; i < sel.options.length; i++) {
@@ -241,7 +227,6 @@ async function init() {
     }
   }
 
-  // Pre-select workflow from URL param if passed
   const params = new URLSearchParams(window.location.search);
   const wiParam = params.get('workflow_instance_id');
   if (wiParam) {
@@ -298,7 +283,6 @@ async function createTask() {
     updated_at: new Date().toISOString(),
   };
 
-  // Add org_id if known
   if (currentOrgId) {
     payload.organization_id = currentOrgId;
   }
@@ -327,12 +311,4 @@ async function createTask() {
 init();
 </script>
 </body>
-</html>`;
-
-  return new Response(html, {
-    headers: {
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "no-cache",
-    },
-  });
-});
+</html>

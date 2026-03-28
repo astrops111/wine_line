@@ -136,13 +136,13 @@ export function Triggers() {
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                                     <div>
-                                        <label className="detail-label">{zh ? '名稱' : 'Name'}</label>
-                                        <input className="input-field" value={newTrigger.name} onChange={e => setNewTrigger({ ...newTrigger, name: e.target.value })}
+                                        <label className="detail-label" htmlFor="trigger-name">{zh ? '名稱' : 'Name'}</label>
+                                        <input id="trigger-name" className="input-field" name="triggerName" autoComplete="off" value={newTrigger.name} onChange={e => setNewTrigger({ ...newTrigger, name: e.target.value })}
                                             placeholder={zh ? '例：任務完成時通知主管' : 'e.g.: Notify manager on task done'} />
                                     </div>
                                     <div>
-                                        <label className="detail-label">{zh ? '觸發事件' : 'Event Source'}</label>
-                                        <select className="select" style={{ width: '100%' }} value={newTrigger.event_source}
+                                        <label className="detail-label" htmlFor="trigger-event">{zh ? '觸發事件' : 'Event Source'}</label>
+                                        <select id="trigger-event" className="select" name="eventSource" style={{ width: '100%' }} value={newTrigger.event_source}
                                             onChange={e => setNewTrigger({ ...newTrigger, event_source: e.target.value })}>
                                             {Object.entries(eventSources).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                                         </select>
@@ -156,8 +156,8 @@ export function Triggers() {
                                     </div>
                                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                                         <input className="input-field" style={{ width: '120px' }} value={newTrigger.condition_field}
-                                            onChange={e => setNewTrigger({ ...newTrigger, condition_field: e.target.value })} placeholder="field" />
-                                        <select className="select" value={newTrigger.condition_op}
+                                            onChange={e => setNewTrigger({ ...newTrigger, condition_field: e.target.value })} name="condField" autoComplete="off" aria-label="Condition field" placeholder="field…" />
+                                        <select className="select" name="condOp" aria-label="Condition operator" value={newTrigger.condition_op}
                                             onChange={e => setNewTrigger({ ...newTrigger, condition_op: e.target.value })}>
                                             <option value="equals">=</option>
                                             <option value="not_equals">≠</option>
@@ -166,7 +166,7 @@ export function Triggers() {
                                             <option value="less_than">&lt;</option>
                                         </select>
                                         <input className="input-field" style={{ width: '120px' }} value={newTrigger.condition_value}
-                                            onChange={e => setNewTrigger({ ...newTrigger, condition_value: e.target.value })} placeholder="value" />
+                                            onChange={e => setNewTrigger({ ...newTrigger, condition_value: e.target.value })} name="condValue" autoComplete="off" aria-label="Condition value" placeholder="value…" />
                                     </div>
                                 </div>
 
@@ -176,19 +176,19 @@ export function Triggers() {
                                         🎯 {zh ? '動作 (THEN)' : 'Action (THEN)'}
                                     </div>
                                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                        <select className="select" value={newTrigger.action_type}
+                                        <select className="select" name="actionType" aria-label="Action type" value={newTrigger.action_type}
                                             onChange={e => setNewTrigger({ ...newTrigger, action_type: e.target.value })}>
                                             {Object.entries(actionTypes).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                                         </select>
-                                        <select className="select" value={newTrigger.action_channel}
+                                        <select className="select" name="actionChannel" aria-label="Action channel" value={newTrigger.action_channel}
                                             onChange={e => setNewTrigger({ ...newTrigger, action_channel: e.target.value })}>
                                             <option value="line">💬 LINE</option>
                                             <option value="email">📧 Email</option>
                                             <option value="system">⚙️ System</option>
                                         </select>
                                         <input className="input-field" style={{ flex: 1 }} value={newTrigger.action_message}
-                                            onChange={e => setNewTrigger({ ...newTrigger, action_message: e.target.value })}
-                                            placeholder={zh ? '訊息內容...' : 'Message...'} />
+                                            onChange={e => setNewTrigger({ ...newTrigger, action_message: e.target.value })} name="actionMessage" autoComplete="off"
+                                            placeholder={zh ? '訊息內容…' : 'Message…'} />
                                     </div>
                                 </div>
 

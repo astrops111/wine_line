@@ -181,7 +181,7 @@ export function ExpenseClaims() {
                 ) : (
                     <table className="data-table" style={{ width: '100%', minWidth: '800px', borderCollapse: 'collapse' }}>
                         <thead>
-                            <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
+                            <tr style={{ borderBottom: '1px solid var(--outline-variant)', textAlign: 'left' }}>
                                 <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontWeight: 500 }}>{zh ? '員工' : 'Employee'}</th>
                                 <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontWeight: 500 }}>{zh ? '日期' : 'Date'}</th>
                                 <th style={{ padding: '12px 16px', color: 'var(--text-secondary)', fontWeight: 500 }}>{zh ? '類別' : 'Category'}</th>
@@ -195,7 +195,7 @@ export function ExpenseClaims() {
                             {claims.length === 0 ? (
                                 <tr><td colSpan={7} style={{ padding: '20px', textAlign: 'center', color: '#888' }}>{zh ? '沒有紀錄' : 'No records found'}</td></tr>
                             ) : claims.map(claim => (
-                                <tr key={claim.id} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                <tr key={claim.id} style={{ borderBottom: '1px solid var(--outline-variant)' }}>
                                     <td style={{ padding: '12px 16px' }}>{claim.user?.name || 'Unknown'}</td>
                                     <td style={{ padding: '12px 16px' }}>{claim.claim_date}</td>
                                     <td style={{ padding: '12px 16px' }}>
@@ -223,7 +223,7 @@ export function ExpenseClaims() {
                                             </button>
                                         )}
                                         {!isAdminOrManager && claim.status === 'pending' && (
-                                            <button onClick={() => updateStatus(claim.id, 'cancelled')} style={{ background: 'transparent', color: '#6b7280', border: '1px solid #d1d5db', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                                            <button onClick={() => updateStatus(claim.id, 'cancelled')} style={{ background: 'transparent', color: '#6b7280', border: '1px solid var(--outline)', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
                                                 {zh ? '取消' : 'Cancel'}
                                             </button>
                                         )}
@@ -236,33 +236,33 @@ export function ExpenseClaims() {
             </div>
 
             {showModal && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-                    <div className="card" style={{ width: '100%', maxWidth: '500px', background: 'var(--bg-primary)', padding: '24px', borderRadius: '12px', maxHeight: '90vh', overflowY: 'auto' }}>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px', overscrollBehavior: 'contain' }}>
+                    <div role="dialog" aria-modal="true" className="card" style={{ width: '100%', maxWidth: '500px', background: 'var(--bg-primary)', padding: '24px', borderRadius: '12px', maxHeight: '90vh', overflowY: 'auto' }}>
                         <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '20px' }}>{zh ? '新增核銷單' : 'New Expense Claim'}</h2>
                         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>{zh ? '申請日期*' : 'Date*'}</label>
-                                    <input type="date" required value={claimDate} onChange={e => setClaimDate(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                                    <input type="date" required value={claimDate} onChange={e => setClaimDate(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--outline-variant)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>{zh ? '類別*' : 'Category*'}</label>
-                                    <select value={category} onChange={e => setCategory(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
+                                    <select value={category} onChange={e => setCategory(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--outline-variant)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
                                         {categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                                     </select>
                                 </div>
                             </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>{zh ? '說明*' : 'Description*'}</label>
-                                <textarea required value={description} onChange={e => setDescription(e.target.value)} rows={3} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                                <textarea name="notes" required value={description} onChange={e => setDescription(e.target.value)} rows={3} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--outline-variant)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                             </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>{zh ? '金額*' : 'Amount*'}</label>
-                                <input type="number" required min="1" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
+                                <input type="number" required min="1" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid var(--outline-variant)', background: 'var(--bg-secondary)', color: 'var(--text-primary)' }} />
                             </div>
 
                             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '16px' }}>
-                                <button type="button" onClick={() => setShowModal(false)} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: '6px', cursor: 'pointer' }}>
+                                <button type="button" onClick={() => setShowModal(false)} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid var(--outline-variant)', color: 'var(--text-primary)', borderRadius: '6px', cursor: 'pointer' }}>
                                     {zh ? '取消' : 'Cancel'}
                                 </button>
                                 <button type="submit" style={{ padding: '8px 16px', background: 'var(--accent-primary)', border: 'none', color: 'white', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}>

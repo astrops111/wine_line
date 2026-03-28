@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { getLocale } from '../lib/i18n';
+import { Link } from 'react-router-dom';
 
 interface TaskRow {
     id: string;
@@ -290,7 +291,7 @@ export function ManagerDashboard() {
                     <h1>📊 {zh ? '門市營運管理看板' : 'Operations Dashboard'}</h1>
                 </div>
                 <div style={{ padding: '40px', textAlign: 'center' }}>
-                    <div className="loading-pulse">{zh ? '載入中...' : 'Loading...'}</div>
+                    <div className="loading-pulse">{zh ? '載入中…' : 'Loading…'}</div>
                 </div>
             </div>
         );
@@ -318,7 +319,7 @@ export function ManagerDashboard() {
                     background: 'linear-gradient(135deg, rgba(99,102,241,0.15), rgba(99,102,241,0.05))',
                     borderLeft: '4px solid #6366f1',
                 }}>
-                    <div style={{ fontSize: '36px', fontWeight: 800, color: '#6366f1', lineHeight: 1 }}>
+                    <div style={{ fontSize: '36px', fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: '#6366f1', lineHeight: 1 }}>
                         {overallProgress}%
                     </div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>
@@ -340,7 +341,7 @@ export function ManagerDashboard() {
                     padding: '20px', textAlign: 'center',
                     borderLeft: '4px solid #22c55e',
                 }}>
-                    <div style={{ fontSize: '36px', fontWeight: 800, color: '#22c55e', lineHeight: 1 }}>
+                    <div style={{ fontSize: '36px', fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: '#22c55e', lineHeight: 1 }}>
                         {summaryStats.completed}
                     </div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>
@@ -353,7 +354,7 @@ export function ManagerDashboard() {
                     padding: '20px', textAlign: 'center',
                     borderLeft: '4px solid #f59e0b',
                 }}>
-                    <div style={{ fontSize: '36px', fontWeight: 800, color: '#f59e0b', lineHeight: 1 }}>
+                    <div style={{ fontSize: '36px', fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: '#f59e0b', lineHeight: 1 }}>
                         {summaryStats.pending}
                     </div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>
@@ -367,7 +368,7 @@ export function ManagerDashboard() {
                     borderLeft: '4px solid #ef4444',
                     background: summaryStats.delayed > 0 ? 'rgba(239,68,68,0.06)' : undefined,
                 }}>
-                    <div style={{ fontSize: '36px', fontWeight: 800, color: '#ef4444', lineHeight: 1 }}>
+                    <div style={{ fontSize: '36px', fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: '#ef4444', lineHeight: 1 }}>
                         {summaryStats.delayed}
                     </div>
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>
@@ -381,7 +382,7 @@ export function ManagerDashboard() {
                 {/* ── Store Progress ── */}
                 <div className="card" style={{ padding: 0 }}>
                     <div style={{
-                        padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)',
+                        padding: '16px 20px', borderBottom: 'none',
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     }}>
                         <span style={{ fontWeight: 700, fontSize: '15px' }}>
@@ -436,7 +437,7 @@ export function ManagerDashboard() {
                 {/* ── Delayed Tasks ── */}
                 <div className="card" style={{ padding: 0 }}>
                     <div style={{
-                        padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)',
+                        padding: '16px 20px', borderBottom: 'none',
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     }}>
                         <span style={{ fontWeight: 700, fontSize: '15px', color: delayedTasks.length > 0 ? '#ef4444' : undefined }}>
@@ -488,7 +489,7 @@ export function ManagerDashboard() {
             {/* ── Today's Updates ── */}
             <div className="card" style={{ padding: 0, marginBottom: '24px' }}>
                 <div style={{
-                    padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)',
+                    padding: '16px 20px', borderBottom: 'none',
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
                     <span style={{ fontWeight: 700, fontSize: '15px' }}>
@@ -508,7 +509,7 @@ export function ManagerDashboard() {
                             {/* Timeline line */}
                             <div style={{
                                 position: 'absolute', left: '7px', top: '8px', bottom: '8px',
-                                width: '2px', background: 'var(--border-subtle)',
+                                width: '2px', background: 'var(--outline-variant)',
                             }} />
                             {todayActivity.map((act, i) => (
                                 <div key={act.id + i} style={{
@@ -552,7 +553,7 @@ export function ManagerDashboard() {
                 {/* Today's Attendance */}
                 <div className="card" style={{ padding: 0 }}>
                     <div style={{
-                        padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)',
+                        padding: '16px 20px', borderBottom: 'none',
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     }}>
                         <span style={{ fontWeight: 700, fontSize: '15px' }}>
@@ -570,7 +571,7 @@ export function ManagerDashboard() {
                         ) : attendanceData.map((att, i) => (
                             <div key={i} style={{
                                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                padding: '8px 0', borderBottom: '1px solid var(--border-subtle)',
+                                padding: '8px 0', borderBottom: 'none',
                             }}>
                                 <div>
                                     <div style={{ fontSize: '13px', fontWeight: 600 }}>{att.name}</div>
@@ -597,7 +598,7 @@ export function ManagerDashboard() {
                 {/* Weekly Hours & Overtime Alerts */}
                 <div className="card" style={{ padding: 0 }}>
                     <div style={{
-                        padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)',
+                        padding: '16px 20px', borderBottom: 'none',
                         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     }}>
                         <span style={{ fontWeight: 700, fontSize: '15px' }}>
@@ -620,7 +621,7 @@ export function ManagerDashboard() {
                         ) : attendanceData.map((att, i) => (
                             <div key={i} style={{
                                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                padding: '8px 0', borderBottom: '1px solid var(--border-subtle)',
+                                padding: '8px 0', borderBottom: 'none',
                                 background: att.isOvertime ? 'rgba(239,68,68,0.06)' : undefined,
                                 marginBottom: att.isOvertime ? '2px' : 0,
                                 borderRadius: att.isOvertime ? '6px' : undefined,
@@ -633,7 +634,7 @@ export function ManagerDashboard() {
                                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                     <div style={{
                                         width: '60px', height: '6px', borderRadius: '3px',
-                                        background: 'var(--border-subtle)', overflow: 'hidden',
+                                        background: 'var(--outline-variant)', overflow: 'hidden',
                                     }}>
                                         <div style={{
                                             height: '100%', width: `${Math.min(100, (att.hoursThisWeek / 40) * 100)}%`,
@@ -663,7 +664,7 @@ export function ManagerDashboard() {
                         ⚡ {zh ? '快速操作' : 'Quick Actions'}
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        <a href="/tasks" style={{ textDecoration: 'none' }}>
+                        <Link to="/tasks" style={{ textDecoration: 'none' }}>
                             <div style={{
                                 padding: '16px', borderRadius: '10px', textAlign: 'center',
                                 background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(99,102,241,0.04))',
@@ -678,8 +679,8 @@ export function ManagerDashboard() {
                                     {zh ? '查看全部任務' : 'All Tasks'}
                                 </div>
                             </div>
-                        </a>
-                        <a href="/employees" style={{ textDecoration: 'none' }}>
+                        </Link>
+                        <Link to="/employees" style={{ textDecoration: 'none' }}>
                             <div style={{
                                 padding: '16px', borderRadius: '10px', textAlign: 'center',
                                 background: 'linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.04))',
@@ -694,8 +695,8 @@ export function ManagerDashboard() {
                                     {zh ? '查看門市人員' : 'Store Staff'}
                                 </div>
                             </div>
-                        </a>
-                        <a href="/scheduling" style={{ textDecoration: 'none' }}>
+                        </Link>
+                        <Link to="/scheduling" style={{ textDecoration: 'none' }}>
                             <div style={{
                                 padding: '16px', borderRadius: '10px', textAlign: 'center',
                                 background: 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.04))',
@@ -710,8 +711,8 @@ export function ManagerDashboard() {
                                     {zh ? '排班管理' : 'Scheduling'}
                                 </div>
                             </div>
-                        </a>
-                        <a href="/hr-dashboard" style={{ textDecoration: 'none' }}>
+                        </Link>
+                        <Link to="/hr-dashboard" style={{ textDecoration: 'none' }}>
                             <div style={{
                                 padding: '16px', borderRadius: '10px', textAlign: 'center',
                                 background: 'linear-gradient(135deg, rgba(236,72,153,0.12), rgba(236,72,153,0.04))',
@@ -726,13 +727,13 @@ export function ManagerDashboard() {
                                     {zh ? 'HR 報表' : 'HR Reports'}
                                 </div>
                             </div>
-                        </a>
+                        </Link>
                     </div>
                 </div>
 
                 {/* Active Workflows */}
                 <div className="card" style={{ padding: 0 }}>
-                    <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)' }}>
+                    <div style={{ padding: '16px 20px', borderBottom: 'none' }}>
                         <span style={{ fontWeight: 700, fontSize: '15px' }}>
                             🔄 {zh ? '進行中工作流程' : 'Active Workflows'}
                         </span>
@@ -745,7 +746,7 @@ export function ManagerDashboard() {
                         ) : workflows.map(wf => (
                             <div key={wf.id} style={{
                                 display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                padding: '10px 0', borderBottom: '1px solid var(--border-subtle)',
+                                padding: '10px 0', borderBottom: 'none',
                             }}>
                                 <div>
                                     <div style={{ fontWeight: 500, fontSize: '13px' }}>{wf.name}</div>

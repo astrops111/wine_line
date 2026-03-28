@@ -616,7 +616,7 @@ export function OvertimeRequests() {
           {/* Pending Table */}
           {pendingLoading ? (
             <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              {zh ? '載入中...' : 'Loading...'}
+              {zh ? '載入中…' : 'Loading…'}
             </div>
           ) : pendingRequests.length === 0 ? (
             <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -627,7 +627,7 @@ export function OvertimeRequests() {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <tr style={{ borderBottom: '1px solid var(--outline-variant)' }}>
                       {[
                         zh ? '員工' : 'Employee',
                         zh ? '門市' : 'Store',
@@ -659,7 +659,7 @@ export function OvertimeRequests() {
                       <>
                         <tr
                           key={req.id}
-                          style={{ borderBottom: '1px solid var(--border-color)', verticalAlign: 'top' }}
+                          style={{ verticalAlign: 'top' }}
                         >
                           <td style={{ padding: '12px 16px', fontWeight: 500 }}>
                             {req.user?.name ?? '—'}
@@ -722,7 +722,7 @@ export function OvertimeRequests() {
                           </td>
                         </tr>
                         {rejectingId === req.id && (
-                          <tr key={`reject-${req.id}`} style={{ borderBottom: '1px solid var(--border-color)', background: 'rgba(244,63,94,0.05)' }}>
+                          <tr key={`reject-${req.id}`} style={{ borderBottom: '1px solid var(--outline-variant)', background: 'rgba(244,63,94,0.05)' }}>
                             <td colSpan={8} style={{ padding: '12px 16px' }}>
                               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                 <span style={{ color: 'var(--text-muted)', fontSize: '13px', whiteSpace: 'nowrap' }}>
@@ -731,7 +731,7 @@ export function OvertimeRequests() {
                                 <input
                                   className="input-field"
                                   style={{ flex: 1, fontSize: '13px' }}
-                                  placeholder={zh ? '請輸入拒絕原因...' : 'Enter rejection reason...'}
+                                  placeholder={zh ? '請輸入拒絕原因…' : 'Enter rejection reason…'}
                                   value={rejectReason}
                                   onChange={e => setRejectReason(e.target.value)}
                                   autoFocus
@@ -801,7 +801,7 @@ export function OvertimeRequests() {
                 <input
                   className="input-field"
                   style={{ fontSize: '13px', minWidth: '130px' }}
-                  placeholder={zh ? '搜尋員工...' : 'Search employee...'}
+                  placeholder={zh ? '搜尋員工…' : 'Search employee…'}
                   value={filterEmployee}
                   onChange={e => setFilterEmployee(e.target.value)}
                 />
@@ -927,7 +927,7 @@ export function OvertimeRequests() {
           {/* All Records Table */}
           {allLoading ? (
             <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              {zh ? '載入中...' : 'Loading...'}
+              {zh ? '載入中…' : 'Loading…'}
             </div>
           ) : filteredRequests.length === 0 ? (
             <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -938,7 +938,7 @@ export function OvertimeRequests() {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <tr style={{ borderBottom: '1px solid var(--outline-variant)' }}>
                       {[
                         zh ? '員工' : 'Employee',
                         zh ? '日期' : 'Date',
@@ -969,7 +969,7 @@ export function OvertimeRequests() {
                     {filteredRequests.map(req => (
                       <tr
                         key={req.id}
-                        style={{ borderBottom: '1px solid var(--border-color)', verticalAlign: 'middle' }}
+                        style={{ verticalAlign: 'middle' }}
                       >
                         <td style={{ padding: '12px 16px' }}>
                           <div style={{ fontWeight: 500 }}>{req.user?.name ?? '—'}</div>
@@ -1069,7 +1069,7 @@ export function OvertimeRequests() {
 
           {riskLoading ? (
             <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              {zh ? '載入中...' : 'Loading...'}
+              {zh ? '載入中…' : 'Loading…'}
             </div>
           ) : riskData.length === 0 ? (
             <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -1160,8 +1160,7 @@ export function OvertimeRequests() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '16px',
-          }}
+            padding: '16px', overscrollBehavior: 'contain' }}
           onClick={e => { if (e.target === e.currentTarget) { setShowNewModal(false); resetNewForm() } }}
         >
           <div
@@ -1206,7 +1205,7 @@ export function OvertimeRequests() {
                 value={newForm.user_id}
                 onChange={e => setNewForm({ ...newForm, user_id: e.target.value })}
               >
-                <option value="">{zh ? '請選擇員工...' : 'Select employee...'}</option>
+                <option value="">{zh ? '請選擇員工…' : 'Select employee…'}</option>
                 {activeUsers.map(u => (
                   <option key={u.id} value={u.id}>{u.name}</option>
                 ))}
@@ -1356,7 +1355,7 @@ export function OvertimeRequests() {
                 className="input-field"
                 rows={3}
                 style={{ width: '100%', resize: 'vertical' }}
-                placeholder={zh ? '請說明加班原因...' : 'Describe the reason for overtime...'}
+                placeholder={zh ? '請說明加班原因…' : 'Describe the reason for overtime…'}
                 value={newForm.reason}
                 onChange={e => setNewForm({ ...newForm, reason: e.target.value })}
               />
@@ -1391,7 +1390,7 @@ export function OvertimeRequests() {
                 onClick={handleNewSubmit}
                 disabled={submitting || !newForm.user_id || !newForm.request_date}
               >
-                {submitting ? (zh ? '送出中...' : 'Submitting...') : (zh ? '送出申請' : 'Submit Request')}
+                {submitting ? (zh ? '送出中…' : 'Submitting…') : (zh ? '送出申請' : 'Submit Request')}
               </button>
             </div>
           </div>

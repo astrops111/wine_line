@@ -900,7 +900,7 @@ export function PayrollManagement() {
           {/* Table */}
           {structLoading ? (
             <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              {zh ? '載入中...' : 'Loading...'}
+              {zh ? '載入中…' : 'Loading…'}
             </div>
           ) : salaryStructures.length === 0 ? (
             <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -911,7 +911,7 @@ export function PayrollManagement() {
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <tr style={{ borderBottom: '1px solid var(--outline-variant)' }}>
                       {[
                         zh ? '員工' : 'Employee',
                         zh ? '門市' : 'Store',
@@ -944,7 +944,7 @@ export function PayrollManagement() {
                     {salaryStructures.map(s => (
                       <tr
                         key={s.id}
-                        style={{ borderBottom: '1px solid var(--border-color)', verticalAlign: 'middle' }}
+                        style={{ verticalAlign: 'middle' }}
                       >
                         <td style={{ padding: '12px 16px', fontWeight: 500 }}>{s.user_name}</td>
                         <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>{s.store_name}</td>
@@ -1078,7 +1078,7 @@ export function PayrollManagement() {
                   disabled={calculating}
                 >
                   {calculating
-                    ? zh ? '計算中...' : 'Calculating...'
+                    ? zh ? '計算中…' : 'Calculating…'
                     : zh ? '計算薪資' : 'Calculate Payroll'}
                 </button>
                 {preview.length > 0 && (
@@ -1096,7 +1096,7 @@ export function PayrollManagement() {
                       style={{ background: '#22c55e', borderColor: '#22c55e' }}
                     >
                       {saving
-                        ? zh ? '儲存中...' : 'Saving...'
+                        ? zh ? '儲存中…' : 'Saving…'
                         : zh ? '確認薪資' : 'Confirm Payroll'}
                     </button>
                     {existingRun?.status === 'confirmed' && (
@@ -1106,7 +1106,7 @@ export function PayrollManagement() {
                         disabled={sending}
                       >
                         {sending && resendingRunId === existingRun.id
-                          ? zh ? '發送中...' : 'Sending...'
+                          ? zh ? '發送中…' : 'Sending…'
                           : zh ? '發送薪資單' : 'Send Payslips'}
                       </button>
                     )}
@@ -1194,7 +1194,7 @@ export function PayrollManagement() {
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                      <tr style={{ borderBottom: '1px solid var(--outline-variant)' }}>
                         {[
                           zh ? '姓名' : 'Name',
                           zh ? '門市' : 'Store',
@@ -1236,7 +1236,7 @@ export function PayrollManagement() {
                       {preview.map(r => (
                         <tr
                           key={r.user_id}
-                          style={{ borderBottom: '1px solid var(--border-color)', verticalAlign: 'middle' }}
+                          style={{ verticalAlign: 'middle' }}
                         >
                           <td style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 500, whiteSpace: 'nowrap' }}>
                             {r.user_name}
@@ -1281,7 +1281,7 @@ export function PayrollManagement() {
                                 padding: '4px 6px',
                                 fontSize: '12px',
                                 background: 'var(--bg-secondary)',
-                                border: '1px solid var(--border-color)',
+                                border: '1px solid var(--outline-variant)',
                                 borderRadius: '4px',
                                 color: 'var(--text-primary)',
                                 textAlign: 'right',
@@ -1358,7 +1358,7 @@ export function PayrollManagement() {
 
           {historyLoading ? (
             <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              {zh ? '載入中...' : 'Loading...'}
+              {zh ? '載入中…' : 'Loading…'}
             </div>
           ) : payrollRuns.length === 0 ? (
             <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -1422,7 +1422,7 @@ export function PayrollManagement() {
                           disabled={sending && resendingRunId === run.id}
                         >
                           {sending && resendingRunId === run.id
-                            ? zh ? '發送中...' : 'Sending...'
+                            ? zh ? '發送中…' : 'Sending…'
                             : zh ? '重發薪資單' : 'Resend Payslips'}
                         </button>
                       )}
@@ -1434,10 +1434,10 @@ export function PayrollManagement() {
 
                   {/* Expanded records */}
                   {expandedRunId === run.id && (
-                    <div style={{ borderTop: '1px solid var(--border-color)' }}>
+                    <div style={{ borderTop: '1px solid var(--outline-variant)' }}>
                       {expandedLoading ? (
                         <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                          {zh ? '載入中...' : 'Loading...'}
+                          {zh ? '載入中…' : 'Loading…'}
                         </div>
                       ) : expandedRecords.length === 0 ? (
                         <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -1447,7 +1447,7 @@ export function PayrollManagement() {
                         <div style={{ overflowX: 'auto' }}>
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                             <thead>
-                              <tr style={{ borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)' }}>
+                              <tr style={{ borderBottom: '1px solid var(--outline-variant)', background: 'var(--bg-secondary)' }}>
                                 {[
                                   zh ? '姓名' : 'Name',
                                   zh ? '門市' : 'Store',
@@ -1485,7 +1485,7 @@ export function PayrollManagement() {
                               {expandedRecords.map(r => (
                                 <tr
                                   key={r.id}
-                                  style={{ borderBottom: '1px solid var(--border-color)' }}
+                                  style={{ borderBottom: '1px solid var(--outline-variant)' }}
                                 >
                                   <td style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 500, whiteSpace: 'nowrap' }}>
                                     {r.user_name}
@@ -1625,7 +1625,7 @@ export function PayrollManagement() {
             <select
               value={bracketYear}
               onChange={e => setBracketYear(Number(e.target.value))}
-              style={{ fontSize: '13px', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
+              style={{ fontSize: '13px', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--outline-variant)', background: 'var(--bg-card)', color: 'var(--text-primary)' }}
             >
               {[2020, 2021, 2022, 2023, 2024, 2025, 2026].map(y => (
                 <option key={y} value={y}>{y}</option>
@@ -1635,13 +1635,13 @@ export function PayrollManagement() {
 
           {bracketsLoading ? (
             <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
-              {zh ? '載入中...' : 'Loading...'}
+              {zh ? '載入中…' : 'Loading…'}
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
               {/* Labor Insurance Brackets */}
               <div className="card" style={{ overflow: 'hidden' }}>
-                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)' }}>
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--outline-variant)' }}>
                   <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>
                     {zh ? '勞工保險' : 'Labor Insurance'}
                   </h3>
@@ -1657,7 +1657,7 @@ export function PayrollManagement() {
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                       <thead>
-                        <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                        <tr style={{ borderBottom: '1px solid var(--outline-variant)' }}>
                           {[
                             zh ? '級距' : 'Grade',
                             zh ? '月薪下限' : 'Min Salary',
@@ -1686,7 +1686,7 @@ export function PayrollManagement() {
                           <tr
                             key={b.grade}
                             style={{
-                              borderBottom: '1px solid var(--border-color)',
+                              borderBottom: '1px solid var(--outline-variant)',
                               background: idx % 2 === 0 ? 'transparent' : 'var(--bg-secondary)',
                             }}
                           >
@@ -1715,7 +1715,7 @@ export function PayrollManagement() {
 
               {/* Health Insurance Brackets */}
               <div className="card" style={{ overflow: 'hidden' }}>
-                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)' }}>
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--outline-variant)' }}>
                   <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0 }}>
                     {zh ? '全民健康保險' : 'National Health Insurance'}
                   </h3>
@@ -1731,7 +1731,7 @@ export function PayrollManagement() {
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                       <thead>
-                        <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                        <tr style={{ borderBottom: '1px solid var(--outline-variant)' }}>
                           {[
                             zh ? '級距' : 'Grade',
                             zh ? '月薪下限' : 'Min Salary',
@@ -1760,7 +1760,7 @@ export function PayrollManagement() {
                           <tr
                             key={b.grade}
                             style={{
-                              borderBottom: '1px solid var(--border-color)',
+                              borderBottom: '1px solid var(--outline-variant)',
                               background: idx % 2 === 0 ? 'transparent' : 'var(--bg-secondary)',
                             }}
                           >
@@ -1822,8 +1822,7 @@ export function PayrollManagement() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '16px',
-          }}
+            padding: '16px', overscrollBehavior: 'contain' }}
           onClick={e => {
             if (e.target === e.currentTarget) {
               setShowStructModal(false)
@@ -1876,7 +1875,7 @@ export function PayrollManagement() {
                 onChange={e => setEditingStruct({ ...editingStruct, user_id: e.target.value })}
                 disabled={!!editingStruct.id}
               >
-                <option value="">{zh ? '請選擇員工...' : 'Select employee...'}</option>
+                <option value="">{zh ? '請選擇員工…' : 'Select employee…'}</option>
                 {employees.map(u => (
                   <option key={u.id} value={u.id}>
                     {u.name}
@@ -2071,7 +2070,7 @@ export function PayrollManagement() {
                 className="input-field"
                 rows={3}
                 style={{ width: '100%', resize: 'vertical' }}
-                placeholder={zh ? '選填備註...' : 'Optional notes...'}
+                placeholder={zh ? '選填備註…' : 'Optional notes…'}
                 value={editingStruct.notes || ''}
                 onChange={e => setEditingStruct({ ...editingStruct, notes: e.target.value })}
               />
@@ -2137,7 +2136,7 @@ export function PayrollManagement() {
                 disabled={structSaving || !editingStruct.user_id}
               >
                 {structSaving
-                  ? zh ? '儲存中...' : 'Saving...'
+                  ? zh ? '儲存中…' : 'Saving…'
                   : zh ? '儲存' : 'Save'}
               </button>
             </div>

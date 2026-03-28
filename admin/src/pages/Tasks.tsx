@@ -640,7 +640,7 @@ export function Tasks() {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                     <div>
                                         <input className="input-field" style={{ width: '100%' }} value={newTitle} onChange={e => setNewTitle(e.target.value)}
-                                            placeholder={zh ? '輸入任務標題...' : 'Enter task title...'} onKeyDown={e => e.key === 'Enter' && createTask()} autoFocus />
+                                            placeholder={zh ? '輸入任務標題…' : 'Enter task title…'} onKeyDown={e => e.key === 'Enter' && createTask()} autoFocus />
                                     </div>
                                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                                         <select className="select" style={{ flex: 1, minWidth: '110px' }} value={newPriority} onChange={e => setNewPriority(e.target.value)}>
@@ -702,7 +702,7 @@ export function Tasks() {
                                 </thead>
                                 <tbody>
                                     {filtered.map((task, idx) => (
-                                        <tr key={task.id} onClick={() => openTaskDetail(task)}
+                                        <tr key={task.id} onClick={() => openTaskDetail(task)} tabIndex={0} onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') { () => openTaskDetail(task); } }}
                                             style={{
                                                 cursor: 'pointer',
                                                 background: selectedTask?.id === task.id ? 'var(--accent-primary-dim)' : undefined,
@@ -785,7 +785,7 @@ export function Tasks() {
                                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px' }}>
                                                             {shown.map((id, i) => {
                                                                 const label = tasks.find(t => t.id === id)?.title || id.slice(0, 6);
-                                                                return <span key={i} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '8px', padding: '1px 5px', fontSize: '10px', color: 'var(--text-muted)' }}>{label}</span>;
+                                                                return <span key={i} style={{ background: 'var(--bg-primary)', border: '1px solid var(--outline-variant)', borderRadius: '8px', padding: '1px 5px', fontSize: '10px', color: 'var(--text-muted)' }}>{label}</span>;
                                                             })}
                                                             {trs.length > 2 && <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>+{trs.length - 2}</span>}
                                                         </div>
@@ -869,12 +869,12 @@ export function Tasks() {
                                         {zh ? '此模組用於設定及管理標準作業程序（Standard Operating Procedures）。' : 'Manage your Standard Operating Procedures and automation rules here.'}
                                     </p>
                                     <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px' }}>
-                                        <div style={{ padding: '16px', background: 'var(--bg-primary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                        <div style={{ padding: '16px', background: 'var(--bg-primary)', borderRadius: '8px', border: '1px solid var(--outline-variant)' }}>
                                             <div style={{ fontSize: '24px', marginBottom: '8px' }}>🤖</div>
                                             <div style={{ fontWeight: 600, fontSize: '14px' }}>{zh ? 'AI 生成' : 'AI Generation'}</div>
                                             <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{zh ? '透過 AI 建立 SOP' : 'Create SOPs via AI'}</div>
                                         </div>
-                                        <div style={{ padding: '16px', background: 'var(--bg-primary)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                                        <div style={{ padding: '16px', background: 'var(--bg-primary)', borderRadius: '8px', border: '1px solid var(--outline-variant)' }}>
                                             <div style={{ fontSize: '24px', marginBottom: '8px' }}>📊</div>
                                             <div style={{ fontWeight: 600, fontSize: '14px' }}>{zh ? '執行分析' : 'Execution Analytics'}</div>
                                             <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{zh ? '分析執行效率' : 'Analyze efficiency'}</div>
@@ -904,7 +904,7 @@ export function Tasks() {
                                     <h3 style={{ fontSize: '16px', fontWeight: 600, lineHeight: 1.4 }}>{selectedTask.title}</h3>
                                     {isDirty && <div style={{ fontSize: '11px', color: 'var(--accent-yellow, #f59e0b)', marginTop: '2px' }}>● {zh ? '有未儲存的變更' : 'Unsaved changes'}</div>}
                                 </div>
-                                <button className="btn btn-sm btn-secondary" onClick={closePanel} style={{ flexShrink: 0 }}>✕</button>
+                                <button className="btn btn-sm btn-secondary" aria-label="關閉" onClick={closePanel} style={{ flexShrink: 0 }}>✕</button>
                             </div>
 
                             {/* Editable Fields */}
@@ -973,14 +973,14 @@ export function Tasks() {
                                         <label className="detail-label">{zh ? `備註${ni + 1}` : `Note ${ni + 1}`}</label>
                                         <input className="input-field" style={{ width: '100%' }}
                                             value={localEdits?.[nk] ?? selectedTask[nk] ?? ''}
-                                            placeholder={zh ? `備註${ni + 1}...` : `Note ${ni + 1}...`}
+                                            placeholder={zh ? `備註${ni + 1}.…` : `Note ${ni + 1}.…`}
                                             onChange={e => patchEdit({ [nk]: e.target.value })} />
                                     </div>
                                 ))}
                             </div>
 
                             {/* Info row */}
-                            <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '12px', borderTop: '1px solid var(--border-color)', paddingTop: '12px' }}>
+                            <div style={{ display: 'flex', gap: '16px', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '12px', borderTop: '1px solid var(--outline-variant)', paddingTop: '12px' }}>
                                 <span>ID: {selectedTask.id.substring(0, 8)}</span>
                                 <span>{zh ? '建立' : 'Created'}: {new Date(selectedTask.created_at).toLocaleDateString('zh-TW')}</span>
                                 {selectedTask.completed_at && <span>✅ {new Date(selectedTask.completed_at).toLocaleDateString('zh-TW')}</span>}
@@ -1013,7 +1013,7 @@ export function Tasks() {
                                     patchEdit({ trigger_actions: currentTriggers.filter(id => id !== taskId) });
                                 };
                                 return (
-                                    <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '12px', marginBottom: '16px' }}>
+                                    <div style={{ borderTop: '1px solid var(--outline-variant)', paddingTop: '12px', marginBottom: '16px' }}>
                                         <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}>
                                             🔔 {zh ? '觸發動作（完成時執行）' : 'Trigger Actions (on complete)'}
                                         </div>
@@ -1024,7 +1024,7 @@ export function Tasks() {
                                                     const tgt = tasks.find(t => t.id === taskId);
                                                     const label = tgt ? `→ ${tgt.sort_order ? tgt.sort_order + '. ' : ''}${tgt.title}` : `→ ${taskId.slice(0, 8)}`;
                                                     return (
-                                                        <span key={taskId} style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '3px 8px', fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                        <span key={taskId} style={{ background: 'var(--bg-primary)', border: '1px solid var(--outline-variant)', borderRadius: '12px', padding: '3px 8px', fontSize: '11px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                             {label}
                                                             <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '11px', padding: '0 2px', lineHeight: 1 }}
                                                                 onClick={() => removeTrigger(taskId)}>✕</button>
@@ -1036,7 +1036,7 @@ export function Tasks() {
                                         {/* Dropdown to add trigger */}
                                         <select className="select" style={{ width: '100%', fontSize: '12px' }} value=""
                                             onChange={e => { addTrigger(e.target.value); e.currentTarget.value = ''; }}>
-                                            <option value="">➕ {zh ? '新增觸發任務...' : 'Add trigger task...'}</option>
+                                            <option value="">➕ {zh ? '新增觸發任務…' : 'Add trigger task…'}</option>
                                             {candidateTasks.map(t => (
                                                 <option key={t.id} value={t.id}>
                                                     {t.sort_order ? `${t.sort_order}. ` : ''}{t.title}
@@ -1048,7 +1048,7 @@ export function Tasks() {
                             })()}
 
                             {/* Comments */}
-                            <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px' }}>
+                            <div style={{ borderTop: '1px solid var(--outline-variant)', paddingTop: '16px' }}>
                                 <div style={{ fontSize: '13px', fontWeight: 600, marginBottom: '12px' }}>
                                     💬 {t('task.comments')} ({comments.length})
                                 </div>
@@ -1079,7 +1079,7 @@ export function Tasks() {
                                 <div style={{ display: 'flex', gap: '8px' }}>
                                     <input className="input-field" style={{ flex: 1 }} value={newComment}
                                         onChange={e => setNewComment(e.target.value)} onKeyDown={e => e.key === 'Enter' && addComment()}
-                                        placeholder={zh ? '輸入備註...' : 'Add a comment...'} />
+                                        placeholder={zh ? '輸入備註…' : 'Add a comment…'} />
                                     <button className="btn btn-primary btn-sm" onClick={addComment}>
                                         {zh ? '送出' : 'Send'}
                                     </button>
@@ -1087,7 +1087,7 @@ export function Tasks() {
                             </div>
 
                             {/* Delete */}
-                            <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border-color)', textAlign: 'right' }}>
+                            <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--outline-variant)', textAlign: 'right' }}>
                                 <button className="btn btn-sm" style={{ color: 'var(--accent-red)', background: 'var(--accent-red-dim)' }}
                                     onClick={() => deleteTask(selectedTask.id)}>
                                     🗑️ {t('common.delete')}
@@ -1149,7 +1149,7 @@ export function Tasks() {
                                 className="input-field"
                                 value={newBucketName}
                                 onChange={e => setNewBucketName(e.target.value)}
-                                placeholder={zh ? '新分類名稱...' : 'New bucket name...'}
+                                placeholder={zh ? '新分類名稱…' : 'New bucket name…'}
                             />
                             <button
                                 className="btn btn-primary"

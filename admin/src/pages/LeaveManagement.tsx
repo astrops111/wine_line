@@ -641,7 +641,7 @@ export function LeaveManagement() {
                     {/* Pending table */}
                     {loadingPending ? (
                         <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                            {zh ? '載入中...' : 'Loading...'}
+                            {zh ? '載入中…' : 'Loading…'}
                         </div>
                     ) : pendingRequests.length === 0 ? (
                         <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
@@ -652,7 +652,7 @@ export function LeaveManagement() {
                             <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                                     <thead>
-                                        <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                        <tr style={{ borderBottom: '1px solid var(--outline-variant)' }}>
                                             {[
                                                 zh ? '員工' : 'Employee',
                                                 zh ? '假別' : 'Leave Type',
@@ -686,7 +686,7 @@ export function LeaveManagement() {
                                             <tr
                                                 key={req.id}
                                                 style={{
-                                                    borderBottom: '1px solid var(--border-light)',
+                                                    borderBottom: '1px solid var(--outline-variant)',
                                                     transition: 'background 0.15s',
                                                 }}
                                                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-card-hover)')}
@@ -873,7 +873,7 @@ export function LeaveManagement() {
                     {/* All requests table */}
                     {loadingAll ? (
                         <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                            {zh ? '載入中...' : 'Loading...'}
+                            {zh ? '載入中…' : 'Loading…'}
                         </div>
                     ) : filteredRequests.length === 0 ? (
                         <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
@@ -884,7 +884,7 @@ export function LeaveManagement() {
                             <div style={{ overflowX: 'auto' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                                     <thead>
-                                        <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                        <tr style={{ borderBottom: '1px solid var(--outline-variant)' }}>
                                             {[
                                                 zh ? '員工' : 'Employee',
                                                 zh ? '假別' : 'Type',
@@ -918,7 +918,7 @@ export function LeaveManagement() {
                                         {filteredRequests.map(req => (
                                             <tr
                                                 key={req.id}
-                                                style={{ borderBottom: '1px solid var(--border-light)', transition: 'background 0.15s' }}
+                                                style={{ borderBottom: '1px solid var(--outline-variant)', transition: 'background 0.15s' }}
                                                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-card-hover)')}
                                                 onMouseLeave={e => (e.currentTarget.style.background = '')}
                                             >
@@ -1046,7 +1046,7 @@ export function LeaveManagement() {
                     {/* Balances table */}
                     {loadingBalances ? (
                         <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                            {zh ? '載入中...' : 'Loading...'}
+                            {zh ? '載入中…' : 'Loading…'}
                         </div>
                     ) : balanceRows.length === 0 ? (
                         <div className="card" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
@@ -1154,7 +1154,7 @@ export function LeaveManagement() {
                                             <div
                                                 className="fade-in"
                                                 style={{
-                                                    borderTop: '1px solid var(--border-color)',
+                                                    borderTop: '1px solid var(--outline-variant)',
                                                     padding: '16px',
                                                     background: 'var(--bg-secondary)',
                                                 }}
@@ -1192,7 +1192,7 @@ export function LeaveManagement() {
                                                             value={row.balances[row.editType]?.used_days ?? 0}
                                                             readOnly
                                                             style={{ opacity: 0.6, cursor: 'not-allowed' }}
-                                                        />
+                                                         autoComplete="off" />
                                                     </div>
                                                     <div>
                                                         <label className="detail-label">{zh ? '結轉天數' : 'Carry Over'}</label>
@@ -1213,7 +1213,7 @@ export function LeaveManagement() {
                                                             disabled={savingBalance === row.user.id}
                                                         >
                                                             {savingBalance === row.user.id
-                                                                ? (zh ? '儲存中...' : 'Saving...')
+                                                                ? (zh ? '儲存中…' : 'Saving…')
                                                                 : (zh ? '儲存' : 'Save')}
                                                         </button>
                                                     </div>
@@ -1258,6 +1258,7 @@ export function LeaveManagement() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         padding: '20px',
+                        overscrollBehavior: 'contain',
                     }}
                     onClick={e => { if (e.target === e.currentTarget) setShowNewModal(false) }}
                 >
@@ -1329,7 +1330,7 @@ export function LeaveManagement() {
                                     gap: '8px',
                                 }}>
                                     {loadingBalance ? (
-                                        <span style={{ color: 'var(--text-muted)' }}>{zh ? '查詢餘額中...' : 'Loading balance...'}</span>
+                                        <span style={{ color: 'var(--text-muted)' }}>{zh ? '查詢餘額中…' : 'Loading balance…'}</span>
                                     ) : (
                                         <>
                                             <span style={{ color: 'var(--text-secondary)' }}>
@@ -1406,7 +1407,7 @@ export function LeaveManagement() {
                                 <textarea
                                     className="input-field"
                                     rows={3}
-                                    placeholder={zh ? '請輸入請假原因...' : 'Enter reason for leave...'}
+                                    placeholder={zh ? '請輸入請假原因…' : 'Enter reason for leave…'}
                                     value={newForm.reason}
                                     onChange={e => setNewForm({ ...newForm, reason: e.target.value })}
                                     style={{ resize: 'vertical' }}
@@ -1421,7 +1422,7 @@ export function LeaveManagement() {
                                     disabled={submittingNew || !newForm.user_id || !newForm.start_date || !newForm.end_date}
                                     style={{ flex: 1 }}
                                 >
-                                    {submittingNew ? (zh ? '提交中...' : 'Submitting...') : (zh ? '提交申請' : 'Submit Request')}
+                                    {submittingNew ? (zh ? '提交中…' : 'Submitting…') : (zh ? '提交申請' : 'Submit Request')}
                                 </button>
                                 <button
                                     className="btn btn-secondary"
@@ -1449,6 +1450,7 @@ export function LeaveManagement() {
                         alignItems: 'center',
                         justifyContent: 'center',
                         padding: '20px',
+                        overscrollBehavior: 'contain',
                     }}
                     onClick={e => { if (e.target === e.currentTarget) setShowRecalcDialog(false) }}
                 >

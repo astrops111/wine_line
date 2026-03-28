@@ -305,7 +305,7 @@ export function RecruitmentATS() {
             <button className="btn btn-primary btn-sm" onClick={() => setShowCreateJob(true)}>+ {zh ? '新增職缺' : 'New Job'}</button>
           </div>
           {loading ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>{zh ? '載入中...' : 'Loading...'}</div>
+            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>{zh ? '載入中…' : 'Loading…'}</div>
           ) : jobs.length === 0 ? (
             <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
               {zh ? '尚無職缺' : 'No job postings yet'}
@@ -529,7 +529,7 @@ export function RecruitmentATS() {
 
       {/* ── Modal: Create Job ── */}
       {showCreateJob && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', overscrollBehavior: 'contain' }}
           onClick={e => { if (e.target === e.currentTarget) setShowCreateJob(false); }}>
           <div className="card" style={{ padding: '24px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 16px' }}>{zh ? '新增職缺' : 'New Job Posting'}</h2>
@@ -585,7 +585,7 @@ export function RecruitmentATS() {
             {error && <div style={{ color: '#dc2626', fontSize: '13px', marginTop: '8px' }}>{error}</div>}
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
               <button className="btn btn-secondary" onClick={() => setShowCreateJob(false)}>{zh ? '取消' : 'Cancel'}</button>
-              <button className="btn btn-primary" onClick={saveJob} disabled={saving}>{saving ? '...' : (zh ? '儲存' : 'Save')}</button>
+              <button className="btn btn-primary" onClick={saveJob} disabled={saving}>{saving ? '…' : (zh ? '儲存' : 'Save')}</button>
             </div>
           </div>
         </div>
@@ -593,7 +593,7 @@ export function RecruitmentATS() {
 
       {/* ── Modal: Create Candidate ── */}
       {showCreateCandidate && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', overscrollBehavior: 'contain' }}
           onClick={e => { if (e.target === e.currentTarget) setShowCreateCandidate(false); }}>
           <div className="card" style={{ padding: '24px', width: '100%', maxWidth: '480px' }}>
             <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 16px' }}>{zh ? '新增應徵者' : 'Add Candidate'}</h2>
@@ -651,7 +651,7 @@ export function RecruitmentATS() {
             {error && <div style={{ color: '#dc2626', fontSize: '13px', marginTop: '8px' }}>{error}</div>}
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
               <button className="btn btn-secondary" onClick={() => setShowCreateCandidate(false)}>{zh ? '取消' : 'Cancel'}</button>
-              <button className="btn btn-primary" onClick={saveCandidate} disabled={saving}>{saving ? '...' : (zh ? '儲存' : 'Save')}</button>
+              <button className="btn btn-primary" onClick={saveCandidate} disabled={saving}>{saving ? '…' : (zh ? '儲存' : 'Save')}</button>
             </div>
           </div>
         </div>
@@ -659,7 +659,7 @@ export function RecruitmentATS() {
 
       {/* ── Modal: Schedule Interview ── */}
       {showCreateInterview && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px', overscrollBehavior: 'contain' }}
           onClick={e => { if (e.target === e.currentTarget) setShowCreateInterview(false); }}>
           <div className="card" style={{ padding: '24px', width: '100%', maxWidth: '480px' }}>
             <h2 style={{ fontSize: '16px', fontWeight: 600, margin: '0 0 16px' }}>{zh ? '安排面試' : 'Schedule Interview'}</h2>
@@ -705,7 +705,7 @@ export function RecruitmentATS() {
             {error && <div style={{ color: '#dc2626', fontSize: '13px', marginTop: '8px' }}>{error}</div>}
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
               <button className="btn btn-secondary" onClick={() => setShowCreateInterview(false)}>{zh ? '取消' : 'Cancel'}</button>
-              <button className="btn btn-primary" onClick={saveInterview} disabled={saving}>{saving ? '...' : (zh ? '儲存' : 'Save')}</button>
+              <button className="btn btn-primary" onClick={saveInterview} disabled={saving}>{saving ? '…' : (zh ? '儲存' : 'Save')}</button>
             </div>
           </div>
         </div>

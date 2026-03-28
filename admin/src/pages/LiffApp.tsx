@@ -561,7 +561,7 @@ export function LiffApp() {
             <button
                 onClick={handleGpsClockIn}
                 disabled={clockInStatus === 'locating'}
-                className={`w-full py-6 rounded-2xl text-white text-xl font-bold shadow-lg transition-all ${
+                className={`w-full py-6 rounded-2xl text-white text-xl font-bold shadow-lg transition-colors ${
                     clockInStatus === 'locating'
                         ? 'bg-gray-400 cursor-not-allowed'
                         : clockInStatus === 'success'
@@ -571,7 +571,7 @@ export function LiffApp() {
                         : 'bg-indigo-600 active:scale-95'
                 }`}
             >
-                {clockInStatus === 'locating' ? '定位中...' :
+                {clockInStatus === 'locating' ? '定位中…' :
                  clockInStatus === 'success' ? '打卡完成 ✓' :
                  clockInStatus === 'error' ? '打卡失敗' :
                  clockInStatus === 'out_of_range' ? (storeGpsConfig?.clock_in_method === 'wifi' ? '未連接 WiFi' : '超出範圍') :
@@ -656,7 +656,7 @@ export function LiffApp() {
                         )}
                         <div>
                             <label className="text-xs text-gray-500">原因說明 *</label>
-                            <textarea className="w-full mt-1 border rounded-lg p-2 text-sm" rows={3} placeholder="請說明更正原因..."
+                            <textarea className="w-full mt-1 border rounded-lg p-2 text-sm" rows={3} placeholder="請說明更正原因…"
                                 value={correctionData.reason}
                                 onChange={e => setCorrectionData({ ...correctionData, reason: e.target.value })} />
                         </div>
@@ -666,7 +666,7 @@ export function LiffApp() {
                                 disabled={correctionSubmitting || !correctionData.reason}
                                 onClick={() => submitCorrection(showCorrectionForm === 'new' ? null : showCorrectionForm)}
                             >
-                                {correctionSubmitting ? '提交中...' : '提交申請'}
+                                {correctionSubmitting ? '提交中…' : '提交申請'}
                             </button>
                             <button className="px-4 border rounded-lg text-sm text-gray-600"
                                 onClick={() => { setShowCorrectionForm(null); setCorrectionData({ requested_clock_in: '', requested_clock_out: '', reason: '', correction_type: 'both' }); }}>
@@ -686,7 +686,7 @@ export function LiffApp() {
                 <div className="text-center text-gray-500 py-8">載入中...</div>
             ) : shifts.length === 0 ? (
                 <div className="text-center bg-white rounded-lg shadow p-6 text-gray-500">
-                    <Calendar className="mx-auto h-12 w-12 text-gray-300 mb-2" />
+                    <Calendar className="mx-auto h-12 w-12 text-gray-300 mb-2" aria-hidden="true" />
                     <p>目前沒有近期排班</p>
                 </div>
             ) : (
@@ -707,7 +707,7 @@ export function LiffApp() {
                                 </span>
                             </div>
                             <div className="flex items-center text-sm text-gray-500 mt-2">
-                                <MapPin size={14} className="mr-1" />
+                                <MapPin size={14} className="mr-1" aria-hidden="true" />
                                 {shift.stores?.name}
                                 {shift.shift_templates?.name && (
                                     <span className="ml-2 px-1.5 py-0.5 bg-gray-100 rounded text-xs">
@@ -796,7 +796,7 @@ export function LiffApp() {
 
             {availabilities.length === 0 ? (
                 <div className="text-center bg-white rounded-lg shadow p-6 text-gray-500">
-                    <Settings className="mx-auto h-12 w-12 text-gray-300 mb-2" />
+                    <Settings className="mx-auto h-12 w-12 text-gray-300 mb-2" aria-hidden="true" />
                     <p>尚未設定任何排班偏好</p>
                 </div>
             ) : (
@@ -820,7 +820,7 @@ export function LiffApp() {
 
                                 {template && (
                                     <div className="text-sm text-gray-600 mt-2 flex items-center">
-                                        <Clock size={14} className="mr-1" />
+                                        <Clock size={14} className="mr-1" aria-hidden="true" />
                                         期望班別: <span className="font-medium ml-1">{template.name} ({template.start_time.substring(0, 5)} - {template.end_time.substring(0, 5)})</span>
                                     </div>
                                 )}
@@ -899,7 +899,7 @@ export function LiffApp() {
                             </div>
                             <div>
                                 <label className="text-xs text-gray-500 block mb-1">請假事由 *</label>
-                                <textarea className="w-full border rounded-lg p-2 text-sm" rows={3} placeholder="請填寫請假事由..."
+                                <textarea className="w-full border rounded-lg p-2 text-sm" rows={3} placeholder="請填寫請假事由…"
                                     value={leaveForm.reason} onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })} />
                             </div>
                             <button
@@ -907,7 +907,7 @@ export function LiffApp() {
                                 disabled={leaveSubmitting || !leaveForm.reason.trim()}
                                 onClick={submitLeaveRequest}
                             >
-                                {leaveSubmitting ? '提交中...' : '提交申請'}
+                                {leaveSubmitting ? '提交中…' : '提交申請'}
                             </button>
                         </div>
                     </div>
@@ -915,7 +915,7 @@ export function LiffApp() {
 
                 {leaveRequests.length === 0 && !showLeaveForm ? (
                     <div className="text-center bg-white rounded-lg shadow p-6 text-gray-500">
-                        <Plane className="mx-auto h-12 w-12 text-gray-300 mb-2" />
+                        <Plane className="mx-auto h-12 w-12 text-gray-300 mb-2" aria-hidden="true" />
                         <p>尚未有任何請假紀錄</p>
                         <p className="text-xs mt-1 text-gray-400">點擊右上角「＋ 申請請假」提交申請</p>
                     </div>
@@ -937,7 +937,7 @@ export function LiffApp() {
                                 </div>
                                 <div className="text-sm text-gray-600">
                                     <div className="flex items-center mb-1">
-                                        <Calendar size={14} className="mr-1" />
+                                        <Calendar size={14} className="mr-1" aria-hidden="true" />
                                         {format(parseISO(leave.start_date), 'yyyy/MM/dd')}
                                         {leave.end_date !== leave.start_date && ` - ${format(parseISO(leave.end_date), 'yyyy/MM/dd')}`}
                                     </div>

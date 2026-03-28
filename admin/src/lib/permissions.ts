@@ -67,6 +67,7 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
     'agent-console':       '/agent-console',
     'line':                '/line',
     'audit-logs':          '/audit-logs',
+    'line-logs':           '/line-logs',
     'performance':         '/performance',
 };
 

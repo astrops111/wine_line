@@ -254,7 +254,7 @@ export function DocumentManagement() {
           </div>
 
           {loading ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>{zh ? '載入中...' : 'Loading...'}</div>
+            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>{zh ? '載入中…' : 'Loading…'}</div>
           ) : docs.length === 0 ? (
             <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
               {zh ? '尚無文件。請至「上傳文件」頁上傳。' : 'No documents. Go to Upload tab to add files.'}
@@ -389,7 +389,7 @@ export function DocumentManagement() {
             onClick={handleUpload}
             disabled={uploading}
           >
-            {uploading ? (zh ? '上傳中...' : 'Uploading...') : (zh ? '上傳文件' : 'Upload Document')}
+            {uploading ? (zh ? '上傳中…' : 'Uploading…') : (zh ? '上傳文件' : 'Upload Document')}
           </button>
         </div>
       )}

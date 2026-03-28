@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import liff from '@line/liff';
 import { supabase } from '../lib/supabase';
 
 /* ── Types ── */
@@ -34,7 +35,7 @@ const css = `
 .liff-dash {
   min-height: 100vh;
   background: linear-gradient(180deg, #0c0e1a 0%, #141829 50%, #0f1420 100%);
-  color: #e2e8f0;
+  color: #dde2f0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
@@ -266,7 +267,7 @@ const css = `
   font-weight: 600;
   font-size: 14px;
   margin-bottom: 6px;
-  color: #e2e8f0;
+  color: #dde2f0;
 }
 .delay-meta {
   display: flex;
@@ -352,6 +353,55 @@ const css = `
   font-weight: 600;
 }
 
+/* ── Error state ── */
+.dash-error {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #0c0e1a 0%, #141829 100%);
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+}
+.error-icon { font-size: 44px; }
+.error-text { color: #f87171; font-size: 14px; font-weight: 500; }
+.error-detail { color: #475569; font-size: 12px; max-width: 280px; }
+
+/* ── Refresh indicator ── */
+.refresh-bar {
+  text-align: center;
+  padding: 8px;
+  font-size: 11px;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.refresh-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 6px 16px;
+  color: #818cf8;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.refresh-btn:active {
+  background: rgba(255,255,255,0.12);
+}
+.refresh-spinning {
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ── Loading ── */
 .dash-loading {
   min-height: 100vh;
@@ -375,32 +425,123 @@ const css = `
   font-size: 14px;
   font-weight: 500;
 }
+@media (prefers-reduced-motion: reduce) {
+  .overall-fill, .progress-fill, .summary-card, .delay-card, .refresh-btn { transition: none !important; }
+  @keyframes spin { from, to { transform: rotate(0deg); } }
+  @keyframes pulse-glow { from, to { box-shadow: none; } }
+}
 `;
 
 /* ── Component ── */
 export function LiffManagerDashboard() {
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [orgId, setOrgId] = useState<string | null>(null);
+    const [userName, setUserName] = useState<string>('');
+    const [refreshing, setRefreshing] = useState(false);
+    const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
     const [stats, setStats] = useState({ completed: 0, pending: 0, delayed: 0, total: 0 });
     const [storeProgress, setStoreProgress] = useState<StoreProgress[]>([]);
     const [delayedTasks, setDelayedTasks] = useState<DelayedTask[]>([]);
     const [activity, setActivity] = useState<ActivityItem[]>([]);
 
-    useEffect(() => { loadData(); }, []);
+    // LIFF initialization & employee lookup (mirrors LiffApp.tsx pattern)
+    useEffect(() => {
+        if (import.meta.env.DEV) {
+            // Local dev: mock LINE user and look up employee
+            const mockLineId = 'U_MOCK_LINE_ID';
+            setUserName('Test Manager');
+            lookupEmployee(mockLineId);
+        } else {
+            initLiff();
+        }
+    }, []);
 
-    async function loadData() {
+    async function initLiff() {
         try {
-            const [taskRes, storeRes] = await Promise.all([
-                supabase.from('tasks')
-                    .select('id, title, status, priority, due_date, completed_at, created_at, updated_at, users!tasks_assigned_to_fkey(id, name, store_id)')
-                    .order('sort_order', { ascending: true }),
-                supabase.from('stores')
-                    .select('id, name, store_code')
-                    .eq('is_active', true)
-                    .neq('store_type', 'headquarters'),
-            ]);
+            await liff.init({ liffId: import.meta.env.VITE_LIFF_DASHBOARD_ID || 'YOUR_LIFF_ID' });
+            if (liff.isLoggedIn()) {
+                const profile = await liff.getProfile();
+                setUserName(profile.displayName);
+                await lookupEmployee(profile.userId);
+            } else {
+                liff.login();
+            }
+        } catch (err: any) {
+            console.error('LIFF Init Error:', err);
+            setError('LIFF 初始化失敗');
+            setLoading(false);
+        }
+    }
 
+    async function lookupEmployee(lineUserId: string) {
+        try {
+            // Resolve LINE user → employee
+            const { data: mapping, error: mapErr } = await supabase
+                .from('line_employee_mapping')
+                .select('user_id')
+                .eq('line_user_id', lineUserId)
+                .single();
+
+            if (mapErr || !mapping) {
+                setError('您的 LINE 帳號尚未綁定員工資料');
+                setLoading(false);
+                return;
+            }
+
+            // Get employee's org + manager status
+            const { data: user, error: userErr } = await supabase
+                .from('users')
+                .select('id, name, organization_id, is_manager, is_line_manager, role')
+                .eq('id', mapping.user_id)
+                .single();
+
+            if (userErr || !user) {
+                setError('無法取得員工資料');
+                setLoading(false);
+                return;
+            }
+
+            if (!user.is_manager && !user.is_line_manager && user.role !== 'admin') {
+                setError('此看板僅限主管使用');
+                setLoading(false);
+                return;
+            }
+
+            setOrgId(user.organization_id);
+            if (user.name) setUserName(user.name);
+            await loadData(user.organization_id);
+        } catch (err) {
+            console.error('lookupEmployee error:', err);
+            setError('驗證身份時發生錯誤');
+            setLoading(false);
+        }
+    }
+
+    const loadData = useCallback(async (organizationId?: string) => {
+        const oid = organizationId || orgId;
+        if (!oid) return;
+
+        try {
+            // Build task query with org filter
+            let taskQuery = supabase.from('tasks')
+                .select('id, title, status, priority, due_date, completed_at, created_at, updated_at, organization_id, users!tasks_assigned_to_fkey(id, name, store_id)')
+                .eq('organization_id', oid)
+                .order('sort_order', { ascending: true });
+
+            // Build store query with org filter; store_type may not exist, so catch error
+            let storeQuery = supabase.from('stores')
+                .select('id, name, store_code, store_type')
+                .eq('organization_id', oid)
+                .eq('is_active', true);
+
+            const [taskRes, storeRes] = await Promise.all([taskQuery, storeQuery]);
+
+            // Filter out HQ stores client-side (safe if store_type column doesn't exist)
+            const allStores: any[] = (storeRes.data || []).filter(
+                (s: any) => !s.store_type || s.store_type !== 'headquarters'
+            );
             const tasks: any[] = (taskRes.data || []).map((t: any) => ({ ...t, assigned_user: t.users }));
-            const stores: any[] = storeRes.data || [];
             const now = new Date();
 
             // Summary
@@ -414,7 +555,7 @@ export function LiffManagerDashboard() {
 
             // Store progress
             const map = new Map<string, StoreProgress>();
-            stores.forEach(s => map.set(s.id, { name: s.name, total: 0, completed: 0, percent: 0, blocked: 0, inProgress: 0, pending: 0 }));
+            allStores.forEach(s => map.set(s.id, { name: s.name, total: 0, completed: 0, percent: 0, blocked: 0, inProgress: 0, pending: 0 }));
             const unassigned: StoreProgress = { name: '未分配門市', total: 0, completed: 0, percent: 0, blocked: 0, inProgress: 0, pending: 0 };
             tasks.forEach(t => {
                 const sid = t.assigned_user?.store_id;
@@ -440,7 +581,7 @@ export function LiffManagerDashboard() {
                     })
                     .map(t => ({
                         id: t.id, title: t.title,
-                        storeName: t.assigned_user?.store_id ? (stores.find((s: any) => s.id === t.assigned_user?.store_id)?.name || '—') : '未分配',
+                        storeName: t.assigned_user?.store_id ? (allStores.find((s: any) => s.id === t.assigned_user?.store_id)?.name || '—') : '未分配',
                         assignee: t.assigned_user?.name || '未指派',
                         priority: t.priority,
                         daysOverdue: t.due_date ? Math.max(0, Math.ceil((now.getTime() - new Date(t.due_date).getTime()) / 86400000)) : 0,
@@ -463,17 +604,32 @@ export function LiffManagerDashboard() {
                         if (t.completed_at && new Date(t.completed_at) >= todayStart) { type = 'completed'; timeStr = t.completed_at; }
                         else if (new Date(t.created_at) >= todayStart && !t.updated_at) { type = 'created'; timeStr = t.created_at; }
                         else if (t.status === 'blocked') { type = 'blocked'; }
-                        const sName = t.assigned_user?.store_id ? (stores.find((s: any) => s.id === t.assigned_user?.store_id)?.name || '') : '';
+                        const sName = t.assigned_user?.store_id ? (allStores.find((s: any) => s.id === t.assigned_user?.store_id)?.name || '') : '';
                         return { id: t.id, time: new Date(timeStr).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }), title: t.title, storeName: sName, type };
                     })
                     .sort((a, b) => b.time.localeCompare(a.time))
                     .slice(0, 10)
             );
+
+            setLastRefresh(new Date());
         } catch (err) {
             console.error('LiffManagerDashboard error:', err);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
+    }, [orgId]);
+
+    // Auto-refresh every 5 minutes
+    useEffect(() => {
+        if (!orgId) return;
+        const interval = setInterval(() => loadData(), 5 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, [orgId, loadData]);
+
+    async function handleRefresh() {
+        setRefreshing(true);
+        await loadData();
     }
 
     const pctClass = (p: number) => p >= 70 ? 'green' : p >= 40 ? 'amber' : 'red';
@@ -493,6 +649,19 @@ export function LiffManagerDashboard() {
         );
     }
 
+    if (error) {
+        return (
+            <>
+                <style>{css}</style>
+                <div className="dash-error">
+                    <div className="error-icon">🔒</div>
+                    <div className="error-text">{error}</div>
+                    <div className="error-detail">請確認您的 LINE 帳號已綁定員工資料，且具有主管權限。</div>
+                </div>
+            </>
+        );
+    }
+
     const overallPct = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
 
     return (
@@ -502,14 +671,16 @@ export function LiffManagerDashboard() {
                 {/* ── Header ── */}
                 <div className="dash-header">
                     <h1 className="dash-title">門市營運管理看板</h1>
-                    <p className="dash-subtitle">掌握所有門市任務進度，一目了然</p>
+                    <p className="dash-subtitle">
+                        {userName ? `${userName}，` : ''}掌握所有門市任務進度
+                    </p>
                     <div className="overall-bar-wrap">
                         <div className="overall-label">
                             <span>整體營運進度</span>
                             <span className="overall-pct">{overallPct}%</span>
                         </div>
                         <div className="overall-track">
-                            <div className="overall-fill" style={{ width: `${overallPct}%` }} />
+                            <div className="overall-fill" role="progressbar" style={{ width: `${overallPct}%` }} />
                         </div>
                     </div>
                 </div>
@@ -528,6 +699,19 @@ export function LiffManagerDashboard() {
                         <div className="summary-val red">{stats.delayed}</div>
                         <div className="summary-lbl">延遲</div>
                     </div>
+                </div>
+
+                {/* ── Refresh Bar ── */}
+                <div className="refresh-bar">
+                    <button className="refresh-btn" onClick={handleRefresh} disabled={refreshing}>
+                        <span className={refreshing ? 'refresh-spinning' : ''} style={{ display: 'inline-block' }}>🔄</span>
+                        {' '}{refreshing ? '更新中…' : '重新整理'}
+                    </button>
+                    {lastRefresh && (
+                        <span style={{ fontSize: '10px', color: '#334155' }}>
+                            {lastRefresh.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })} 更新
+                        </span>
+                    )}
                 </div>
 
                 {/* ── Store Progress ── */}
