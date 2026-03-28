@@ -185,7 +185,7 @@ class TestExecutorAgent(BaseAgent):
 
         print("  [executor] Starting Vite dev server…")
         self._server_proc = subprocess.Popen(
-            ["npm", "run", "dev"],
+            "npm run dev",
             cwd=self.admin_dir,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
@@ -204,11 +204,21 @@ class TestExecutorAgent(BaseAgent):
     def _stop_dev_server(self):
         if self._server_proc:
             print("  [executor] Stopping Vite dev server…")
-            self._server_proc.terminate()
-            try:
-                self._server_proc.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                self._server_proc.kill()
+            # shell=True spawns cmd.exe → terminate() only kills the shell,
+            # leaving the Vite node process orphaned. Use taskkill /T to kill
+            # the entire process tree on Windows.
+            if sys.platform == "win32":
+                subprocess.run(
+                    ["taskkill", "/F", "/T", "/PID", str(self._server_proc.pid)],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                )
+            else:
+                self._server_proc.terminate()
+                try:
+                    self._server_proc.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    self._server_proc.kill()
             self._server_proc = None
 
     # ── Test execution ────────────────────────────────────────────────────────
@@ -251,25 +261,39 @@ class TestExecutorAgent(BaseAgent):
     # ── Output parsing ────────────────────────────────────────────────────────
 
     def _parse_test_output(self, stdout: str, suite_name: str) -> list[dict]:
+        """
+        Parse test output lines. Only match lines that contain a TC code
+        (e.g. TC-E-01) or the explicit [OK]/[FAIL]/[BUG]/[WARN] markers.
+        Skip summary lines like "Smoke Tests: 19/19 passed" and Supabase noise.
+        """
         results = []
         for line in stdout.splitlines():
-            if any(kw in line for kw in ["✅", "[OK]", "passed"]) and "FAIL" not in line:
-                status = "PASS"
-            elif "[BUG]" in line or "DEFICIENCY" in line:
+            stripped = line.strip()
+            # Only parse lines with a TC code or explicit bracket markers
+            has_tc  = bool(re.search(r"TC-[A-Z]+-\d+", stripped))
+            has_tag = any(tag in stripped for tag in ["[OK]", "[FAIL]", "[BUG]", "[WARN]"])
+            if not has_tc and not has_tag:
+                # Also accept emoji-prefixed individual test result lines
+                if not (stripped.startswith("✅") or stripped.startswith("⚠️")):
+                    continue
+
+            if "[BUG]" in stripped or "DEFICIENCY" in stripped:
                 status = "BUG"
-            elif any(kw in line for kw in ["⚠️", "[WARN]", "skipped", "WARN"]):
-                status = "WARN"
-            elif any(kw in line for kw in ["[FAIL]", "FAIL", "Error", "assert"]):
+            elif "[FAIL]" in stripped or ("FAIL" in stripped and has_tc):
                 status = "FAIL"
+            elif any(kw in stripped for kw in ["⚠️", "[WARN]", "skipped"]):
+                status = "WARN"
+            elif any(kw in stripped for kw in ["✅", "[OK]", "passed"]):
+                status = "PASS"
             else:
                 continue
 
-            tc_match = re.search(r"TC-[A-Z]+-\d+", line)
+            tc_match = re.search(r"TC-[A-Z]+-\d+", stripped)
             name = tc_match.group(0) if tc_match else f"{suite_name}_line"
             results.append({
                 "name":   name,
                 "status": status,
-                "detail": line.strip()[:200],
+                "detail": stripped[:200],
                 "suite":  suite_name,
             })
         return results

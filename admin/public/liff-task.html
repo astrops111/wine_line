@@ -92,6 +92,12 @@ textarea::placeholder{color:#555}
       </select>
     </div>
     <div class="field">
+      <label>負責人</label>
+      <select id="assignee">
+        <option value="">— 不指定負責人 —</option>
+      </select>
+    </div>
+    <div class="field">
       <label>優先級</label>
       <select id="priority">
         <option value="low">🟢 低</option>
@@ -129,6 +135,17 @@ let taskData = null;
 let currentUserId = null;
 let currentUserName = '';
 let currentOrgId = null;
+
+function populateSelect(id, items, valueKey, labelKey) {
+  var sel = document.getElementById(id);
+  while (sel.options.length > 1) sel.remove(1);
+  (items || []).forEach(function(item) {
+    var opt = document.createElement('option');
+    opt.value = item[valueKey];
+    opt.textContent = item[labelKey];
+    sel.appendChild(opt);
+  });
+}
 
 function showToast(msg, isError) {
   const t = document.getElementById('toast');
@@ -199,6 +216,18 @@ async function loadTask() {
 
   taskData = data;
 
+  // Load users for assignee dropdown
+  var orgId = currentOrgId || data.organization_id;
+  var usersQuery = sb.from('users').select('id, name').eq('is_active', true).order('name');
+  if (orgId) usersQuery = sb.from('users').select('id, name').eq('organization_id', orgId).eq('is_active', true).order('name');
+  var { data: users } = await usersQuery;
+  populateSelect('assignee', users, 'id', 'name');
+
+  // Pre-select current assignee
+  if (data.assigned_to) {
+    document.getElementById('assignee').value = data.assigned_to;
+  }
+
   document.getElementById('taskTitle').textContent = data.title;
   document.getElementById('workflowName').textContent = data.workflow_instance?.name ?? '—';
   document.getElementById('assigneeName').textContent = data.assignee?.name ?? '—';
@@ -225,12 +254,14 @@ async function saveTask() {
 
   var status = document.getElementById('status').value;
   var priority = document.getElementById('priority').value;
+  var assignee = document.getElementById('assignee').value || null;
   var dueDate = document.getElementById('dueDate').value || null;
   var newNote = document.getElementById('newNote').value.trim();
 
   var updates = {
     status: status,
     priority: priority,
+    assigned_to: assignee,
     due_date: dueDate,
     updated_at: new Date().toISOString(),
   };

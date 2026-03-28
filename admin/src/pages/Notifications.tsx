@@ -42,7 +42,8 @@ export function Notifications() {
     const [showCreate, setShowCreate] = useState(false);
     const [newRule, setNewRule] = useState({ name: '', event_type: 'task_status_changed', channel: 'line', message_template: '' });
     const [showCreateReminder, setShowCreateReminder] = useState(false);
-    const [newReminder, setNewReminder] = useState({ name: '', reminder_type: 'daily_summary', cron_expression: '0 9 * * *', message_template: '' });
+    const [newReminder, setNewReminder] = useState({ name: '', reminder_type: 'daily_summary', cron_expression: '0 9 * * *', message_template: '', scheduled_date: '', scheduled_time: '09:00' });
+    const [useCustomTime, setUseCustomTime] = useState(false);
     const zh = getLocale() === 'zh-TW';
     const { orgId } = useOrg();
 
@@ -88,16 +89,20 @@ export function Notifications() {
 
     async function createReminder() {
         if (!newReminder.name.trim()) return;
+        const time = useCustomTime ? newReminder.scheduled_time : '09:00';
+        const nextRunAt = newReminder.scheduled_date ? `${newReminder.scheduled_date}T${time}:00` : null;
         await supabase.from('scheduled_reminders').insert({
             organization_id: orgId,
             name: newReminder.name,
             reminder_type: newReminder.reminder_type,
             cron_expression: newReminder.cron_expression || null,
             message_template: newReminder.message_template || null,
+            next_run_at: nextRunAt,
             is_active: true,
         });
         setShowCreateReminder(false);
-        setNewReminder({ name: '', reminder_type: 'daily_summary', cron_expression: '0 9 * * *', message_template: '' });
+        setNewReminder({ name: '', reminder_type: 'daily_summary', cron_expression: '0 9 * * *', message_template: '', scheduled_date: '', scheduled_time: '09:00' });
+        setUseCustomTime(false);
         loadData();
     }
 
@@ -251,7 +256,29 @@ export function Notifications() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="detail-label" htmlFor="reminder-cron">Cron {zh ? '表達式' : 'Expression'}</label>
+                                        <label className="detail-label" htmlFor="reminder-date">{zh ? '提醒日期' : 'Reminder Date'}</label>
+                                        <input id="reminder-date" type="date" className="input-field" name="scheduledDate" value={newReminder.scheduled_date}
+                                            onChange={e => setNewReminder({ ...newReminder, scheduled_date: e.target.value })} />
+                                    </div>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                                            <label className="detail-label" htmlFor="reminder-time" style={{ margin: 0 }}>{zh ? '提醒時間' : 'Reminder Time'}</label>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                                                <input type="checkbox" checked={useCustomTime} onChange={e => setUseCustomTime(e.target.checked)} />
+                                                {zh ? '自訂時間' : 'Custom time'}
+                                            </label>
+                                        </div>
+                                        {useCustomTime ? (
+                                            <input id="reminder-time" type="time" className="input-field" name="scheduledTime" value={newReminder.scheduled_time}
+                                                onChange={e => setNewReminder({ ...newReminder, scheduled_time: e.target.value })} />
+                                        ) : (
+                                            <div className="input-field" style={{ color: 'var(--text-muted)', display: 'flex', alignItems: 'center' }}>
+                                                🕘 {zh ? '預設 09:00' : 'Default 09:00'}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <label className="detail-label" htmlFor="reminder-cron">Cron {zh ? '表達式（選填）' : 'Expression (optional)'}</label>
                                         <input id="reminder-cron" className="input-field" name="cronExpression" autoComplete="off" spellCheck={false} value={newReminder.cron_expression} onChange={e => setNewReminder({ ...newReminder, cron_expression: e.target.value })}
                                             placeholder="0 9 * * *" />
                                     </div>
@@ -278,6 +305,7 @@ export function Notifications() {
                                         <tr>
                                             <th>{zh ? '名稱' : 'Name'}</th>
                                             <th>{zh ? '類型' : 'Type'}</th>
+                                            <th>{zh ? '排程時間' : 'Scheduled'}</th>
                                             <th>Cron</th>
                                             <th>{zh ? '狀態' : 'Status'}</th>
                                         </tr>
@@ -287,6 +315,9 @@ export function Notifications() {
                                             <tr key={r.id}>
                                                 <td style={{ fontWeight: 500 }}>{r.name}</td>
                                                 <td><span className="status-badge in_progress" style={{ fontSize: '11px' }}>{r.reminder_type}</span></td>
+                                                <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                                                    {r.next_run_at ? new Date(r.next_run_at).toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                </td>
                                                 <td style={{ fontFamily: 'monospace', color: 'var(--text-muted)', fontSize: '12px' }}>{r.cron_expression || '—'}</td>
                                                 <td>
                                                     <button className={`btn btn-sm ${r.is_active ? 'btn-primary' : 'btn-secondary'}`}

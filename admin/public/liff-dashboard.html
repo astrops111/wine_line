@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<title>營運管理看板</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;
+  background:linear-gradient(180deg,#0c0e1a 0%,#141829 50%,#0f1420 100%);
+  color:#dde2f0;
+  font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* Header */
+.dash-header{
+  position:relative;padding:32px 24px 40px;
+  background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#a855f7 100%);
+  border-radius:0 0 28px 28px;text-align:center;overflow:hidden;
+}
+.dash-header::before{content:'';position:absolute;top:-60%;left:-20%;width:140%;height:140%;background:radial-gradient(ellipse,rgba(255,255,255,0.08) 0%,transparent 70%);pointer-events:none}
+.dash-title{font-size:24px;font-weight:800;color:#fff;position:relative}
+.dash-subtitle{font-size:13px;color:rgba(255,255,255,0.65);margin-top:4px;position:relative}
+.overall-bar-wrap{margin-top:16px;padding:0 4px;position:relative}
+.overall-label{display:flex;justify-content:space-between;font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:6px}
+.overall-pct{font-weight:800;color:#fff;font-size:13px}
+.overall-track{height:6px;border-radius:99px;background:rgba(255,255,255,0.15)}
+.overall-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#fff 0%,rgba(255,255,255,0.85) 100%);transition:width 0.8s cubic-bezier(0.4,0,0.2,1);box-shadow:0 0 8px rgba(255,255,255,0.3)}
+
+/* Summary Cards */
+.summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:0 20px;margin-top:-24px;position:relative;z-index:2}
+.summary-card{background:rgba(30,36,58,0.85);backdrop-filter:blur(16px);border-radius:18px;padding:16px 8px;text-align:center;border:1px solid rgba(255,255,255,0.06);box-shadow:0 4px 16px rgba(0,0,0,0.3)}
+.summary-val{font-size:32px;font-weight:900;line-height:1;letter-spacing:-0.5px}
+.summary-val.green{color:#34d399}.summary-val.amber{color:#fbbf24}.summary-val.red{color:#f87171}
+.summary-lbl{font-size:11px;color:#64748b;margin-top:6px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase}
+
+/* Glass Section */
+.glass-section{margin:16px 20px;background:rgba(22,27,45,0.75);backdrop-filter:blur(12px);border-radius:20px;border:1px solid rgba(255,255,255,0.05);box-shadow:0 2px 16px rgba(0,0,0,0.2);overflow:hidden}
+.section-head{padding:16px 18px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.04)}
+.section-title{font-size:15px;font-weight:700;letter-spacing:0.2px}
+.section-meta{font-size:11px;color:#475569;font-weight:500}
+.section-body{padding:14px 18px}
+
+/* Store Progress */
+.store-row{margin-bottom:16px}.store-row:last-child{margin-bottom:4px}
+.store-label{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-size:13px}
+.store-name{font-weight:600;color:#cbd5e1}
+.store-stats{display:flex;align-items:baseline;gap:6px}
+.store-frac{font-size:11px;color:#475569}
+.store-pct{font-weight:800;font-size:14px}
+.store-pct.green{color:#34d399}.store-pct.amber{color:#fbbf24}.store-pct.red{color:#f87171}
+.progress-track{height:8px;border-radius:99px;background:rgba(255,255,255,0.04);overflow:hidden}
+.progress-fill{height:100%;border-radius:99px;transition:width 0.6s cubic-bezier(0.4,0,0.2,1)}
+.progress-fill.green{background:linear-gradient(90deg,#059669,#34d399)}
+.progress-fill.amber{background:linear-gradient(90deg,#d97706,#fbbf24)}
+.progress-fill.red{background:linear-gradient(90deg,#dc2626,#f87171)}
+.store-tags{display:flex;gap:8px;margin-top:6px;font-size:10px;color:#475569}
+.store-tags .blocked-tag{color:#f87171}
+
+/* Delayed Tasks */
+.delay-card{padding:14px 16px;margin-bottom:8px;border-radius:14px;border-left:3px solid #fbbf24;background:rgba(255,255,255,0.02)}
+.delay-card.urgent{border-left-color:#f87171;background:rgba(248,113,113,0.04)}
+.delay-title{font-weight:600;font-size:14px;margin-bottom:6px;color:#dde2f0}
+.delay-meta{display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:#64748b}
+.delay-overdue{color:#f87171;font-weight:700}
+.count-badge{padding:2px 10px;border-radius:99px;font-size:12px;font-weight:700}
+.count-badge.red{background:rgba(248,113,113,0.12);color:#f87171}
+
+/* Timeline */
+.tl-item{display:flex;gap:14px;padding-bottom:14px;position:relative}
+.tl-item:not(:last-child)::after{content:'';position:absolute;left:5px;top:16px;bottom:0;width:1px;background:rgba(255,255,255,0.06)}
+.tl-dot{width:11px;height:11px;border-radius:50%;margin-top:3px;flex-shrink:0}
+.tl-dot.green{background:#34d399;box-shadow:0 0 8px rgba(52,211,153,0.4)}
+.tl-dot.amber{background:#fbbf24;box-shadow:0 0 8px rgba(251,191,36,0.4)}
+.tl-dot.indigo{background:#818cf8;box-shadow:0 0 8px rgba(129,140,248,0.4)}
+.tl-dot.red{background:#f87171;box-shadow:0 0 8px rgba(248,113,113,0.4)}
+.tl-body{flex:1}
+.tl-time{font-size:11px;color:#475569;font-family:'SF Mono','Fira Code',monospace;font-weight:500}
+.tl-title{font-size:13px;font-weight:500;color:#cbd5e1;margin-top:1px}
+.tl-store{font-size:11px;color:#3b82f6;margin-top:2px;font-weight:500}
+
+/* Empty / Error / Loading */
+.empty-state{text-align:center;padding:28px 16px;color:#475569;font-size:13px}
+.empty-state.success{color:#34d399;font-weight:600}
+.dash-error,.dash-loading{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;text-align:center}
+.error-icon,.loading-icon{font-size:44px}
+.error-text{color:#f87171;font-size:14px;font-weight:500}
+.error-detail{color:#475569;font-size:12px;max-width:280px}
+.loading-text{color:#64748b;font-size:14px;font-weight:500}
+.loading-icon{animation:pulse-glow 1.8s infinite}
+@keyframes pulse-glow{0%,100%{opacity:0.5;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
+
+/* Refresh */
+.refresh-bar{text-align:center;padding:8px;font-size:11px;color:#475569;display:flex;align-items:center;justify-content:center;gap:6px}
+.refresh-btn{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:6px 16px;color:#818cf8;font-size:12px;font-weight:600;cursor:pointer}
+.refresh-btn:active{background:rgba(255,255,255,0.12)}
+.refresh-spinning{display:inline-block;animation:spin 0.8s linear infinite}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+/* Task action buttons */
+.task-actions{display:flex;gap:8px;margin-top:16px;padding:0 20px 20px}
+.action-btn{flex:1;padding:14px;border:none;border-radius:14px;font-size:14px;font-weight:700;cursor:pointer;text-align:center;text-decoration:none;color:#fff}
+.action-btn.primary{background:linear-gradient(135deg,#4f46e5,#7c3aed);box-shadow:0 4px 12px rgba(79,70,229,0.3)}
+.action-btn.secondary{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#818cf8}
+.action-btn:active{opacity:0.85;transform:scale(0.98)}
+</style>
+</head>
+<body>
+
+<div id="loading" class="dash-loading">
+  <div class="loading-icon">📊</div>
+  <div class="loading-text">載入營運資料中...</div>
+</div>
+
+<div id="error-screen" class="dash-error" style="display:none">
+  <div class="error-icon">🔒</div>
+  <div class="error-text" id="errorMsg">無法存取</div>
+  <div class="error-detail" id="errorDetail">請確認您的 LINE 帳號已綁定員工資料，且具有主管權限。</div>
+</div>
+
+<div id="app" style="display:none">
+  <!-- Header -->
+  <div class="dash-header">
+    <h1 class="dash-title">門市營運管理看板</h1>
+    <p class="dash-subtitle" id="subtitle">掌握所有門市任務進度</p>
+    <div class="overall-bar-wrap">
+      <div class="overall-label">
+        <span>整體營運進度</span>
+        <span class="overall-pct" id="overallPct">0%</span>
+      </div>
+      <div class="overall-track">
+        <div class="overall-fill" id="overallFill" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-val green" id="statCompleted">0</div>
+      <div class="summary-lbl">已完成</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-val amber" id="statPending">0</div>
+      <div class="summary-lbl">待完成</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-val red" id="statDelayed">0</div>
+      <div class="summary-lbl">延遲</div>
+    </div>
+  </div>
+
+  <!-- Refresh Bar -->
+  <div class="refresh-bar">
+    <button class="refresh-btn" id="refreshBtn" onclick="handleRefresh()">
+      <span id="refreshIcon">🔄</span> 重新整理
+    </button>
+    <span id="refreshTime" style="font-size:10px;color:#334155"></span>
+  </div>
+
+  <!-- Store Progress -->
+  <div class="glass-section">
+    <div class="section-head">
+      <span class="section-title">🏪 門市任務進度</span>
+      <span class="section-meta" id="storeCount">0 個門市</span>
+    </div>
+    <div class="section-body" id="storeBody">
+      <div class="empty-state">尚無門市任務資料</div>
+    </div>
+  </div>
+
+  <!-- Delayed Tasks -->
+  <div class="glass-section">
+    <div class="section-head">
+      <span class="section-title" id="delayTitle">⚠️ 延遲任務</span>
+      <span id="delayBadge"></span>
+    </div>
+    <div class="section-body" id="delayBody">
+      <div class="empty-state success">✅ 目前沒有延遲任務！</div>
+    </div>
+  </div>
+
+  <!-- Today's Updates -->
+  <div class="glass-section">
+    <div class="section-head">
+      <span class="section-title">📋 今日更新</span>
+      <span class="section-meta" id="todayDate"></span>
+    </div>
+    <div class="section-body" id="activityBody">
+      <div class="empty-state">今日尚無更新</div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="task-actions">
+    <a class="action-btn primary" href="https://liff.line.me/2009567492-C5Gv3cJ5">➕ 新增任務</a>
+  </div>
+
+  <div style="height:40px"></div>
+</div>
+
+<script>
+var SUPABASE_URL = 'https://kzawtuvmchhtdsokrjys.supabase.co';
+var SUPABASE_ANON_KEY = 'sb_publishable_j4d5NBq-JxIBz-F8GpOLog_u8bEkynM';
+var LIFF_ID = '2009567492-aJcgaxOz';
+
+var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+var currentOrgId = null;
+var currentUserName = '';
+
+function showError(msg, detail) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('errorMsg').textContent = msg;
+  if (detail) document.getElementById('errorDetail').textContent = detail;
+  document.getElementById('error-screen').style.display = 'flex';
+}
+
+function pctClass(p) { return p >= 70 ? 'green' : p >= 40 ? 'amber' : 'red'; }
+
+var dotClass = { completed: 'green', updated: 'amber', created: 'indigo', blocked: 'red' };
+var typeIcon = { completed: '✅', updated: '🔄', created: '🆕', blocked: '🚫' };
+var priorityIcon = { low: '🔽', medium: '➡️', high: '🔼', urgent: '🔥' };
+
+async function loadData() {
+  if (!currentOrgId) return;
+
+  var taskRes = await sb.from('tasks')
+    .select('id, title, status, priority, due_date, completed_at, created_at, updated_at, organization_id, assigned_to, users!tasks_assigned_to_fkey(id, name, store_id)')
+    .eq('organization_id', currentOrgId)
+    .order('created_at', { ascending: false });
+
+  var storeRes = await sb.from('stores')
+    .select('id, name, store_code, store_type')
+    .eq('organization_id', currentOrgId)
+    .eq('is_active', true);
+
+  var allStores = (storeRes.data || []).filter(function(s) { return !s.store_type || s.store_type !== 'headquarters'; });
+  var tasks = (taskRes.data || []).map(function(t) { return Object.assign({}, t, { assigned_user: t.users }); });
+  var now = new Date();
+
+  // Summary stats
+  var completed = tasks.filter(function(t) { return t.status === 'completed'; }).length;
+  var pending = tasks.filter(function(t) { return t.status === 'pending' || t.status === 'in_progress'; }).length;
+  var delayed = tasks.filter(function(t) {
+    if (t.status === 'completed' || t.status === 'cancelled') return false;
+    return t.status === 'blocked' || (t.due_date && new Date(t.due_date) < now);
+  }).length;
+  var total = tasks.length;
+  var overallPct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+  document.getElementById('statCompleted').textContent = completed;
+  document.getElementById('statPending').textContent = pending;
+  document.getElementById('statDelayed').textContent = delayed;
+  document.getElementById('overallPct').textContent = overallPct + '%';
+  document.getElementById('overallFill').style.width = overallPct + '%';
+
+  // Store progress
+  var storeMap = {};
+  allStores.forEach(function(s) {
+    storeMap[s.id] = { name: s.name, total: 0, completed: 0, percent: 0, blocked: 0, inProgress: 0, pending: 0 };
+  });
+  var unassigned = { name: '未分配門市', total: 0, completed: 0, percent: 0, blocked: 0, inProgress: 0, pending: 0 };
+
+  tasks.forEach(function(t) {
+    var sid = t.assigned_user ? t.assigned_user.store_id : null;
+    var b = (sid && storeMap[sid]) ? storeMap[sid] : unassigned;
+    b.total++;
+    if (t.status === 'completed') b.completed++;
+    else if (t.status === 'in_progress') b.inProgress++;
+    else if (t.status === 'blocked') b.blocked++;
+    else b.pending++;
+  });
+
+  var storeArr = [];
+  Object.keys(storeMap).forEach(function(k) {
+    var sp = storeMap[k];
+    if (sp.total > 0) { sp.percent = Math.round((sp.completed / sp.total) * 100); storeArr.push(sp); }
+  });
+  if (unassigned.total > 0) { unassigned.percent = Math.round((unassigned.completed / unassigned.total) * 100); storeArr.push(unassigned); }
+  storeArr.sort(function(a, b) { return b.percent - a.percent; });
+
+  document.getElementById('storeCount').textContent = storeArr.length + ' 個門市';
+  var storeHtml = '';
+  if (storeArr.length === 0) {
+    storeHtml = '<div class="empty-state">尚無門市任務資料</div>';
+  } else {
+    storeArr.forEach(function(sp) {
+      var cls = pctClass(sp.percent);
+      storeHtml += '<div class="store-row">'
+        + '<div class="store-label"><span class="store-name">' + sp.name + '</span>'
+        + '<span class="store-stats"><span class="store-frac">' + sp.completed + '/' + sp.total + '</span>'
+        + '<span class="store-pct ' + cls + '">' + sp.percent + '%</span></span></div>'
+        + '<div class="progress-track"><div class="progress-fill ' + cls + '" style="width:' + sp.percent + '%"></div></div>'
+        + '<div class="store-tags">'
+        + (sp.inProgress > 0 ? '<span>🔄 ' + sp.inProgress + ' 進行中</span>' : '')
+        + (sp.pending > 0 ? '<span>⏳ ' + sp.pending + ' 待處理</span>' : '')
+        + (sp.blocked > 0 ? '<span class="blocked-tag">🚫 ' + sp.blocked + ' 受阻</span>' : '')
+        + '</div></div>';
+    });
+  }
+  document.getElementById('storeBody').innerHTML = storeHtml;
+
+  // Delayed tasks
+  var delayedTasks = tasks
+    .filter(function(t) {
+      if (t.status === 'completed' || t.status === 'cancelled') return false;
+      return t.status === 'blocked' || (t.due_date && new Date(t.due_date) < now);
+    })
+    .map(function(t) {
+      var sid = t.assigned_user ? t.assigned_user.store_id : null;
+      var storeName = sid ? (allStores.find(function(s) { return s.id === sid; }) || {}).name || '—' : '未分配';
+      return {
+        id: t.id, title: t.title, storeName: storeName,
+        assignee: t.assigned_user ? t.assigned_user.name || '未指派' : '未指派',
+        priority: t.priority,
+        daysOverdue: t.due_date ? Math.max(0, Math.ceil((now.getTime() - new Date(t.due_date).getTime()) / 86400000)) : 0
+      };
+    })
+    .sort(function(a, b) { return (a.priority === 'urgent' ? -1 : 0) - (b.priority === 'urgent' ? -1 : 0) || b.daysOverdue - a.daysOverdue; });
+
+  if (delayedTasks.length > 0) {
+    document.getElementById('delayTitle').style.color = '#f87171';
+    document.getElementById('delayBadge').innerHTML = '<span class="count-badge red">' + delayedTasks.length + '</span>';
+  } else {
+    document.getElementById('delayTitle').style.color = '';
+    document.getElementById('delayBadge').innerHTML = '';
+  }
+
+  var delayHtml = '';
+  if (delayedTasks.length === 0) {
+    delayHtml = '<div class="empty-state success">✅ 目前沒有延遲任務！</div>';
+  } else {
+    delayedTasks.forEach(function(dt) {
+      delayHtml += '<div class="delay-card ' + (dt.priority === 'urgent' ? 'urgent' : '') + '">'
+        + '<div class="delay-title">' + (priorityIcon[dt.priority] || '') + ' ' + dt.title + '</div>'
+        + '<div class="delay-meta">'
+        + '<span>🏪 ' + dt.storeName + '</span>'
+        + '<span>👤 ' + dt.assignee + '</span>'
+        + (dt.daysOverdue > 0 ? '<span class="delay-overdue">⏰ 延遲 ' + dt.daysOverdue + ' 天</span>' : '')
+        + '</div></div>';
+    });
+  }
+  document.getElementById('delayBody').innerHTML = delayHtml;
+
+  // Today's activity
+  var todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  var activity = tasks
+    .filter(function(t) {
+      var u = t.updated_at ? new Date(t.updated_at) : null;
+      var c = t.completed_at ? new Date(t.completed_at) : null;
+      return (u && u >= todayStart) || (c && c >= todayStart) || new Date(t.created_at) >= todayStart;
+    })
+    .map(function(t) {
+      var type = 'updated';
+      var timeStr = t.updated_at || t.created_at;
+      if (t.completed_at && new Date(t.completed_at) >= todayStart) { type = 'completed'; timeStr = t.completed_at; }
+      else if (new Date(t.created_at) >= todayStart && !t.updated_at) { type = 'created'; timeStr = t.created_at; }
+      else if (t.status === 'blocked') { type = 'blocked'; }
+      var sid = t.assigned_user ? t.assigned_user.store_id : null;
+      var sName = sid ? (allStores.find(function(s) { return s.id === sid; }) || {}).name || '' : '';
+      return { id: t.id, time: new Date(timeStr).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }), title: t.title, storeName: sName, type: type };
+    })
+    .sort(function(a, b) { return b.time.localeCompare(a.time); })
+    .slice(0, 10);
+
+  document.getElementById('todayDate').textContent = new Date().toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' });
+
+  var actHtml = '';
+  if (activity.length === 0) {
+    actHtml = '<div class="empty-state">今日尚無更新</div>';
+  } else {
+    activity.forEach(function(a) {
+      actHtml += '<div class="tl-item">'
+        + '<div class="tl-dot ' + (dotClass[a.type] || 'amber') + '"></div>'
+        + '<div class="tl-body">'
+        + '<div class="tl-time">' + a.time + '</div>'
+        + '<div class="tl-title">' + (typeIcon[a.type] || '') + ' ' + a.title + '</div>'
+        + (a.storeName ? '<div class="tl-store">🏪 ' + a.storeName + '</div>' : '')
+        + '</div></div>';
+    });
+  }
+  document.getElementById('activityBody').innerHTML = actHtml;
+
+  // Update refresh time
+  document.getElementById('refreshTime').textContent = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) + ' 更新';
+}
+
+async function handleRefresh() {
+  var btn = document.getElementById('refreshBtn');
+  var icon = document.getElementById('refreshIcon');
+  btn.disabled = true;
+  icon.className = 'refresh-spinning';
+  btn.innerHTML = '<span class="refresh-spinning">🔄</span> 更新中…';
+  await loadData();
+  btn.disabled = false;
+  btn.innerHTML = '<span id="refreshIcon">🔄</span> 重新整理';
+}
+
+async function init() {
+  try {
+    if (LIFF_ID) {
+      await liff.init({ liffId: LIFF_ID });
+      if (!liff.isLoggedIn()) { liff.login(); return; }
+      var profile = await liff.getProfile();
+      currentUserName = profile.displayName || '';
+
+      // Look up via line_users table
+      var { data: lu } = await sb.from('line_users').select('user_id').eq('line_user_id', profile.userId).maybeSingle();
+      if (!lu || !lu.user_id) {
+        showError('帳號未綁定', '您的 LINE 帳號尚未綁定員工資料，請先使用 /註冊 指令進行綁定。');
+        return;
+      }
+
+      var { data: user } = await sb.from('users').select('id, name, organization_id, role').eq('id', lu.user_id).maybeSingle();
+      if (!user || !user.organization_id) {
+        showError('帳號異常', '找不到您的組織資料，請聯絡管理員。');
+        return;
+      }
+
+      currentOrgId = user.organization_id;
+      if (user.name) currentUserName = user.name;
+    } else {
+      // No LIFF ID — load all tasks (dev/demo mode)
+      var { data: orgs } = await sb.from('organizations').select('id').limit(1).maybeSingle();
+      if (orgs) currentOrgId = orgs.id;
+    }
+  } catch (e) {
+    console.warn('LIFF init:', e);
+  }
+
+  if (!currentOrgId) {
+    showError('無法載入', '找不到組織資料。');
+    return;
+  }
+
+  document.getElementById('subtitle').textContent = (currentUserName ? currentUserName + '，' : '') + '掌握所有門市任務進度';
+
+  await loadData();
+
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+
+  // Auto-refresh every 5 minutes
+  setInterval(loadData, 5 * 60 * 1000);
+}
+
+init();
+</script>
+</body>
+</html>

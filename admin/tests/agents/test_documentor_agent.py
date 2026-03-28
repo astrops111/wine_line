@@ -119,18 +119,36 @@ class TestDocumentorAgent(BaseAgent):
 
     # ── Public entry point ────────────────────────────────────────────────────
 
+    @staticmethod
+    def _truncate_exec_result(exec_result: dict) -> dict:
+        """Trim stdout/stderr per suite to avoid blowing up the prompt size."""
+        trimmed = {
+            "summary":  exec_result.get("summary", {}),
+            "failures": exec_result.get("failures", []),
+            "suites":   {},
+        }
+        for name, data in exec_result.get("suites", {}).items():
+            trimmed["suites"][name] = {
+                "returncode": data.get("returncode"),
+                "tests":      data.get("tests", []),
+                # keep only last 500 chars of stdout for context
+                "stdout_tail": (data.get("stdout") or "")[-500:],
+            }
+        return trimmed
+
     def run(self, exec_result: dict, run_id: str, created_files: list[str]) -> dict:
         self._report_path = ""
 
-        date_str   = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        date_str    = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         screenshots = json.loads(self._list_screenshots())
+        trimmed     = self._truncate_exec_result(exec_result)
 
         prompt = (
             f"run_id={run_id}, date={date_str}\n"
             f"created_test_files={json.dumps(created_files)}\n"
             f"screenshots={json.dumps(screenshots[:30])} "
             f"({'...' if len(screenshots) > 30 else 'all shown'})\n"
-            f"exec_result={json.dumps(exec_result, indent=2)}\n\n"
+            f"exec_result={json.dumps(trimmed, indent=2)}\n\n"
             "Generate the full QA report markdown and call write_report, then finish."
         )
 

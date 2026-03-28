@@ -82,24 +82,24 @@ class BaseAgent:
             choice  = response.choices[0]
             message = choice.message
 
-            # Accumulate assistant message
-            messages.append({
-                "role":       "assistant",
-                "content":    message.content or "",
-                "tool_calls": [
+            # Build assistant message — only include tool_calls key when present
+            assistant_msg: dict = {
+                "role":    "assistant",
+                "content": message.content or "",
+            }
+            if message.tool_calls:
+                assistant_msg["tool_calls"] = [
                     {
                         "id":       tc.id,
                         "type":     "function",
                         "function": {"name": tc.function.name, "arguments": tc.function.arguments},
                     }
-                    for tc in (message.tool_calls or [])
-                ] or None,
-            })
+                    for tc in message.tool_calls
+                ]
+            messages.append(assistant_msg)
 
-            if choice.finish_reason == "stop":
-                return message.content or ""
-
-            if choice.finish_reason != "tool_calls" or not message.tool_calls:
+            # DashScope may return "stop", "tool_calls", or "function_call"
+            if choice.finish_reason == "stop" or not message.tool_calls:
                 return message.content or f"[{self.name}] stopped: {choice.finish_reason}"
 
             # Dispatch each tool call and collect results
