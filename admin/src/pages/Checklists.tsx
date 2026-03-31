@@ -78,7 +78,7 @@ export function Checklists() {
         Promise.all([
             loadChecklists(),
             supabase.from('users').select('id, name').order('name').then(r => setEmployees(r.data || [])),
-            supabase.from('departments').select('id, name').order('name').then(r => setDepartments(r.data || [])),
+            supabase.from('departments').select('id, name, company_id').order('name').then(r => setDepartments(r.data || [])),
             supabase.from('stores').select('id, name').order('name').then(r => setStores(r.data || [])),
             supabase.from('workflow_instances').select('id, name').order('created_at', { ascending: false }).then(r => setWorkflowInstances(r.data || [])),
             supabase.from('tasks').select('id, title, status, workflow_instance:workflow_instances(name)')

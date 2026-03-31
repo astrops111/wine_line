@@ -1,32 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import liff from '@line/liff';
 import { supabase } from '../lib/supabase';
-
-/* ── Types ── */
-interface StoreProgress {
-    name: string;
-    total: number;
-    completed: number;
-    percent: number;
-    blocked: number;
-    inProgress: number;
-    pending: number;
-}
-interface DelayedTask {
-    id: string;
-    title: string;
-    storeName: string;
-    assignee: string;
-    priority: string;
-    daysOverdue: number;
-}
-interface ActivityItem {
-    id: string;
-    time: string;
-    title: string;
-    storeName: string;
-    type: 'completed' | 'updated' | 'created' | 'blocked';
-}
+import { StoreProgressSection, type StoreProgress } from '../components/LiffManager/StoreProgressSection';
+import { DelayedTasksSection, type DelayedTask } from '../components/LiffManager/DelayedTasksSection';
+import { ActivityTimeline, type ActivityItem } from '../components/LiffManager/ActivityTimeline';
 
 /* ── CSS-in-JS ── */
 const css = `
@@ -632,11 +609,6 @@ export function LiffManagerDashboard() {
         await loadData();
     }
 
-    const pctClass = (p: number) => p >= 70 ? 'green' : p >= 40 ? 'amber' : 'red';
-    const dotClass: Record<string, string> = { completed: 'green', updated: 'amber', created: 'indigo', blocked: 'red' };
-    const typeIcon: Record<string, string> = { completed: '✅', updated: '🔄', created: '🆕', blocked: '🚫' };
-    const priorityIcon: Record<string, string> = { low: '🔽', medium: '➡️', high: '🔼', urgent: '🔥' };
-
     if (loading) {
         return (
             <>
@@ -715,87 +687,13 @@ export function LiffManagerDashboard() {
                 </div>
 
                 {/* ── Store Progress ── */}
-                <div className="glass-section">
-                    <div className="section-head">
-                        <span className="section-title">🏪 門市任務進度</span>
-                        <span className="section-meta">{storeProgress.length} 個門市</span>
-                    </div>
-                    <div className="section-body">
-                        {storeProgress.length === 0 ? (
-                            <div className="empty-state">尚無門市任務資料</div>
-                        ) : storeProgress.map(sp => (
-                            <div key={sp.name} className="store-row">
-                                <div className="store-label">
-                                    <span className="store-name">{sp.name}</span>
-                                    <span className="store-stats">
-                                        <span className="store-frac">{sp.completed}/{sp.total}</span>
-                                        <span className={`store-pct ${pctClass(sp.percent)}`}>{sp.percent}%</span>
-                                    </span>
-                                </div>
-                                <div className="progress-track">
-                                    <div className={`progress-fill ${pctClass(sp.percent)}`} style={{ width: `${sp.percent}%` }} />
-                                </div>
-                                <div className="store-tags">
-                                    {sp.inProgress > 0 && <span>🔄 {sp.inProgress} 進行中</span>}
-                                    {sp.pending > 0 && <span>⏳ {sp.pending} 待處理</span>}
-                                    {sp.blocked > 0 && <span className="blocked-tag">🚫 {sp.blocked} 受阻</span>}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                <StoreProgressSection storeProgress={storeProgress} />
 
                 {/* ── Delayed Tasks ── */}
-                <div className="glass-section">
-                    <div className="section-head">
-                        <span className="section-title" style={{ color: delayedTasks.length > 0 ? '#f87171' : undefined }}>
-                            ⚠️ 延遲任務
-                        </span>
-                        {delayedTasks.length > 0 && (
-                            <span className="count-badge red">{delayedTasks.length}</span>
-                        )}
-                    </div>
-                    <div className="section-body">
-                        {delayedTasks.length === 0 ? (
-                            <div className="empty-state success">✅ 目前沒有延遲任務！</div>
-                        ) : delayedTasks.map(dt => (
-                            <div key={dt.id} className={`delay-card ${dt.priority === 'urgent' ? 'urgent' : ''}`}>
-                                <div className="delay-title">{priorityIcon[dt.priority]} {dt.title}</div>
-                                <div className="delay-meta">
-                                    <span>🏪 {dt.storeName}</span>
-                                    <span>👤 {dt.assignee}</span>
-                                    {dt.daysOverdue > 0 && (
-                                        <span className="delay-overdue">⏰ 延遲 {dt.daysOverdue} 天</span>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                <DelayedTasksSection delayedTasks={delayedTasks} />
 
                 {/* ── Today's Updates ── */}
-                <div className="glass-section">
-                    <div className="section-head">
-                        <span className="section-title">📋 今日更新</span>
-                        <span className="section-meta">
-                            {new Date().toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' })}
-                        </span>
-                    </div>
-                    <div className="section-body">
-                        {activity.length === 0 ? (
-                            <div className="empty-state">今日尚無更新</div>
-                        ) : activity.map((a, i) => (
-                            <div key={a.id + i} className="tl-item">
-                                <div className={`tl-dot ${dotClass[a.type]}`} />
-                                <div className="tl-body">
-                                    <div className="tl-time">{a.time}</div>
-                                    <div className="tl-title">{typeIcon[a.type]} {a.title}</div>
-                                    {a.storeName && <div className="tl-store">🏪 {a.storeName}</div>}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                <ActivityTimeline activity={activity} />
 
                 {/* Safe area */}
                 <div style={{ height: '40px' }} />

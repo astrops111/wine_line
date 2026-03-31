@@ -317,6 +317,54 @@ function buildCorrectionNotification(type: "approved" | "rejected", details: {
   };
 }
 
+function buildScheduleNotification(details: {
+  store_name: string; week_start: string; week_end: string;
+  shifts: { date: string; start_time: string; end_time: string }[];
+}) {
+  const shiftRows: object[] = details.shifts.length > 0
+    ? details.shifts.map(s => ({
+        type: "box", layout: "horizontal",
+        contents: [
+          { type: "text", text: s.date.slice(5), size: "sm", color: "#888888", flex: 2 },
+          { type: "text", text: `${s.start_time.slice(0, 5)} – ${s.end_time.slice(0, 5)}`, size: "sm", weight: "bold", flex: 5 },
+        ],
+      }))
+    : [{
+        type: "text", text: "本週無排班", size: "sm", color: "#888888",
+      }];
+
+  return {
+    type: "flex",
+    altText: `📅 新班表已發佈: ${details.store_name} ${details.week_start}`,
+    contents: {
+      type: "bubble",
+      size: "kilo",
+      header: {
+        type: "box", layout: "vertical", backgroundColor: "#2B6CB0", paddingAll: "14px",
+        contents: [
+          { type: "text", text: "📅 新班表已發佈", weight: "bold", color: "#FFFFFF", size: "md" },
+          { type: "text", text: `${details.store_name} | ${details.week_start} ~ ${details.week_end}`, size: "xs", color: "#BEE3F8", marginTop: "4px" },
+        ],
+      },
+      body: {
+        type: "box", layout: "vertical", paddingAll: "14px", spacing: "sm",
+        contents: [
+          { type: "text", text: "您的班次", size: "sm", weight: "bold", color: "#2D3748" },
+          { type: "separator", margin: "sm" },
+          ...shiftRows,
+        ],
+      },
+      footer: {
+        type: "box", layout: "vertical", paddingAll: "10px", backgroundColor: "#F7FAFC",
+        contents: [{
+          type: "button", style: "link", height: "sm",
+          action: { type: "message", label: "查看完整班表", text: "我的班表" },
+        }],
+      },
+    },
+  };
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -338,10 +386,69 @@ serve(async (req) => {
     const db = createClient(supabaseUrl, supabaseKey);
     const body = await req.json();
     const { user_id, type, details } = body;
-    // type: 'leave_approved' | 'leave_rejected' | 'ot_approved' | 'ot_rejected' | 'correction_approved' | 'correction_rejected'
 
-    if (!user_id || !type) {
-      return new Response(JSON.stringify({ error: "Missing user_id or type" }), {
+    if (!type) {
+      return new Response(JSON.stringify({ error: "Missing type" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── schedule_published: broadcast to all employees in store ──
+    if (type === "schedule_published") {
+      const { store_id, store_name, week_start, assignments, employees } = details || {};
+      if (!store_id || !assignments) {
+        return new Response(JSON.stringify({ error: "Missing store_id or assignments" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const wStart = new Date(week_start + "T00:00:00");
+      const wEnd = new Date(wStart); wEnd.setDate(wEnd.getDate() + 6);
+      const weekEnd = wEnd.toISOString().split("T")[0];
+
+      const empIds = (employees || []).map((e: { id: string }) => e.id);
+      if (empIds.length === 0) {
+        return new Response(JSON.stringify({ ok: true, sent: false }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: mappings } = await db
+        .from("line_employee_mapping")
+        .select("user_id, line_user_id")
+        .in("user_id", empIds)
+        .eq("is_verified", true);
+
+      if (!mappings || mappings.length === 0) {
+        return new Response(JSON.stringify({ ok: true, sent: false }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      let sentCount = 0;
+      for (const m of mappings) {
+        const empShifts = (assignments as { user_id: string; date: string; start_time: string; end_time: string }[])
+          .filter(a => a.user_id === m.user_id)
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .map(a => ({ date: a.date, start_time: a.start_time, end_time: a.end_time }));
+
+        const msg = buildScheduleNotification({
+          store_name: store_name || "門市",
+          week_start, week_end: weekEnd, shifts: empShifts,
+        });
+        await pushLine(m.line_user_id, [msg], accessToken);
+        sentCount++;
+      }
+
+      return new Response(JSON.stringify({ ok: true, sent: true, count: sentCount }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // All other types require user_id
+    if (!user_id) {
+      return new Response(JSON.stringify({ error: "Missing user_id" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

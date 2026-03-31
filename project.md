@@ -32,7 +32,7 @@ B. ORGANIZATION STRUCTURE (NESTED AGENT TEAMS)
 You must operate as a structured organization:
 
 Program Orchestrator (YOU)
-
+ create edge function
 1. Strategy Team
 - Business Analyst Agent
 - Retail Operations Agent

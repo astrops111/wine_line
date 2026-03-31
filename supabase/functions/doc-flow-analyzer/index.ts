@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { logLLMUsage, extractTokensOpenAI } from "../_shared/llm-logger.ts";
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -15,8 +16,8 @@ async function callLLM(systemPrompt: string, userPrompt: string): Promise<string
         { role: 'user', content: userPrompt },
     ];
 
-    // Try DashScope first
     if (dashKey) {
+        const _s = Date.now();
         try {
             const resp = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
                 method: 'POST',
@@ -25,16 +26,20 @@ async function callLLM(systemPrompt: string, userPrompt: string): Promise<string
             });
             if (resp.ok) {
                 const data = await resp.json();
+                const t = extractTokensOpenAI(data);
+                logLLMUsage({ functionName: 'doc-flow-analyzer', provider: 'dashscope', model: 'qwen3.5-plus', inputTokens: t.input, outputTokens: t.output, totalTokens: t.total, latencyMs: Date.now() - _s, status: 'success', purpose: 'document' });
                 return data.choices[0].message.content;
             }
+            logLLMUsage({ functionName: 'doc-flow-analyzer', provider: 'dashscope', model: 'qwen3.5-plus', latencyMs: Date.now() - _s, status: 'fallback', errorMessage: `${resp.status}`, purpose: 'document' });
             console.warn(`DashScope failed (${resp.status}), trying Gemini fallback`);
         } catch (e) {
+            logLLMUsage({ functionName: 'doc-flow-analyzer', provider: 'dashscope', model: 'qwen3.5-plus', latencyMs: Date.now() - _s, status: 'error', errorMessage: String(e), purpose: 'document' });
             console.warn('DashScope error, trying Gemini fallback:', e);
         }
     }
 
-    // Fallback: Gemini (OpenAI-compatible endpoint)
     if (!geminiKey) throw new Error('No AI provider available: DASHSCOPE_API_KEY invalid and GEMINI_API_KEY not set');
+    const _s2 = Date.now();
     const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${geminiKey}`, 'Content-Type': 'application/json' },
@@ -42,9 +47,12 @@ async function callLLM(systemPrompt: string, userPrompt: string): Promise<string
     });
     if (!resp.ok) {
         const errBody = await resp.text();
+        logLLMUsage({ functionName: 'doc-flow-analyzer', provider: 'gemini', model: 'gemini-2.5-flash', latencyMs: Date.now() - _s2, status: 'error', errorMessage: `${resp.status}`, purpose: 'document' });
         throw new Error(`Gemini API Error: ${resp.status} ${errBody}`);
     }
     const data = await resp.json();
+    const t = extractTokensOpenAI(data);
+    logLLMUsage({ functionName: 'doc-flow-analyzer', provider: 'gemini', model: 'gemini-2.5-flash', inputTokens: t.input, outputTokens: t.output, totalTokens: t.total, latencyMs: Date.now() - _s2, status: 'success', purpose: 'document' });
     return data.choices[0].message.content;
 }
 

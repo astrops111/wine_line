@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logLLMUsage, extractTokensOpenAI, extractTokensAnthropic } from "../_shared/llm-logger.ts";
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -18,6 +19,7 @@ const supabase = createClient(
 async function callLLMForChat(systemPrompt: string, messages: any[]): Promise<string> {
     // Try Claude first
     if (ANTHROPIC_API_KEY) {
+        const _s = Date.now();
         try {
             const resp = await fetch('https://api.anthropic.com/v1/messages', {
                 method: 'POST',
@@ -35,16 +37,21 @@ async function callLLMForChat(systemPrompt: string, messages: any[]): Promise<st
             });
             if (resp.ok) {
                 const data = await resp.json();
+                const t = extractTokensAnthropic(data);
+                logLLMUsage({ functionName: 'help-chatbot', provider: 'anthropic', model: 'claude-opus-4-6', inputTokens: t.input, outputTokens: t.output, totalTokens: t.total, latencyMs: Date.now() - _s, status: 'success', purpose: 'chat' });
                 return data.content?.[0]?.text || '';
             }
+            logLLMUsage({ functionName: 'help-chatbot', provider: 'anthropic', model: 'claude-opus-4-6', latencyMs: Date.now() - _s, status: 'fallback', errorMessage: `${resp.status}`, purpose: 'chat' });
             console.warn(`Claude failed (${resp.status}), trying Gemini fallback`);
         } catch (e) {
+            logLLMUsage({ functionName: 'help-chatbot', provider: 'anthropic', model: 'claude-opus-4-6', latencyMs: Date.now() - _s, status: 'error', errorMessage: String(e), purpose: 'chat' });
             console.warn('Claude error, trying Gemini fallback:', e);
         }
     }
 
     // Fallback: Gemini
     if (!GEMINI_API_KEY) throw new Error('No AI provider available: ANTHROPIC_API_KEY not set/invalid and GEMINI_API_KEY not set');
+    const _s2 = Date.now();
     const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${GEMINI_API_KEY}`, 'Content-Type': 'application/json' },
@@ -58,9 +65,12 @@ async function callLLMForChat(systemPrompt: string, messages: any[]): Promise<st
     });
     if (!resp.ok) {
         const errBody = await resp.text();
+        logLLMUsage({ functionName: 'help-chatbot', provider: 'gemini', model: 'gemini-2.5-flash', latencyMs: Date.now() - _s2, status: 'error', errorMessage: `${resp.status}`, purpose: 'chat' });
         throw new Error(`Gemini API Error: ${resp.status} ${errBody}`);
     }
     const data = await resp.json();
+    const t = extractTokensOpenAI(data);
+    logLLMUsage({ functionName: 'help-chatbot', provider: 'gemini', model: 'gemini-2.5-flash', inputTokens: t.input, outputTokens: t.output, totalTokens: t.total, latencyMs: Date.now() - _s2, status: 'success', purpose: 'chat' });
     return data.choices[0].message.content;
 }
 

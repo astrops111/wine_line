@@ -50,7 +50,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     async function fetchModules(oid: string): Promise<ModuleAccess[]> {
         const { data } = await supabase
             .from('module_access')
-            .select('id, module_key, module_name_zh, module_name_en, icon, is_enabled, required_role, sort_order')
+            .select('id, module_key, module_name_zh, module_name_en, icon, is_enabled, required_role, sort_order, access_level')
             .eq('organization_id', oid)
             .order('sort_order');
         return data ?? [];
@@ -104,28 +104,36 @@ export function OrgProvider({ children }: { children: ReactNode }) {
                 }
             }
 
-            // Dev / anon fallback: pick first active org, grant admin role
-            const { data: orgs } = await supabase
-                .from('organizations')
-                .select('id, name')
-                .eq('status', 'active')
-                .order('created_at')
-                .limit(1);
+            if (import.meta.env.DEV) {
+                // Dev fallback: pick first active org, grant admin role
+                const { data: orgs } = await supabase
+                    .from('organizations')
+                    .select('id, name')
+                    .eq('status', 'active')
+                    .order('created_at')
+                    .limit(1);
 
-            if (orgs && orgs.length > 0) {
-                const devOrgId = orgs[0].id;
-                const mods = await fetchModules(devOrgId);
-                setOrgId(devOrgId);
-                setOrgName(orgs[0].name);
-                setModules(mods);
+                if (orgs && orgs.length > 0) {
+                    const devOrgId = orgs[0].id;
+                    const mods = await fetchModules(devOrgId);
+                    setOrgId(devOrgId);
+                    setOrgName(orgs[0].name);
+                    setModules(mods);
+                }
+                setUserRoles(['admin']);
+            } else {
+                // Production: no auth user = no access
+                console.warn('No authenticated user found. Access will be restricted.');
+                setUserRoles([]);
             }
-
-            // Dev mode: grant admin so all routes are accessible
-            setUserRoles(['admin']);
         } catch (err) {
             console.error('OrgContext resolve error:', err);
-            setOrgId('00000000-0000-0000-0000-000000000001');
-            setUserRoles(['admin']);
+            if (import.meta.env.DEV) {
+                setOrgId('00000000-0000-0000-0000-000000000001');
+                setUserRoles(['admin']);
+            } else {
+                setUserRoles([]);
+            }
         } finally {
             setLoading(false);
         }

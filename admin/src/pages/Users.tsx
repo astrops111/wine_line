@@ -2,6 +2,14 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { t, getLocale } from '../lib/i18n';
 import { useOrg } from '../lib/OrgContext';
+import { writeAuditLog } from '../lib/auditLog';
+
+interface UserRole {
+    role_name: string;
+    description: string;
+    user_role_id: string;
+    role_id: string;
+}
 
 interface User {
     id: string;
@@ -9,35 +17,51 @@ interface User {
     email: string;
     status: string;
     created_at: string;
-    roles: { role_name: string; description: string }[];
+    roles: UserRole[];
     line_user: { display_name: string; is_verified: boolean } | null;
+}
+
+interface RoleDef {
+    id: string;
+    role_name: string;
+    description: string;
 }
 
 export function Users() {
     const [users, setUsers] = useState<User[]>([]);
+    const [allRoles, setAllRoles] = useState<RoleDef[]>([]);
     const [loading, setLoading] = useState(true);
     const [showCreate, setShowCreate] = useState(false);
     const [newUser, setNewUser] = useState({ name: '', email: '', role: '' });
+    const [editingRolesFor, setEditingRolesFor] = useState<string | null>(null);
     const zh = getLocale() === 'zh-TW';
-    const { orgId } = useOrg();
+    const { orgId, currentUser } = useOrg();
 
     useEffect(() => { loadData(); }, []);
 
     async function loadData() {
         setLoading(true);
-        const { data } = await supabase.from('users')
-            .select(`id, name, email, status, created_at,
-        user_roles(roles(role_name, description)),
-        line_users(display_name, is_verified)`)
-            .order('created_at', { ascending: true });
+        const [usersRes, rolesRes] = await Promise.all([
+            supabase.from('users')
+                .select(`id, name, email, status, created_at,
+                    user_roles(id, role_id, roles(role_name, description)),
+                    line_users(display_name, is_verified)`)
+                .order('created_at', { ascending: true }),
+            supabase.from('roles').select('id, role_name, description'),
+        ]);
 
-        if (data) {
-            setUsers(data.map((u: any) => ({
+        if (usersRes.data) {
+            setUsers(usersRes.data.map((u: any) => ({
                 ...u,
-                roles: u.user_roles?.map((ur: any) => ur.roles).filter(Boolean) || [],
+                roles: u.user_roles?.map((ur: any) => ({
+                    ...ur.roles,
+                    user_role_id: ur.id,
+                    role_id: ur.role_id,
+                })).filter((r: any) => r?.role_name) || [],
                 line_user: u.line_users?.[0] || null,
             })));
         }
+        if (rolesRes.data) setAllRoles(rolesRes.data);
         setLoading(false);
     }
 
@@ -51,7 +75,7 @@ export function Users() {
         }).select().single();
 
         if (data && newUser.role) {
-            const { data: role } = await supabase.from('roles').select('id').eq('role_name', newUser.role).single();
+            const role = allRoles.find(r => r.role_name === newUser.role);
             if (role) {
                 await supabase.from('user_roles').insert({ user_id: data.id, role_id: role.id });
             }
@@ -59,6 +83,59 @@ export function Users() {
         setShowCreate(false);
         setNewUser({ name: '', email: '', role: '' });
         loadData();
+    }
+
+    async function addRoleToUser(userId: string, roleName: string) {
+        const role = allRoles.find(r => r.role_name === roleName);
+        if (!role) return;
+        const user = users.find(u => u.id === userId);
+        if (user?.roles.some(r => r.role_name === roleName)) return;
+
+        const { error } = await supabase.from('user_roles').insert({
+            user_id: userId,
+            role_id: role.id,
+        });
+        if (!error) {
+            writeAuditLog({
+                organization_id: orgId,
+                user_id: currentUser?.id,
+                user_name: currentUser?.name,
+                action: 'create',
+                module: 'users',
+                table_name: 'user_roles',
+                record_label: `${user?.name} + ${roleName}`,
+                new_values: { user_id: userId, role_name: roleName },
+            });
+            loadData();
+        }
+    }
+
+    async function removeRoleFromUser(userId: string, userRoleId: string, roleName: string) {
+        if (roleName === 'admin') {
+            const adminCount = users.filter(u =>
+                u.status === 'active' && u.roles.some(r => r.role_name === 'admin')
+            ).length;
+            if (adminCount <= 1) {
+                alert(zh ? '無法移除最後一位管理員的管理員角色。' : 'Cannot remove admin role from the last admin user.');
+                return;
+            }
+        }
+
+        const user = users.find(u => u.id === userId);
+        const { error } = await supabase.from('user_roles').delete().eq('id', userRoleId);
+        if (!error) {
+            writeAuditLog({
+                organization_id: orgId,
+                user_id: currentUser?.id,
+                user_name: currentUser?.name,
+                action: 'delete',
+                module: 'users',
+                table_name: 'user_roles',
+                record_label: `${user?.name} - ${roleName}`,
+                old_values: { user_id: userId, role_name: roleName },
+            });
+            loadData();
+        }
     }
 
     async function toggleStatus(userId: string, current: string) {
@@ -125,7 +202,7 @@ export function Users() {
                                 <tr>
                                     <th>{zh ? '姓名' : 'Name'}</th>
                                     <th>Email</th>
-                                    <th>{zh ? '角色' : 'Role'}</th>
+                                    <th>{zh ? '角色' : 'Roles'}</th>
                                     <th>LINE</th>
                                     <th>{zh ? '狀態' : 'Status'}</th>
                                 </tr>
@@ -148,16 +225,50 @@ export function Users() {
                                         </td>
                                         <td style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{u.email}</td>
                                         <td>
-                                            {u.roles.map((r, i) => (
-                                                <span key={i} style={{
-                                                    display: 'inline-block', padding: '2px 8px', borderRadius: '10px',
-                                                    fontSize: '11px', fontWeight: 500, marginRight: '4px',
-                                                    background: `${roleColors[r.role_name] || 'var(--text-muted)'}20`,
-                                                    color: roleColors[r.role_name] || 'var(--text-muted)',
-                                                }}>
-                                                    {r.role_name}
-                                                </span>
-                                            ))}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                                                {u.roles.map((r, i) => (
+                                                    <span key={i} style={{
+                                                        display: 'inline-flex', alignItems: 'center', gap: '4px',
+                                                        padding: '2px 8px', borderRadius: '10px',
+                                                        fontSize: '11px', fontWeight: 500,
+                                                        background: `${roleColors[r.role_name] || 'var(--text-muted)'}20`,
+                                                        color: roleColors[r.role_name] || 'var(--text-muted)',
+                                                    }}>
+                                                        {r.role_name}
+                                                        {editingRolesFor === u.id && (
+                                                            <button
+                                                                onClick={() => removeRoleFromUser(u.id, r.user_role_id, r.role_name)}
+                                                                style={{ background: 'none', border: 'none', cursor: 'pointer',
+                                                                         fontSize: '10px', color: 'inherit', padding: '0 2px', lineHeight: 1 }}
+                                                                title={zh ? '移除角色' : 'Remove role'}
+                                                            >✕</button>
+                                                        )}
+                                                    </span>
+                                                ))}
+                                                {editingRolesFor === u.id && (
+                                                    <select
+                                                        className="input-field"
+                                                        style={{ width: '90px', fontSize: '11px', padding: '2px 4px' }}
+                                                        value=""
+                                                        onChange={e => { if (e.target.value) addRoleToUser(u.id, e.target.value); }}
+                                                    >
+                                                        <option value="">+</option>
+                                                        {allRoles
+                                                            .filter(r => !u.roles.some(ur => ur.role_name === r.role_name))
+                                                            .map(r => (
+                                                                <option key={r.id} value={r.role_name}>{r.role_name}</option>
+                                                            ))
+                                                        }
+                                                    </select>
+                                                )}
+                                                <button
+                                                    onClick={() => setEditingRolesFor(editingRolesFor === u.id ? null : u.id)}
+                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', padding: '0 4px' }}
+                                                    title={zh ? '編輯角色' : 'Edit roles'}
+                                                >
+                                                    {editingRolesFor === u.id ? '✓' : '✏️'}
+                                                </button>
+                                            </div>
                                         </td>
                                         <td>
                                             {u.line_user ? (

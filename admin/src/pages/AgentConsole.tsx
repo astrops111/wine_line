@@ -28,7 +28,24 @@ interface AgentReg {
     sort_order: number;
 }
 
-type Tab = 'overview' | 'tasks' | 'registry';
+interface LLMUsageLog {
+    id: string;
+    function_name: string;
+    provider: string;
+    model: string;
+    input_tokens: number;
+    output_tokens: number;
+    total_tokens: number;
+    estimated_cost: number;
+    latency_ms: number;
+    status: string;
+    error_message: string | null;
+    purpose: string | null;
+    metadata: Record<string, unknown> | null;
+    created_at: string;
+}
+
+type Tab = 'overview' | 'tasks' | 'registry' | 'llm-usage';
 
 const TEAM_COLORS: Record<string, string> = {
     documentation: 'var(--accent-primary)',
@@ -44,6 +61,12 @@ const STATUS_BADGE: Record<string, string> = {
     awaiting_approval: 'on_hold',
 };
 
+const PROVIDER_COLORS: Record<string, string> = {
+    dashscope: '#f59e0b',
+    gemini: '#3b82f6',
+    anthropic: '#a855f7',
+};
+
 export function AgentConsole() {
     const zh = getLocale() === 'zh-TW';
     const [tab, setTab] = useState<Tab>('overview');
@@ -55,6 +78,17 @@ export function AgentConsole() {
     const [selectedOrch, setSelectedOrch] = useState<string | null>(null);
     const [helpArticleCount, setHelpArticleCount] = useState<number | null>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // LLM Usage state
+    const [llmLogs, setLlmLogs] = useState<LLMUsageLog[]>([]);
+    const [llmLoading, setLlmLoading] = useState(false);
+    const [llmDateFrom, setLlmDateFrom] = useState(() => {
+        const d = new Date(); d.setDate(d.getDate() - 7);
+        return d.toISOString().split('T')[0];
+    });
+    const [llmDateTo, setLlmDateTo] = useState(() => new Date().toISOString().split('T')[0]);
+    const [llmProviderFilter, setLlmProviderFilter] = useState<string>('all');
+    const [expandedLogId, setExpandedLogId] = useState<string | null>(null);
 
     useEffect(() => {
         loadData();
@@ -69,6 +103,10 @@ export function AgentConsole() {
         }
         return () => { if (pollRef.current) clearInterval(pollRef.current); };
     }, [tasks]);
+
+    useEffect(() => {
+        if (tab === 'llm-usage') loadLlmLogs();
+    }, [tab, llmDateFrom, llmDateTo, llmProviderFilter]);
 
     async function loadData() {
         setLoading(true);
@@ -99,6 +137,23 @@ export function AgentConsole() {
             .from('help_articles')
             .select('id', { count: 'exact', head: true });
         setHelpArticleCount(count ?? 0);
+    }
+
+    async function loadLlmLogs() {
+        setLlmLoading(true);
+        let query = supabase
+            .from('llm_usage_logs')
+            .select('*')
+            .gte('created_at', llmDateFrom + 'T00:00:00')
+            .lte('created_at', llmDateTo + 'T23:59:59')
+            .order('created_at', { ascending: false })
+            .limit(1000);
+        if (llmProviderFilter !== 'all') {
+            query = query.eq('provider', llmProviderFilter);
+        }
+        const { data } = await query;
+        setLlmLogs(data || []);
+        setLlmLoading(false);
     }
 
     async function triggerOrchestration() {
@@ -173,11 +228,12 @@ export function AgentConsole() {
 
             {/* Tabs */}
             <div className="tab-bar" style={{ marginBottom: '20px' }}>
-                {(['overview', 'tasks', 'registry'] as Tab[]).map(t => (
+                {(['overview', 'tasks', 'registry', 'llm-usage'] as Tab[]).map(t => (
                     <button key={t} className={`tab-item ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
                         {t === 'overview' ? (zh ? '📊 總覽' : '📊 Overview')
                             : t === 'tasks' ? (zh ? `📋 任務佇列${orchestrationIds.length > 0 ? ` (${orchestrationIds.length})` : ''}` : `📋 Task Queue${orchestrationIds.length > 0 ? ` (${orchestrationIds.length})` : ''}`)
-                            : (zh ? '🗂 Agent 清單' : '🗂 Agent Registry')}
+                            : t === 'registry' ? (zh ? '🗂 Agent 清單' : '🗂 Agent Registry')
+                            : (zh ? '💰 LLM 用量' : '💰 LLM Usage')}
                     </button>
                 ))}
             </div>
@@ -465,6 +521,237 @@ Documentation Team (sequential pipeline):
                     )}
                 </div>
             )}
+
+            {/* LLM Usage Tab */}
+            {tab === 'llm-usage' && (() => {
+                const today = new Date().toISOString().split('T')[0];
+                const todayLogs = llmLogs.filter(l => l.created_at.startsWith(today));
+                const totalCalls = llmLogs.length;
+                const totalTokens = llmLogs.reduce((s, l) => s + (l.total_tokens || 0), 0);
+                const totalCost = llmLogs.reduce((s, l) => s + (Number(l.estimated_cost) || 0), 0);
+                const errorCount = llmLogs.filter(l => l.status === 'error').length;
+                const errorRate = totalCalls > 0 ? ((errorCount / totalCalls) * 100).toFixed(1) : '0';
+
+                // Group by provider
+                const byProvider: Record<string, { calls: number; tokens: number; cost: number }> = {};
+                for (const l of llmLogs) {
+                    if (!byProvider[l.provider]) byProvider[l.provider] = { calls: 0, tokens: 0, cost: 0 };
+                    byProvider[l.provider].calls++;
+                    byProvider[l.provider].tokens += l.total_tokens || 0;
+                    byProvider[l.provider].cost += Number(l.estimated_cost) || 0;
+                }
+
+                // Group by function
+                const byFunc: Record<string, { calls: number; tokens: number; cost: number; latencySum: number; errors: number }> = {};
+                for (const l of llmLogs) {
+                    if (!byFunc[l.function_name]) byFunc[l.function_name] = { calls: 0, tokens: 0, cost: 0, latencySum: 0, errors: 0 };
+                    byFunc[l.function_name].calls++;
+                    byFunc[l.function_name].tokens += l.total_tokens || 0;
+                    byFunc[l.function_name].cost += Number(l.estimated_cost) || 0;
+                    byFunc[l.function_name].latencySum += l.latency_ms || 0;
+                    if (l.status === 'error') byFunc[l.function_name].errors++;
+                }
+                const funcEntries = Object.entries(byFunc).sort((a, b) => b[1].cost - a[1].cost);
+
+                return (
+                    <div>
+                        {/* Filters */}
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
+                            <label style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{zh ? '從' : 'From'}</label>
+                            <input type="date" className="input-field" style={{ width: '150px', fontSize: '13px' }}
+                                value={llmDateFrom} onChange={e => setLlmDateFrom(e.target.value)} />
+                            <label style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{zh ? '到' : 'To'}</label>
+                            <input type="date" className="input-field" style={{ width: '150px', fontSize: '13px' }}
+                                value={llmDateTo} onChange={e => setLlmDateTo(e.target.value)} />
+                            <select className="input-field" style={{ width: '140px', fontSize: '13px' }}
+                                value={llmProviderFilter} onChange={e => setLlmProviderFilter(e.target.value)}>
+                                <option value="all">{zh ? '所有供應商' : 'All Providers'}</option>
+                                <option value="dashscope">DashScope</option>
+                                <option value="gemini">Gemini</option>
+                                <option value="anthropic">Anthropic</option>
+                            </select>
+                            <button className="btn btn-secondary" onClick={loadLlmLogs} disabled={llmLoading}
+                                style={{ fontSize: '12px', padding: '6px 12px' }}>
+                                {llmLoading ? '...' : (zh ? '🔄 重新整理' : '🔄 Refresh')}
+                            </button>
+                        </div>
+
+                        {/* Stats Cards */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
+                            {[
+                                { label: zh ? '總呼叫數' : 'Total Calls', value: totalCalls, sub: `${zh ? '今日' : 'Today'}: ${todayLogs.length}`, color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+                                { label: zh ? '總 Token 數' : 'Total Tokens', value: totalTokens >= 1000000 ? `${(totalTokens / 1000000).toFixed(1)}M` : totalTokens >= 1000 ? `${(totalTokens / 1000).toFixed(1)}K` : totalTokens, sub: `in+out`, color: '#a855f7', bg: 'rgba(168,85,247,0.1)' },
+                                { label: zh ? '預估費用' : 'Est. Cost', value: `$${totalCost.toFixed(4)}`, sub: 'USD', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+                                { label: zh ? '錯誤率' : 'Error Rate', value: `${errorRate}%`, sub: `${errorCount} / ${totalCalls}`, color: errorCount > 0 ? '#f43f5e' : '#2dd4bf', bg: errorCount > 0 ? 'rgba(244,63,94,0.1)' : 'rgba(45,212,191,0.1)' },
+                            ].map((s, i) => (
+                                <div key={i} className="card" style={{ padding: '16px', borderLeft: `3px solid ${s.color}`, background: s.bg }}>
+                                    <div style={{ fontSize: '22px', fontWeight: 700, color: s.color }}>{s.value}</div>
+                                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>{s.label}</div>
+                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{s.sub}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Usage by Provider */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '16px', marginBottom: '20px' }}>
+                            <div className="card" style={{ padding: '0' }}>
+                                <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--outline-variant)', fontWeight: 600, fontSize: '13px' }}>
+                                    {zh ? '依供應商統計' : 'By Provider'}
+                                </div>
+                                {Object.entries(byProvider).length === 0 ? (
+                                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+                                        {zh ? '無資料' : 'No data'}
+                                    </div>
+                                ) : Object.entries(byProvider).sort((a, b) => b[1].calls - a[1].calls).map(([prov, stats]) => {
+                                    const pct = totalCalls > 0 ? ((stats.calls / totalCalls) * 100) : 0;
+                                    return (
+                                        <div key={prov} style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-color)' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                <span style={{ fontSize: '13px', fontWeight: 600, color: PROVIDER_COLORS[prov] || 'var(--text-primary)', textTransform: 'capitalize' }}>
+                                                    {prov}
+                                                </span>
+                                                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{stats.calls} {zh ? '次' : 'calls'}</span>
+                                            </div>
+                                            <div style={{ height: '6px', borderRadius: '3px', background: 'var(--bg-primary)', overflow: 'hidden' }}>
+                                                <div style={{ height: '100%', width: `${pct}%`, borderRadius: '3px', background: PROVIDER_COLORS[prov] || '#64748b', transition: 'width 0.3s' }} />
+                                            </div>
+                                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                                {stats.tokens.toLocaleString()} tokens · ${stats.cost.toFixed(4)}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Usage by Function */}
+                            <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+                                <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--outline-variant)', fontWeight: 600, fontSize: '13px' }}>
+                                    {zh ? '依功能統計' : 'By Function'}
+                                </div>
+                                <div style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                        <thead>
+                                            <tr style={{ background: 'var(--bg-primary)' }}>
+                                                {[zh ? '功能' : 'Function', zh ? '次數' : 'Calls', zh ? '平均延遲' : 'Avg Latency', 'Tokens', zh ? '費用' : 'Cost', zh ? '錯誤' : 'Errors'].map(h => (
+                                                    <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', borderBottom: '1px solid var(--outline-variant)' }}>
+                                                        {h}
+                                                    </th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {funcEntries.map(([fn, s]) => (
+                                                <tr key={fn} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                                    <td style={{ padding: '8px 10px' }}>
+                                                        <code style={{ fontSize: '11px', color: 'var(--accent-primary)', background: 'rgba(45,212,191,0.1)', padding: '1px 5px', borderRadius: '3px' }}>
+                                                            {fn}
+                                                        </code>
+                                                    </td>
+                                                    <td style={{ padding: '8px 10px', fontSize: '12px' }}>{s.calls}</td>
+                                                    <td style={{ padding: '8px 10px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                                                        {s.calls > 0 ? `${Math.round(s.latencySum / s.calls)}ms` : '—'}
+                                                    </td>
+                                                    <td style={{ padding: '8px 10px', fontSize: '12px' }}>{s.tokens.toLocaleString()}</td>
+                                                    <td style={{ padding: '8px 10px', fontSize: '12px', fontWeight: 600, color: '#f59e0b' }}>
+                                                        ${s.cost.toFixed(4)}
+                                                    </td>
+                                                    <td style={{ padding: '8px 10px', fontSize: '12px', color: s.errors > 0 ? '#f43f5e' : 'var(--text-muted)' }}>
+                                                        {s.errors > 0 ? `❌ ${s.errors}` : '—'}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                    {funcEntries.length === 0 && (
+                                        <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '12px' }}>
+                                            {zh ? '無資料' : 'No data'}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Recent Calls Log */}
+                        <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+                            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--outline-variant)', fontWeight: 600, fontSize: '13px', display: 'flex', justifyContent: 'space-between' }}>
+                                <span>{zh ? '近期呼叫紀錄' : 'Recent Call Logs'}</span>
+                                <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 400 }}>
+                                    {llmLogs.length} {zh ? '筆' : 'records'}
+                                </span>
+                            </div>
+                            <div style={{ maxHeight: '480px', overflowY: 'auto' }}>
+                                {llmLogs.length === 0 && !llmLoading && (
+                                    <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                                        {zh ? '此期間無 LLM 使用紀錄。' : 'No LLM usage records for this period.'}
+                                    </div>
+                                )}
+                                {llmLoading && (
+                                    <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                        {zh ? '載入中…' : 'Loading…'}
+                                    </div>
+                                )}
+                                {llmLogs.slice(0, 200).map(log => (
+                                    <div key={log.id} style={{
+                                        padding: '10px 16px', borderBottom: '1px solid var(--border-color)',
+                                        cursor: 'pointer', background: expandedLogId === log.id ? 'var(--bg-secondary)' : 'transparent',
+                                    }}
+                                        onClick={() => setExpandedLogId(expandedLogId === log.id ? null : log.id)}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span style={{
+                                                width: '7px', height: '7px', borderRadius: '50%', flexShrink: 0,
+                                                background: log.status === 'success' ? '#2dd4bf' : log.status === 'fallback' ? '#f59e0b' : '#f43f5e',
+                                            }} />
+                                            <code style={{ fontSize: '11px', color: 'var(--accent-primary)', minWidth: '130px' }}>{log.function_name}</code>
+                                            <span style={{ fontSize: '11px', color: PROVIDER_COLORS[log.provider] || 'var(--text-muted)', fontWeight: 600, textTransform: 'capitalize', minWidth: '70px' }}>
+                                                {log.provider}
+                                            </span>
+                                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', minWidth: '100px' }}>{log.model}</span>
+                                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', minWidth: '65px' }}>
+                                                {(log.total_tokens || 0).toLocaleString()} tok
+                                            </span>
+                                            <span style={{ fontSize: '11px', fontWeight: 600, color: '#f59e0b', minWidth: '60px' }}>
+                                                ${(Number(log.estimated_cost) || 0).toFixed(4)}
+                                            </span>
+                                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', minWidth: '55px' }}>
+                                                {log.latency_ms}ms
+                                            </span>
+                                            {log.purpose && (
+                                                <span style={{
+                                                    fontSize: '10px', padding: '1px 6px', borderRadius: '6px',
+                                                    background: 'rgba(59,130,246,0.1)', color: '#3b82f6',
+                                                }}>{log.purpose}</span>
+                                            )}
+                                            <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                                                {log.created_at.replace('T', ' ').slice(0, 19)}
+                                            </span>
+                                        </div>
+                                        {expandedLogId === log.id && (
+                                            <div style={{ marginTop: '8px', paddingLeft: '17px', fontSize: '12px' }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '6px' }}>
+                                                    <div><span style={{ color: 'var(--text-muted)' }}>Input:</span> {(log.input_tokens || 0).toLocaleString()}</div>
+                                                    <div><span style={{ color: 'var(--text-muted)' }}>Output:</span> {(log.output_tokens || 0).toLocaleString()}</div>
+                                                    <div><span style={{ color: 'var(--text-muted)' }}>Status:</span> <span style={{ color: log.status === 'success' ? '#2dd4bf' : '#f43f5e' }}>{log.status}</span></div>
+                                                </div>
+                                                {log.error_message && (
+                                                    <div style={{ color: '#f43f5e', background: 'rgba(244,63,94,0.1)', padding: '4px 8px', borderRadius: '4px', marginBottom: '4px' }}>
+                                                        {log.error_message}
+                                                    </div>
+                                                )}
+                                                {log.metadata && Object.keys(log.metadata).length > 0 && (
+                                                    <pre style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'var(--bg-primary)', padding: '6px 8px', borderRadius: '4px', whiteSpace: 'pre-wrap', maxHeight: '120px', overflow: 'auto' }}>
+                                                        {JSON.stringify(log.metadata, null, 2)}
+                                                    </pre>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 }

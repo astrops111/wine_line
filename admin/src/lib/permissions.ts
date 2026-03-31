@@ -3,6 +3,7 @@
 // ============================================================
 
 export type AppRole = 'admin' | 'manager' | 'staff' | 'operations';
+export type AccessLevel = 'full' | 'read';
 
 export interface ModuleAccess {
     id: string;
@@ -13,6 +14,7 @@ export interface ModuleAccess {
     is_enabled: boolean;
     required_role: string;
     sort_order: number;
+    access_level: AccessLevel;
 }
 
 /**
@@ -35,12 +37,22 @@ export const ROLE_ACCESS: Record<string, AppRole[]> = {
 
 /**
  * Returns true if any of userRoles satisfies the requiredRole gate.
- * Dev mode (empty userRoles array): always returns true.
+ * Empty userRoles = no access (production-safe).
  */
 export function canAccess(requiredRole: string, userRoles: string[]): boolean {
-    if (userRoles.length === 0) return true;
+    if (userRoles.length === 0) return false;
     const allowed = ROLE_ACCESS[requiredRole] ?? ROLE_ACCESS['all'];
     return userRoles.some(r => allowed.includes(r as AppRole));
+}
+
+/**
+ * Returns true if user has write (full) access to a module.
+ */
+export function canWrite(moduleKey: string, modules: ModuleAccess[], userRoles: string[]): boolean {
+    const mod = modules.find(m => m.module_key === moduleKey);
+    if (!mod || !mod.is_enabled) return false;
+    if (!canAccess(mod.required_role, userRoles)) return false;
+    return mod.access_level === 'full';
 }
 
 /**
@@ -69,6 +81,15 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
     'audit-logs':          '/audit-logs',
     'line-logs':           '/line-logs',
     'performance':         '/performance',
+    'documents':           '/documents',
+    'recruitment':         '/recruitment',
+    'onboarding':          '/onboarding',
+    'announcements':       '/announcements',
+    'training':            '/training',
+    'disciplinary':        '/disciplinary',
+    'business-trips':      '/business-trips',
+    'expense-claims':      '/expense-claims',
+    'jobs':                '/jobs',
 };
 
 /**
@@ -79,6 +100,16 @@ export const ROUTE_MODULE_MAP: Record<string, string> = Object.fromEntries(
 );
 
 /**
+ * Sub-routes that inherit permissions from a parent module.
+ */
+export const SUB_ROUTE_PARENT_MAP: Record<string, string> = {
+    '/tasks':      'workflow-management',
+    '/workflows':  'workflow-management',
+    '/checklists': 'workflow-management',
+    '/employees':  'org-management',
+};
+
+/**
  * Given the current pathname and the org's module list,
  * returns the matching ModuleAccess entry (or undefined if route is uncontrolled).
  */
@@ -87,6 +118,12 @@ export function getModuleForPath(
     modules: ModuleAccess[]
 ): ModuleAccess | undefined {
     const moduleKey = ROUTE_MODULE_MAP[pathname];
-    if (!moduleKey) return undefined;
-    return modules.find(m => m.module_key === moduleKey);
+    if (moduleKey) {
+        return modules.find(m => m.module_key === moduleKey);
+    }
+    const parentKey = SUB_ROUTE_PARENT_MAP[pathname];
+    if (parentKey) {
+        return modules.find(m => m.module_key === parentKey);
+    }
+    return undefined;
 }

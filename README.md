@@ -1,26 +1,64 @@
-# AI LINE Bot System
+# AI LINE Bot — HRM Operations System
 
-LINE-based workflow & task management platform with AI assistance.
+LINE-integrated HR management platform with multi-agent AI orchestration, built for Taiwan labor compliance.
 
 ## Tech Stack
 
-- **Database**: Supabase (PostgreSQL)
-- **Backend**: Supabase Edge Functions (Deno)
-- **AI**: Qwen 3.5 via DashScope API
-- **LINE**: LINE Messaging API
-- **Admin UI**: Vite + React + TypeScript
+- **Frontend**: React 19 + TypeScript + Vite (port 5173)
+- **Backend**: Supabase (PostgreSQL + RLS + Edge Functions)
+- **AI Models**: DashScope Qwen 3.5 | Claude Opus 4.6 | Gemini 2.5 Flash (fallback chain)
+- **LINE**: LINE Messaging API + LIFF SDK
+- **Theme**: Dark/Light mode with design system ("The Executive Insight")
+- **Auth**: Role-based access control (admin / manager / staff / operations)
 
 ## Project Structure
 
 ```
 wines/
 ├── supabase/
-│   ├── migrations/     # SQL migrations
-│   └── functions/      # Edge Functions
-├── admin/              # React admin panel
-├── .env                # API keys (not committed)
+│   ├── migrations/              # 24+ SQL schema migrations
+│   ├── functions/               # 15 Deno Edge Functions
+│   │   ├── line-webhook/        # LINE message handler + HR commands
+│   │   ├── hr-notify/           # Push approve/reject notifications
+│   │   ├── send-payslips/       # Batch payslip distribution
+│   │   ├── workflow-ai/         # AI workflow processing
+│   │   ├── task-ai-agent/       # AI task assistant
+│   │   ├── scheduling-ai/       # AI schedule generation + labor law validation
+│   │   ├── demand-forecast/     # AI staffing prediction from POS/historical data
+│   │   ├── orchestrator/        # Multi-agent coordinator
+│   │   ├── doc-flow-analyzer/   # Extract user flows from pages
+│   │   ├── doc-content-gen/     # Generate bilingual articles
+│   │   ├── doc-indexer/         # Upsert articles with FTS
+│   │   ├── help-chatbot/        # RAG Q&A chatbot
+│   │   ├── summarize-history/   # Tiered LINE summary generation (weekly/monthly)
+│   │   ├── liff-new-task/       # Mobile task creation
+│   │   └── liff-task/           # Mobile task updates
+│   └── config.toml
+├── admin/                       # React admin panel
+│   ├── src/pages/               # 34+ page components
+│   ├── src/lib/                 # Shared: supabase, i18n, permissions, theme, geo, auditLog
+│   ├── scripts/generate-docs.mjs  # Documentation pipeline runner
+│   ├── tests/                   # Playwright Python tests
+│   ├── Dockerfile               # Multi-stage Docker build (Node → Nginx)
+│   ├── design.md                # Design system document
+│   ├── docs/PRD-scheduling-ai.md  # Scheduling AI PRD
+│   └── HRM_DOCUMENTATION.md     # Full system documentation
 └── README.md
 ```
+
+## Modules
+
+| Category | Features |
+|----------|----------|
+| **HR Core** | Employee management, Time tracking (GPS/WiFi), Leave, Overtime, Scheduling |
+| **Payroll** | Salary structures, Taiwan labor/health insurance brackets (2020-2026), Tax withholding, Payslip via LINE, NHI supplements |
+| **Enterprise** | Audit logs, Performance reviews, Recruitment ATS, Document management, Business trips, Expense claims, Multi-level approvals |
+| **Operations** | Onboarding/offboarding workflows, Training/certification tracking, Company announcements, Disciplinary records |
+| **Scheduling** | AI auto-scheduling (Claude), Demand forecasting, Variable working hours (變形工時), Open shift marketplace, Labor budgeting, Employee skills, Schedule templates, KPI tracking |
+| **Workflows** | Templates (AI-generated), Tasks (with attachments), Checklists, Event triggers |
+| **LINE Bot** | HR commands (leave balance, OT, payslip), Notifications, Message/command/error logging, Tiered summaries (daily/weekly/monthly) |
+| **AI Tools** | Help center (RAG chatbot), Multi-agent orchestration, Auto-documentation pipeline |
+| **Mobile** | LIFF employee app (clock-in, schedule, leave, payslip), Manager dashboard |
 
 ## Getting Started
 
@@ -28,5 +66,27 @@ wines/
 # Admin UI
 cd admin
 npm install
-npm run dev
+npm run dev          # http://localhost:5173
+
+# Docker build
+cd admin
+docker build -t hrm-admin .
+docker run -p 8080:8080 hrm-admin
+
+# Deploy edge functions
+npx supabase functions deploy --project-ref <ref>
+
+# Generate help documentation
+node admin/scripts/generate-docs.mjs
 ```
+
+## Documentation
+
+See [admin/HRM_DOCUMENTATION.md](admin/HRM_DOCUMENTATION.md) for complete system documentation including:
+- Enterprise HRM architecture & gap analysis
+- Payroll calculation engine (13-step process)
+- Taiwan insurance bracket tables (2020-2026)
+- Scheduling AI with 10+ labor law validations
+- LINE bot command reference
+- Database schema reference (50+ tables)
+- All 19 implementation phases

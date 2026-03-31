@@ -52,6 +52,14 @@ export function Dashboard() {
         totalActive: number; disabledCount: number; disabledRequired: number;
         indigenousCount: number; specialBreakdown: { label: string; count: number }[];
     }>({ totalActive: 0, disabledCount: 0, disabledRequired: 0, indigenousCount: 0, specialBreakdown: [] });
+    // OE-8: Probation alerts
+    const [probationAlerts, setProbationAlerts] = useState<{ id: string; name: string; probation_end_date: string }[]>([]);
+    // OE-7: Announcements
+    const [announcements, setAnnouncements] = useState<{ id: string; title: string; content: string; priority: string; is_pinned: boolean; published_at: string; author_name: string | null }[]>([]);
+    // Turnover analytics
+    const [turnover, setTurnover] = useState({ thisMonth: 0, thisQuarter: 0, thisYear: 0, rate: 0 });
+    // Work permit expiry alerts
+    const [permitAlerts, setPermitAlerts] = useState<{ id: string; name: string; work_permit_expiry: string }[]>([]);
     const zh = getLocale() === 'zh-TW';
     const { orgId } = useOrg();
 
@@ -104,6 +112,58 @@ export function Dashboard() {
             disabledCount, disabledRequired, indigenousCount,
             specialBreakdown: Object.entries(identityCounts).map(([key, count]) => ({ label: key, count })),
         });
+
+        // OE-8: Probation alerts (within 14 days or past)
+        const { data: probData } = await supabase.from('users')
+            .select('id, name, probation_end_date')
+            .eq('organization_id', orgId).eq('status', 'active')
+            .not('probation_end_date', 'is', null);
+        if (probData) {
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const cutoff = new Date(today.getTime() + 14 * 86400000);
+            setProbationAlerts(probData.filter((e: any) => new Date(e.probation_end_date) <= cutoff)
+                .sort((a: any, b: any) => new Date(a.probation_end_date).getTime() - new Date(b.probation_end_date).getTime()));
+        }
+
+        // OE-7: Announcements
+        const { data: annData } = await supabase.from('announcements')
+            .select('id, title, content, priority, is_pinned, published_at, author:author_id(name)')
+            .eq('organization_id', orgId)
+            .or('expires_at.is.null,expires_at.gt.' + new Date().toISOString())
+            .order('is_pinned', { ascending: false })
+            .order('published_at', { ascending: false })
+            .limit(5);
+        setAnnouncements((annData || []).map((a: any) => ({ ...a, author_name: a.author?.name || null })));
+
+        // Turnover analytics
+        const { data: resignedData } = await supabase.from('users')
+            .select('id, resign_date')
+            .eq('organization_id', orgId)
+            .not('resign_date', 'is', null);
+        if (resignedData) {
+            const now = new Date();
+            const thisMonth = resignedData.filter((e: any) => {
+                const d = new Date(e.resign_date);
+                return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+            }).length;
+            const qStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+            const thisQuarter = resignedData.filter((e: any) => new Date(e.resign_date) >= qStart).length;
+            const thisYear = resignedData.filter((e: any) => new Date(e.resign_date).getFullYear() === now.getFullYear()).length;
+            const totalPool = active.length + thisYear;
+            const rate = totalPool > 0 ? Math.round(thisYear / totalPool * 100) : 0;
+            setTurnover({ thisMonth, thisQuarter, thisYear, rate });
+        }
+
+        // Work permit expiry alerts (within 30 days)
+        const { data: permitData } = await supabase.from('users')
+            .select('id, name, work_permit_expiry')
+            .eq('organization_id', orgId).eq('status', 'active')
+            .not('work_permit_expiry', 'is', null);
+        if (permitData) {
+            const cutoff = new Date(Date.now() + 30 * 86400000);
+            setPermitAlerts(permitData.filter((e: any) => new Date(e.work_permit_expiry) <= cutoff)
+                .sort((a: any, b: any) => new Date(a.work_permit_expiry).getTime() - new Date(b.work_permit_expiry).getTime()));
+        }
     };
 
     async function loadData() {
@@ -169,6 +229,32 @@ export function Dashboard() {
             </div>
 
             <div className="page-body">
+                {/* OE-7: Announcements */}
+                {announcements.length > 0 && (
+                    <div className="card" style={{ marginBottom: '20px' }}>
+                        <div className="card-header">
+                            <span className="card-title">📢 {zh ? '公司公告' : 'Announcements'}</span>
+                        </div>
+                        {announcements.map(ann => {
+                            const badge = ann.priority === 'urgent' ? { icon: '🔴', color: '#f43f5e' } : ann.priority === 'important' ? { icon: '🟡', color: '#f59e0b' } : { icon: '', color: 'var(--text-muted)' };
+                            return (
+                                <div key={ann.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--outline-variant)', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
+                                    {ann.is_pinned && <span style={{ fontSize: '12px' }}>📌</span>}
+                                    {badge.icon && <span style={{ fontSize: '12px' }}>{badge.icon}</span>}
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: '13px', fontWeight: 600 }}>{ann.title}</div>
+                                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>{ann.content.length > 120 ? ann.content.slice(0, 120) + '…' : ann.content}</div>
+                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                            {ann.author_name && <span>{ann.author_name} · </span>}
+                                            {new Date(ann.published_at).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+
                 {/* Employee Headcount */}
                 <div style={{ marginBottom: '8px' }}>
                     <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
@@ -197,6 +283,89 @@ export function Dashboard() {
                         </div>
                     </div>
                 </div>
+
+                {/* Turnover Analytics */}
+                <div style={{ marginBottom: '16px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                        📈 {zh ? '離職率分析' : 'Turnover Analytics'}
+                    </div>
+                    <div className="stats-grid">
+                        <div className="stat-card orange">
+                            <div className="stat-label">{zh ? '本月離職' : 'THIS MONTH'}</div>
+                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{turnover.thisMonth}</div>
+                        </div>
+                        <div className="stat-card purple">
+                            <div className="stat-label">{zh ? '本季離職' : 'THIS QUARTER'}</div>
+                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{turnover.thisQuarter}</div>
+                        </div>
+                        <div className="stat-card red">
+                            <div className="stat-label">{zh ? '本年離職' : 'THIS YEAR'}</div>
+                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{turnover.thisYear}</div>
+                        </div>
+                        <div className="stat-card blue">
+                            <div className="stat-label">{zh ? '年離職率' : 'ANNUAL RATE'}</div>
+                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{turnover.rate}%</div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Work Permit Expiry Alerts */}
+                {permitAlerts.length > 0 && (
+                    <div className="card" style={{ marginBottom: '20px', borderLeft: '3px solid #ef4444' }}>
+                        <div className="card-header">
+                            <span className="card-title">🛂 {zh ? '工作證即將到期' : 'Work Permit Expiry'}</span>
+                            <span style={{ fontSize: '12px', fontWeight: 600, padding: '2px 10px', borderRadius: '8px', background: '#ef444422', color: '#ef4444' }}>
+                                {permitAlerts.length} {zh ? '人' : 'people'}
+                            </span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {permitAlerts.map(emp => {
+                                const days = Math.ceil((new Date(emp.work_permit_expiry).getTime() - Date.now()) / 86400000);
+                                const color = days < 0 ? '#f43f5e' : days <= 7 ? '#f59e0b' : '#3b82f6';
+                                return (
+                                    <div key={emp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+                                        <span style={{ fontSize: '13px', fontWeight: 500 }}>{emp.name}</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{emp.work_permit_expiry}</span>
+                                            <span style={{ fontSize: '12px', fontWeight: 600, color, padding: '1px 8px', borderRadius: '4px', background: color + '22' }}>
+                                                {days < 0 ? (zh ? `已逾期 ${Math.abs(days)} 天` : `${Math.abs(days)}d expired`) : (zh ? `剩 ${days} 天` : `${days}d left`)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
+                {/* OE-8: Probation Alerts */}
+                {probationAlerts.length > 0 && (
+                    <div className="card" style={{ marginBottom: '20px', borderLeft: '3px solid #f59e0b' }}>
+                        <div className="card-header">
+                            <span className="card-title">⏰ {zh ? '試用期到期提醒' : 'Probation Alerts'}</span>
+                            <span style={{ fontSize: '12px', fontWeight: 600, padding: '2px 10px', borderRadius: '8px', background: '#f59e0b22', color: '#f59e0b' }}>
+                                {probationAlerts.length} {zh ? '人' : 'people'}
+                            </span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {probationAlerts.map(emp => {
+                                const days = Math.ceil((new Date(emp.probation_end_date).getTime() - Date.now()) / 86400000);
+                                const color = days < 0 ? '#f43f5e' : days <= 7 ? '#f59e0b' : '#22c55e';
+                                return (
+                                    <div key={emp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+                                        <span style={{ fontSize: '13px', fontWeight: 500 }}>{emp.name}</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{emp.probation_end_date}</span>
+                                            <span style={{ fontSize: '12px', fontWeight: 600, color, padding: '1px 8px', borderRadius: '4px', background: color + '22' }}>
+                                                {days < 0 ? (zh ? `已逾期 ${Math.abs(days)} 天` : `${Math.abs(days)}d overdue`) : (zh ? `剩 ${days} 天` : `${days}d left`)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
 
                 {/* Regulatory Compliance — Disability Quota */}
                 {compliance.totalActive >= 67 && (

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { logLLMUsage, extractTokensOpenAI } from "../_shared/llm-logger.ts";
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -61,6 +62,7 @@ Do not include any explanation outside the JSON code block. Only return the JSON
             { role: "user", content: prompt }
         ];
 
+        const _llmStart = Date.now();
         const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
             method: 'POST',
             headers: {
@@ -75,10 +77,13 @@ Do not include any explanation outside the JSON code block. Only return the JSON
 
         if (!response.ok) {
             const errBody = await response.text();
+            logLLMUsage({ functionName: 'task-ai-agent', provider: 'dashscope', model: 'qwen3.5-plus', latencyMs: Date.now() - _llmStart, status: 'error', errorMessage: `${response.status}`, purpose: 'task' });
             throw new Error(`DashScope API Error: ${response.status} ${errBody}`);
         }
 
         const data = await response.json();
+        const _tok = extractTokensOpenAI(data);
+        logLLMUsage({ functionName: 'task-ai-agent', provider: 'dashscope', model: 'qwen3.5-plus', inputTokens: _tok.input, outputTokens: _tok.output, totalTokens: _tok.total, latencyMs: Date.now() - _llmStart, status: 'success', purpose: 'task' });
         const aiResponseText = data.choices[0].message.content;
         
         // Extract json from markdown

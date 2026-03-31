@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
+import { logLLMUsage, extractTokensOpenAI } from "../_shared/llm-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -270,6 +271,7 @@ serve(async (req) => {
             .map(s => `步驟${s.step_order}: ${s.name}`)
             .join("\n");
           try {
+            const _trigStart = Date.now();
             const aiResp = await fetch(
               "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
               {
@@ -300,6 +302,8 @@ serve(async (req) => {
             );
             if (aiResp.ok) {
               const aiData = await aiResp.json();
+              const _trigTok = extractTokensOpenAI(aiData);
+              logLLMUsage({ functionName: 'workflow-ai', provider: 'dashscope', model: 'qwen3.5-plus', inputTokens: _trigTok.input, outputTokens: _trigTok.output, totalTokens: _trigTok.total, latencyMs: Date.now() - _trigStart, status: 'success', purpose: 'workflow' });
               const aiText: string = aiData.choices[0].message.content;
               const clean = aiText
                 .replace(/```json\n?/g, "")
@@ -374,6 +378,7 @@ Return JSON only, no code fences.`,
     };
 
     const messages = [systemMessage, { role: "user", content: prompt }];
+    const _llmStart2 = Date.now();
     const response = await fetch(
       "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
       {
@@ -391,10 +396,13 @@ Return JSON only, no code fences.`,
 
     if (!response.ok) {
       const errBody = await response.text();
+      logLLMUsage({ functionName: 'workflow-ai', provider: 'dashscope', model: 'qwen3.5-plus', latencyMs: Date.now() - _llmStart2, status: 'error', errorMessage: `${response.status}`, purpose: 'workflow' });
       throw new Error(`DashScope API Error: ${response.status} ${errBody}`);
     }
 
     const data = await response.json();
+    const _tok2 = extractTokensOpenAI(data);
+    logLLMUsage({ functionName: 'workflow-ai', provider: 'dashscope', model: 'qwen3.5-plus', inputTokens: _tok2.input, outputTokens: _tok2.output, totalTokens: _tok2.total, latencyMs: Date.now() - _llmStart2, status: 'success', purpose: 'workflow' });
     const aiResponseText = data.choices[0].message.content;
     return new Response(aiResponseText, {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

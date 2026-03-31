@@ -1,0 +1,53 @@
+-- ============================================================
+-- SEED: Project Tasks (45 store-setup tasks)
+-- Source: seed_project_tasks.sql
+-- ============================================================
+
+INSERT INTO public.project_tasks (task_no, name, assignee, planned_end, actual_end, status, note1, note2, note3, trigger1, trigger2, trigger3, sync_source)
+VALUES
+  (1,  '設計圖確認',                 'Zoey',   NULL,         NULL,         '未開始', '平面圖、3D圖', NULL, NULL, '與dave確認是否同意', '通知任務2', NULL, 'seed'),
+  (2,  '工程第一次報價',             'Zoey',   NULL,         NULL,         '未開始', NULL, NULL, NULL, '第二次報價 確認是否最後一次', '通知任務3', NULL, 'seed'),
+  (3,  '工程最終報價定案',           'Zoey',   NULL,         NULL,         '未開始', NULL, NULL, NULL, '跟Dave確認', '通知任務4', NULL, 'seed'),
+  (4,  '現場規劃圖初稿確認',         'Zoey',   NULL,         NULL,         '未開始', '規劃設備跟座位擺設', NULL, NULL, '通知任務33', '通知任務34', NULL, 'seed'),
+  (5,  '施工圖面確認及工程發包',     'Zoey',   NULL,         NULL,         '未開始', '確認時間給dave', NULL, NULL, '給Dave&Zoey確認時間', '通知任務6-9', '通知任務14-15', 'seed'),
+  (6,  '電力申請',                   '學文',   NULL,         NULL,         '未開始', '不受其他任務引響', NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (7,  '大陸設備採購',               'Anita',  NULL,         NULL,         '進行中', '3/25待付訂金,交期約14天完成', NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (8,  '台灣設備採購',               '學文',   NULL,         NULL,         '未開始', '暫定:炸爐*1.電視*2.電飯鍋*1.電磁爐*1.微波爐*1', NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (9,  '小家電及小五金採購',         '營運',   NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (10, '統編及稅籍申請',             'Alicia', NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (11, '電子發票申請',               'Alicia', NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (12, 'POS機準備',                  'Alicia', NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (13, '刷卡機準備',                 'Alicia', NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (14, '家具採購',                   'Zoey',   NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (15, '招牌安裝',                   'Ken',    NULL,         NULL,         '未開始', '3/17 11:00 跟廠商約現場丈量招牌尺寸', NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (16, '軟裝及布置物採購+植栽',      'Zoey',   NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (17, '電話及網路申請',             '學文',   NULL,         NULL,         '未開始', '待申請中華電信(300M網路/市話/放心播)', NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (18, '監視器採購及安裝',           '學文',   NULL,         NULL,         '未開始', '新勢力', NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (19, '音響採購及安裝',             '學文',   NULL,         NULL,         '未開始', '恩亞', NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (20, '門市用筆電及印表機採購',     '學文',   NULL,         NULL,         '未開始', '待採購', NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (21, '裝修後細清廠商',             '學文',   NULL,         NULL,         '未開始', '待確認', NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (22, '垃圾清運廠商',               '學文',   NULL,         NULL,         '未開始', '待確認', NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (23, '除蟲防治廠商',               '學文',   NULL,         NULL,         '未開始', '史偉莎', NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (24, '保險投保',                   '學文',   NULL,         NULL,         '未開始', '南山保險.待投保', NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (25, '人力編制到位',               '營運',   NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (26, '人力訓練安排',               '營運',   NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (27, '門市營業用小物件採購',       '營運',   NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (28, '首次庫存需求請購',           '營運',   NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (29, '完工前施工狀況檢視',         '學文',   NULL,         NULL,         '未開始', '看是否有需要調整', NULL, NULL, '通知DAVE', '通知任務39 (有的話)', NULL, 'seed'),
+  (30, '行銷廣告案確認及發布',       'Zoey',   NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (31, '傳單及廣告輸出物',           'Zoey',   NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (32, '收銀機準備',                 'Vicky',  NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (33, '確認桌椅排位',               'Zoey',   NULL,         NULL,         '未開始', NULL, NULL, NULL, '通知DAVE', '通知任務5', NULL, 'seed'),
+  (34, '確認規劃廚房',               'Vicky',  NULL,         NULL,         '未開始', NULL, NULL, NULL, '通知任務5', NULL, NULL, 'seed'),
+  (35, '任務6-9/14-15完成',          NULL,     NULL,         NULL,         '未開始', NULL, NULL, NULL, '通知DAVE', '通知任務36', NULL, 'seed'),
+  (36, '監工進度(回報DAVE)',          '學文',   NULL,         NULL,         '未開始', '回復施工進度', NULL, NULL, '通知任務10-20、32', '通知任務25-28', NULL, 'seed'),
+  (37, '監工回報(DAVE)',              NULL,     NULL,         NULL,         '未開始', '時間段開始上油漆', NULL, NULL, '回報DAVE', NULL, NULL, 'seed'),
+  (38, '完成任務10-20, 32',          NULL,     NULL,         NULL,         '未開始', NULL, NULL, NULL, '通知任務21-24', '通知任務30-31', NULL, 'seed'),
+  (39, '須調整項目',                 'Zoey',   NULL,         NULL,         '未開始', '直到確認完工', NULL, NULL, '通知任務29', '通知任務40-43', NULL, 'seed'),
+  (40, '家具進場確認',               'Vicky',  NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (41, '設備進場確認',               'Vicky',  NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (42, '硬體設備確認',               'Vicky',  NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (43, '人員培訓完成確認',           'Vicky',  NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed'),
+  (44, '任務完成40-43',              NULL,     NULL,         NULL,         '未開始', NULL, NULL, NULL, '通知任務45', '通知DAVE', NULL, 'seed'),
+  (45, '確認開幕時間',               'Zoey',   NULL,         NULL,         '未開始', NULL, NULL, NULL, NULL, NULL, NULL, 'seed')
+ON CONFLICT (task_no) DO NOTHING;

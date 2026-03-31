@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { t, setLocale, getLocale, initLocale, type Locale } from './lib/i18n';
 import { initTheme, getTheme, setTheme, type Theme } from './lib/theme';
 import { OrgProvider, useOrg } from './lib/OrgContext';
@@ -36,6 +36,11 @@ import { DocumentManagement } from './pages/DocumentManagement';
 import { RecruitmentATS } from './pages/RecruitmentATS';
 import { BusinessTrips } from './pages/BusinessTrips';
 import { ExpenseClaims } from './pages/ExpenseClaims';
+import { Onboarding } from './pages/Onboarding';
+import { Announcements } from './pages/Announcements';
+import { Training } from './pages/Training';
+import { Disciplinary } from './pages/Disciplinary';
+import { JobsManagement } from './pages/JobsManagement';
 import './index.css';
 
 initLocale();
@@ -106,8 +111,15 @@ function PermissionGuard({ children }: { children: React.ReactNode }) {
 function Sidebar() {
   const [locale, setCurrentLocale] = useState<Locale>(getLocale());
   const [theme, setCurrentTheme] = useState<Theme>(getTheme());
+  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
   const location = useLocation();
   const { userRoles, modules } = useOrg();
+
+  const toggleCollapse = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    localStorage.setItem('sidebar-collapsed', String(next));
+  };
 
   const isAccessible = (moduleKey: string): boolean => {
     const mod = modules.find(m => m.module_key === moduleKey);
@@ -157,6 +169,10 @@ function Sidebar() {
     { path: '/audit-logs',        icon: '📋', label: zh ? '稽核記錄' : 'Audit Logs',     moduleKey: 'audit-logs' },
     { path: '/business-trips',    icon: '✈️', label: zh ? '公出差旅' : 'Business Trips', moduleKey: 'business-trips' },
     { path: '/expense-claims',    icon: '🧾', label: zh ? '費用核銷' : 'Expense Claims', moduleKey: 'expense-claims' },
+    { path: '/onboarding',        icon: '📋', label: zh ? '到職離職' : 'Onboarding',     moduleKey: 'onboarding' },
+    { path: '/announcements',     icon: '📢', label: zh ? '公告管理' : 'Announcements',  moduleKey: 'announcements' },
+    { path: '/training',          icon: '🎓', label: zh ? '教育訓練' : 'Training',       moduleKey: 'training' },
+    { path: '/disciplinary',      icon: '⚖️', label: zh ? '獎懲紀錄' : 'Disciplinary',   moduleKey: 'disciplinary' },
   ].filter(item => isAccessible(item.moduleKey));
 
   const wfSubItems = [
@@ -181,48 +197,55 @@ function Sidebar() {
   const searchTab = new URLSearchParams(location.search).get('tab') || 'dashboard';
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}>
       <div className="sidebar-header">
         <div className="sidebar-logo">
           <div className="sidebar-logo-icon">🤖</div>
-          <div>
-            <h1>AI LINE Bot</h1>
-            <span>Operations System</span>
-          </div>
+          {!collapsed && (
+            <div>
+              <h1>AI LINE Bot</h1>
+              <span>Operations System</span>
+            </div>
+          )}
         </div>
+        <button className="sidebar-toggle" onClick={toggleCollapse} title={collapsed ? 'Expand' : 'Collapse'}>
+          {collapsed ? '▸' : '◂'}
+        </button>
       </div>
 
       <nav className="sidebar-nav">
         {/* Main Menu */}
         <div className="nav-section">
-          <div className="nav-section-title">{zh ? '主選單' : 'MAIN MENU'}</div>
+          {!collapsed && <div className="nav-section-title">{zh ? '主選單' : 'MAIN MENU'}</div>}
           {mainNavItems.map(item => (
             <NavLink
               key={item.path}
               to={item.path}
               className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
+              title={collapsed ? item.label : undefined}
             >
               <span className="icon">{item.icon}</span>
-              {item.label}
+              {!collapsed && item.label}
             </NavLink>
           ))}
         </div>
 
         {/* HR Management collapsible group */}
         {hrNavItems.length > 0 && <div className="nav-section">
-          <div className="nav-section-title">{zh ? '人資管理' : 'HR MANAGEMENT'}</div>
+          {!collapsed && <div className="nav-section-title">{zh ? '人資管理' : 'HR MANAGEMENT'}</div>}
           <button
             className={`nav-item ${hrNavItems.some(i => i.path === location.pathname) ? 'active' : ''}`}
             style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', justifyContent: 'space-between' }}
             onClick={() => setHrOpen(o => !o)}
+            title={collapsed ? (zh ? '人資管理' : 'HR Management') : undefined}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
               <span className="icon">👥</span>
-              {zh ? '人資管理' : 'HR Management'}
+              {!collapsed && (zh ? '人資管理' : 'HR Management')}
             </span>
-            <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '4px' }}>{hrOpen ? '▾' : '▸'}</span>
+            {!collapsed && <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '4px' }}>{hrOpen ? '▾' : '▸'}</span>}
           </button>
-          {hrOpen && (
+          {hrOpen && !collapsed && (
             <div style={{ paddingLeft: '10px', marginTop: '2px' }}>
               {hrNavItems.map(item => (
                 <NavLink
@@ -241,21 +264,22 @@ function Sidebar() {
 
         {/* Workflow Management collapsible group */}
         {isAccessible('workflow-management') && <div className="nav-section">
-          <div className="nav-section-title">{zh ? '流程管理' : 'WORKFLOWS'}</div>
+          {!collapsed && <div className="nav-section-title">{zh ? '流程管理' : 'WORKFLOWS'}</div>}
 
           <button
             className={`nav-item ${isWfPath ? 'active' : ''}`}
             style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', justifyContent: 'space-between' }}
             onClick={() => setWfOpen(o => !o)}
+            title={collapsed ? (zh ? '流程管理' : 'Workflow Mgmt') : undefined}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
               <span className="icon">🔄</span>
-              {zh ? '流程管理' : 'Workflow Mgmt'}
+              {!collapsed && (zh ? '流程管理' : 'Workflow Mgmt')}
             </span>
-            <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '4px' }}>{wfOpen ? '▾' : '▸'}</span>
+            {!collapsed && <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '4px' }}>{wfOpen ? '▾' : '▸'}</span>}
           </button>
 
-          {wfOpen && (
+          {wfOpen && !collapsed && (
             <div style={{ paddingLeft: '10px', marginTop: '2px' }}>
               {wfSubItems.map(item => {
                 const isActive = isWfPath && searchTab === item.tab;
@@ -277,21 +301,22 @@ function Sidebar() {
 
         {/* Org Management collapsible group */}
         {isAccessible('org-management') && <div className="nav-section">
-          <div className="nav-section-title">{zh ? '組織管理' : 'ORG MANAGEMENT'}</div>
+          {!collapsed && <div className="nav-section-title">{zh ? '組織管理' : 'ORG MANAGEMENT'}</div>}
 
           <button
             className={`nav-item ${isOrgPath ? 'active' : ''}`}
             style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', justifyContent: 'space-between' }}
             onClick={() => setOrgOpen(o => !o)}
+            title={collapsed ? (zh ? '組織管理' : 'Org Management') : undefined}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
               <span className="icon">🏢</span>
-              {zh ? '組織管理' : 'Org Management'}
+              {!collapsed && (zh ? '組織管理' : 'Org Management')}
             </span>
-            <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '4px' }}>{orgOpen ? '▾' : '▸'}</span>
+            {!collapsed && <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '4px' }}>{orgOpen ? '▾' : '▸'}</span>}
           </button>
 
-          {orgOpen && (
+          {orgOpen && !collapsed && (
             <div style={{ paddingLeft: '10px', marginTop: '2px' }}>
               {orgSubItems.map(item => {
                 const isActive = isOrgPath && searchTab === item.tab;
@@ -313,64 +338,58 @@ function Sidebar() {
 
         {/* System */}
         <div className="nav-section">
-          <div className="nav-section-title">{zh ? '系統' : 'SYSTEM'}</div>
+          {!collapsed && <div className="nav-section-title">{zh ? '系統' : 'SYSTEM'}</div>}
           {isAccessible('triggers') && (
-            <NavLink to="/triggers" className={`nav-item ${location.pathname === '/triggers' ? 'active' : ''}`}>
-              <span className="icon">⚡</span>{t('nav.triggers')}
+            <NavLink to="/triggers" className={`nav-item ${location.pathname === '/triggers' ? 'active' : ''}`} title={collapsed ? t('nav.triggers') : undefined}>
+              <span className="icon">⚡</span>{!collapsed && t('nav.triggers')}
             </NavLink>
           )}
           {isAccessible('notifications') && (
-            <NavLink to="/notifications" className={`nav-item ${location.pathname === '/notifications' ? 'active' : ''}`}>
-              <span className="icon">🔔</span>{t('nav.notifications')}
+            <NavLink to="/notifications" className={`nav-item ${location.pathname === '/notifications' ? 'active' : ''}`} title={collapsed ? t('nav.notifications') : undefined}>
+              <span className="icon">🔔</span>{!collapsed && t('nav.notifications')}
             </NavLink>
           )}
           {isAccessible('users') && (
-            <NavLink to="/users" className={`nav-item ${location.pathname === '/users' ? 'active' : ''}`}>
-              <span className="icon">👤</span>{t('nav.users')}
-            </NavLink>
-          )}
-          {isAccessible('audit-logs') && (
-            <NavLink to="/audit-logs" className={`nav-item ${location.pathname === '/audit-logs' ? 'active' : ''}`}>
-              <span className="icon">🔍</span>{zh ? '操作紀錄' : 'Audit Logs'}
+            <NavLink to="/users" className={`nav-item ${location.pathname === '/users' ? 'active' : ''}`} title={collapsed ? t('nav.users') : undefined}>
+              <span className="icon">👤</span>{!collapsed && t('nav.users')}
             </NavLink>
           )}
           {isAccessible('line-logs') && (
-            <NavLink to="/line-logs" className={`nav-item ${location.pathname === '/line-logs' ? 'active' : ''}`}>
-              <span className="icon">📊</span>{zh ? 'LINE 記錄' : 'LINE Logs'}
-            </NavLink>
-          )}
-          {isAccessible('performance') && (
-            <NavLink to="/performance" className={`nav-item ${location.pathname === '/performance' ? 'active' : ''}`}>
-              <span className="icon">⭐</span>{zh ? '績效管理' : 'Performance'}
+            <NavLink to="/line-logs" className={`nav-item ${location.pathname === '/line-logs' ? 'active' : ''}`} title={collapsed ? (zh ? 'LINE 記錄' : 'LINE Logs') : undefined}>
+              <span className="icon">📊</span>{!collapsed && (zh ? 'LINE 記錄' : 'LINE Logs')}
             </NavLink>
           )}
           {isAccessible('admin') && (
-            <NavLink to="/admin" className={`nav-item ${location.pathname === '/admin' ? 'active' : ''}`}>
-              <span className="icon">⚙️</span>{zh ? '系統設定' : 'Admin Settings'}
+            <NavLink to="/admin" className={`nav-item ${location.pathname === '/admin' ? 'active' : ''}`} title={collapsed ? (zh ? '系統設定' : 'Admin Settings') : undefined}>
+              <span className="icon">⚙️</span>{!collapsed && (zh ? '系統設定' : 'Admin Settings')}
             </NavLink>
           )}
         </div>
 
         {/* AI Tools */}
         <div className="nav-section">
-          <div className="nav-section-title">{zh ? 'AI 工具' : 'AI TOOLS'}</div>
+          {!collapsed && <div className="nav-section-title">{zh ? 'AI 工具' : 'AI TOOLS'}</div>}
           {isAccessible('help-center') && (
-            <NavLink to="/help-center" className={`nav-item ${location.pathname === '/help-center' ? 'active' : ''}`}>
-              <span className="icon">📚</span>{zh ? '說明中心' : 'Help Center'}
+            <NavLink to="/help-center" className={`nav-item ${location.pathname === '/help-center' ? 'active' : ''}`} title={collapsed ? (zh ? '說明中心' : 'Help Center') : undefined}>
+              <span className="icon">📚</span>{!collapsed && (zh ? '說明中心' : 'Help Center')}
             </NavLink>
           )}
           {isAccessible('agent-console') && (
-            <NavLink to="/agent-console" className={`nav-item ${location.pathname === '/agent-console' ? 'active' : ''}`}>
-              <span className="icon">🤖</span>{zh ? 'Agent 控制台' : 'Agent Console'}
+            <NavLink to="/agent-console" className={`nav-item ${location.pathname === '/agent-console' ? 'active' : ''}`} title={collapsed ? (zh ? 'Agent 控制台' : 'Agent Console') : undefined}>
+              <span className="icon">🤖</span>{!collapsed && (zh ? 'Agent 控制台' : 'Agent Console')}
             </NavLink>
           )}
         </div>
       </nav>
 
       <div className="sidebar-footer-btns">
-        <button className="locale-btn" onClick={toggleLocale}>
-          🌐 {zh ? 'English' : '中文'}
-        </button>
+        {collapsed ? (
+          <button className="theme-btn" onClick={toggleLocale} title={zh ? 'English' : '中文'}>🌐</button>
+        ) : (
+          <button className="locale-btn" onClick={toggleLocale}>
+            🌐 {zh ? 'English' : '中文'}
+          </button>
+        )}
         <button className="theme-btn" aria-label={zh ? '切換主題' : 'Toggle theme'} onClick={toggleTheme}>
           {theme === 'light' ? '🌙' : '☀️'}
         </button>
@@ -380,10 +399,22 @@ function Sidebar() {
 }
 
 function AppContent() {
+  const sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+  const [collapsed, setCollapsed] = useState(sidebarCollapsed);
+
+  // Listen for sidebar toggle via storage events
+  useEffect(() => {
+    const handler = () => setCollapsed(localStorage.getItem('sidebar-collapsed') === 'true');
+    window.addEventListener('storage', handler);
+    // Also poll for same-tab changes
+    const interval = setInterval(handler, 200);
+    return () => { window.removeEventListener('storage', handler); clearInterval(interval); };
+  }, []);
+
   return (
     <div className="app-layout">
       <Sidebar />
-      <main className="main-content">
+      <main className="main-content" style={{ marginLeft: collapsed ? '64px' : undefined }}>
         <PermissionGuard>
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -416,6 +447,11 @@ function AppContent() {
             <Route path="/recruitment" element={<RecruitmentATS />} />
             <Route path="/business-trips" element={<BusinessTrips />} />
             <Route path="/expense-claims" element={<ExpenseClaims />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/announcements" element={<Announcements />} />
+            <Route path="/training" element={<Training />} />
+            <Route path="/disciplinary" element={<Disciplinary />} />
+            <Route path="/jobs" element={<JobsManagement />} />
           </Routes>
         </PermissionGuard>
       </main>

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logLLMUsage, extractTokensOpenAI, extractTokensAnthropic } from "../_shared/llm-logger.ts";
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -69,6 +70,7 @@ Given a task description, return ONLY a JSON object:
 
     // Try Claude first
     if (ANTHROPIC_API_KEY) {
+        const _s = Date.now();
         try {
             const resp = await fetch('https://api.anthropic.com/v1/messages', {
                 method: 'POST',
@@ -86,10 +88,14 @@ Given a task description, return ONLY a JSON object:
             });
             if (resp.ok) {
                 const data = await resp.json();
+                const t = extractTokensAnthropic(data);
+                logLLMUsage({ functionName: 'orchestrator', provider: 'anthropic', model: 'claude-opus-4-6', inputTokens: t.input, outputTokens: t.output, totalTokens: t.total, latencyMs: Date.now() - _s, status: 'success', purpose: 'orchestrator' });
                 return data.content?.[0]?.text || '{}';
             }
+            logLLMUsage({ functionName: 'orchestrator', provider: 'anthropic', model: 'claude-opus-4-6', latencyMs: Date.now() - _s, status: 'fallback', errorMessage: `${resp.status}`, purpose: 'orchestrator' });
             console.warn(`Claude failed (${resp.status}), trying Gemini fallback`);
         } catch (e) {
+            logLLMUsage({ functionName: 'orchestrator', provider: 'anthropic', model: 'claude-opus-4-6', latencyMs: Date.now() - _s, status: 'error', errorMessage: String(e), purpose: 'orchestrator' });
             console.warn('Claude error, trying Gemini fallback:', e);
         }
     }
@@ -98,6 +104,7 @@ Given a task description, return ONLY a JSON object:
     if (!GEMINI_API_KEY) {
         return JSON.stringify({ team: 'documentation', reasoning: 'Default plan (no AI key configured)' });
     }
+    const _s2 = Date.now();
     try {
         const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/openai/chat/completions', {
             method: 'POST',
@@ -112,8 +119,11 @@ Given a task description, return ONLY a JSON object:
         });
         if (resp.ok) {
             const data = await resp.json();
+            const t = extractTokensOpenAI(data);
+            logLLMUsage({ functionName: 'orchestrator', provider: 'gemini', model: 'gemini-2.5-flash', inputTokens: t.input, outputTokens: t.output, totalTokens: t.total, latencyMs: Date.now() - _s2, status: 'success', purpose: 'orchestrator' });
             return data.choices[0].message.content;
         }
+        logLLMUsage({ functionName: 'orchestrator', provider: 'gemini', model: 'gemini-2.5-flash', latencyMs: Date.now() - _s2, status: 'error', errorMessage: `${resp.status}`, purpose: 'orchestrator' });
     } catch {}
     return JSON.stringify({ team: 'documentation', reasoning: 'Default plan (all AI providers failed)' });
 }
