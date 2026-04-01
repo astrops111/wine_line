@@ -155,6 +155,11 @@ export function InstanceCard({
                 <span>🔄 {inst.taskSummary.in_progress}</span>
                 <span>✅ {inst.taskSummary.completed}</span>
                 <span>🚫 {inst.taskSummary.blocked}</span>
+                {inst.taskSummary.overdue > 0 && (
+                    <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: '8px', background: '#ef4444', color: '#fff', whiteSpace: 'nowrap' }}>
+                        {zh ? '逾期' : 'Overdue'} {inst.taskSummary.overdue}
+                    </span>
+                )}
                 <span style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>{zh ? '共' : 'Total'} {inst.taskSummary.total}</span>
             </div>
         </div>

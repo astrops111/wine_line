@@ -3,7 +3,7 @@
 > **System**: AI LINE Bot Operations System — Human Resource Management Module
 > **Stack**: React + TypeScript (Vite) · Supabase (PostgreSQL + Edge Functions + RLS) · LINE LIFF · LINE Messaging API
 > **Compliance**: Taiwan Labor Standards Act (勞動基準法)
-> **Last Updated**: 2026-03-29
+> **Last Updated**: 2026-04-01
 
 ---
 
@@ -29,6 +29,10 @@
 17. [Phase 6b — Onboarding, Training & Communications](#17-phase-6b--onboarding-training--communications)
 18. [Phase 6c — Scheduling Enhancements & Gap Closures](#18-phase-6c--scheduling-enhancements--gap-closures)
 19. [Phase 6d — Tiered Summaries & LLM Cost Tracking](#19-phase-6d--tiered-summaries--llm-cost-tracking)
+20. [Phase 7 — Codebase Modularization & Task Confirmation](#20-phase-7--codebase-modularization--task-confirmation)
+21. [Phase 8 — ERP Expansion & Test Suite (2026-04-01)](#21-phase-8--erp-expansion--test-suite-2026-04-01)
+22. [Deployment](#22-deployment)
+23. [Related Documentation](#23-related-documentation)
 
 ---
 
@@ -134,7 +138,7 @@ HRM SYSTEM
 | Publish with labor law validation | ✅ Done (七休一, 11h rest) |
 | Employee availability preferences | ✅ Done |
 | AI auto-scheduling | ✅ Done (AI criteria panel) |
-| Swap / replacement workflow | 🔲 Not yet built |
+| Swap / replacement workflow | ✅ Done (ShiftSwapsTab) |
 
 #### 🌴 Leave & Holiday Management
 | Feature | Status |
@@ -180,7 +184,7 @@ HRM SYSTEM
 | 七休一 / 11h rest scheduling validation | ✅ Done |
 | Income tax withholding (所得稅扣繳) | ✅ Done |
 | 扣繳憑單 (annual withholding certificate) | 🔲 Future |
-| Audit logs for payroll changes | 🔲 Future |
+| Audit logs for payroll changes | ✅ Done (auditLog.ts) |
 
 ---
 
@@ -252,7 +256,7 @@ HRM SYSTEM
 | Executive / LIFF Manager Dashboard | ✅ Done |
 | LIFF Mobile Manager Dashboard (real-time store metrics) | ✅ Done |
 | Labor cost % trend | 🔲 Future |
-| Headcount / turnover analytics | 🔲 Future |
+| Headcount / turnover analytics | ✅ Done (Dashboard.tsx) |
 
 #### 📱 Employee Self-Service (ESS via LINE LIFF)
 | Feature | Status |
@@ -318,7 +322,7 @@ HRM SYSTEM
 | ~~Training records / LMS~~ | ~~Medium~~ | ✅ Done (Phase 6b) |
 | ~~Expense management~~ | ~~Medium~~ | ✅ Done (Phase 5) |
 | Multi-legal-entity payroll | Medium | 🔲 Pending |
-| 扣繳憑單 (annual tax certificate) | Medium | 🔲 Pending |
+| ~~扣繳憑單 (annual tax certificate)~~ | ~~Medium~~ | ✅ Done (Phase 8) |
 
 #### 🟢 Future SaaS Expansion
 | Feature | Notes |
@@ -344,8 +348,10 @@ HRM SYSTEM
 | **Phase 6b** | Onboarding/offboarding, Training/certs, Announcements, Disciplinary records | ✅ Done |
 | **Phase 6c** | Variable working hours, Open shift marketplace, Schedule templates, Labor budgeting, Employee skills, Employee numbers, Multi-level approvals, Work permits, Scheduling KPIs | ✅ Done |
 | **Phase 6d** | Tiered LINE summaries (weekly/monthly AI), LLM usage tracking, Data pruning, Minimum-admin safety, Access levels | ✅ Done |
-| **Phase 7** | Payroll ERP integration (鼎新/文中), Drag-and-drop schedule editor | 🔲 Next |
-| **Phase 8** | AI analytics, Multi-tenant SaaS, API platform | 🔲 Long-term |
+| **Phase 7** | Component architecture (12 dirs, 55+ components), 10 type definition files, 9 helper libraries, line-webhook modularization (7 files), task confirmation flow, Jobs Management page, Dashboard enhancements, Google Sheets sync | ✅ Done |
+| **Phase 8** | ERP expansion (inventory, vendors, POs, stocktakes), Operations analytics, Clock-in edge function, Withholding certificate (扣繳憑證), Workflow template library, Test suite (8 Playwright modules), Task reminders (pg_cron) | ✅ Done |
+| **Phase 9** | Payroll ERP integration (鼎新/文中), Drag-and-drop schedule editor | 🔲 Next |
+| **Phase 9** | AI analytics, Multi-tenant SaaS, API platform | 🔲 Long-term |
 
 ---
 
@@ -356,8 +362,9 @@ HRM SYSTEM
 │                     Admin Web Panel                         │
 │  React 19 + TypeScript · Vite · Dark/Light Theme            │
 │  RBAC: PermissionGuard (module_access + role gates)         │
-│  34+ Routes: HR, Payroll, Performance, Recruitment,         │
-│              Onboarding, Training, Announcements, AI, LIFF  │
+│  41+ Routes: HR, Payroll, Performance, Recruitment,         │
+│    Onboarding, Training, ERP (Inventory/Vendors), AI, LIFF  │
+│  12 Component Dirs · 55+ Sub-Components · 10 Type Files     │
 └────────────────────┬────────────────────────────────────────┘
                      │ Supabase JS Client
 ┌────────────────────▼────────────────────────────────────────┐
@@ -370,6 +377,8 @@ HRM SYSTEM
 │              job_postings, employee_documents, expense_claims│
 │  Ops: announcements, onboarding_tasks, training_records,    │
 │       disciplinary_records, approval_chains, employee_skills│
+│  ERP: vendors, purchase_orders, inventory_items,            │
+│       inventory_transactions, stocktakes, stocktake_items   │
 │  Scheduling: schedule_templates, scheduling_kpis,           │
 │              daily_demand, pos_integrations                  │
 │  AI: help_articles (FTS), agent_registry, agent_tasks       │
@@ -383,6 +392,7 @@ HRM SYSTEM
 │  line-webhook   │  │  help-chatbot │  │  liff-new-task    │
 │  workflow-ai    │  │  doc-*  (×3)  │  │  liff-task        │
 │  scheduling-ai  │  │  demand-fore  │  │  summarize-hist   │
+│  clock-in       │  │  task-remind  │  │                   │
 └──────┬──────────┘  └───────┬───────┘  └───────────────────┘
        │                     │ AI (Claude / Gemini / DashScope)
        │ LINE Messaging API  │
@@ -404,6 +414,15 @@ HRM SYSTEM
 | `admin/src/lib/permissions.ts` | `canAccess()`, `getModuleForPath()` — RBAC helpers |
 | `admin/src/lib/theme.ts` | `setTheme()`, `getTheme()`, `initTheme()` — dark/light mode |
 | `admin/src/lib/auditLog.ts` | `writeAuditLog()` — compliance audit trail logging |
+| `admin/src/lib/employeeHelpers.ts` | Avatar, type labels, CSV import, special identity options |
+| `admin/src/lib/leaveCalculations.ts` | `calcAnnualLeave()` — Taiwan Labor Act entitlement (7-30 days by seniority) |
+| `admin/src/lib/lineLogsConstants.tsx` | Badge components, command labels, error type colors |
+| `admin/src/lib/overtimeHelpers.ts` | OT hour calculation, risk level colors (red >46h, yellow >38h) |
+| `admin/src/lib/payrollExports.ts` | CSV exports: payroll, bank transfer, insurance report, accounting journal, tax forms |
+| `admin/src/lib/scheduleExcel.ts` | XLSX export/import for weekly schedules |
+| `admin/src/lib/schedulingValidation.ts` | `checkLaborLawViolations()` — 12+ Taiwan labor law checks (H1–H10, GAP-6/12) |
+| `admin/src/lib/taskHelpers.ts` | Task buckets, attachments, `triggerNextWorkflowStep()` auto-advance |
+| `admin/src/lib/workflowHelpers.ts` | Task mapping, summary computation, confirmations, audit logging |
 
 ---
 
@@ -979,6 +998,7 @@ The following events trigger a LINE push notification to the employee:
 | `onboarding_templates` | Onboarding templates | name, type (onboarding/offboarding), items (JSONB) |
 | `onboarding_tasks` | Per-employee tasks | user_id, template_id, title, status, assignee_id, due_date |
 | `task_attachments` | Task file uploads | task_id, file_name, storage_path, mime_type, file_size |
+| `task_confirmations` | Task approval flow | task_id, approver_id, status (pending/approved/rejected), notes |
 | `approval_chains` | Multi-level approvals | module, level, approver_role, min_days, min_amount |
 
 ### Scheduling Enhancement Tables
@@ -1012,6 +1032,18 @@ The following events trigger a LINE push notification to the employee:
 | `line_monthly_summaries` | Monthly AI summaries | group_id, summary_month, notable_events[], key_decisions[] |
 | `llm_usage_logs` | LLM API cost tracking | function_name, provider, model, tokens, estimated_cost, latency_ms |
 
+### ERP & Supply Chain Tables (Phase 8)
+
+| Table | Purpose | Key Columns |
+|-------|---------|-------------|
+| `vendors` | Vendor registry | org_id, name, contact_person, phone, email, category, tax_id, rating (1-5), is_active |
+| `purchase_orders` | Purchase order workflow | vendor_id, po_number, items (JSONB), total_amount, status (draft→submitted→approved→received), ordered_by |
+| `inventory_items` | Stock items | org_id, store_id, sku, name, category, unit, quantity, min_quantity, cost_price, vendor_id |
+| `inventory_transactions` | Stock movement audit | item_id, transaction_type (in/out/adjust/count), quantity, reference, performed_by |
+| `stocktakes` | Physical inventory counts | store_id, status (draft/in_progress/completed), started_by, started_at, completed_at |
+| `stocktake_items` | Per-item stocktake | stocktake_id, item_id, expected_quantity, counted_quantity, variance |
+| `workflow_template_library` | System-wide workflow templates | name, category, steps (JSONB), description (6 pre-seeded) |
+
 ### Enhanced Column Additions (Phase 6c)
 
 | Table | New Columns | Purpose |
@@ -1022,6 +1054,7 @@ The following events trigger a LINE push notification to the employee:
 | `shift_swap_requests` | bid_user_id, bid_message, bid_at | Open shift marketplace |
 | `users` | employee_number, work_permit_number, work_permit_expiry | Employee ID + foreign worker tracking |
 | `payroll_records` | supplementary_nhi, leave_buyout | NHI supplement + leave buyout |
+| `tasks` | confirmation_required, confirmation_status, confirmation_requested_at, confirmation_responded_at, confirmation_notes | Task approval/confirmation flow (Phase 7) |
 
 ### Store Configuration
 
@@ -1035,8 +1068,8 @@ The following events trigger a LINE push notification to the employee:
 
 | Function | Trigger | AI Model | Purpose |
 |----------|---------|----------|---------|
-| `line-webhook` | LINE platform POST | DashScope Qwen | Handle all LINE messages + HR keyword commands |
-| `hr-notify` | Admin actions | — | Push approve/reject notifications to employees |
+| `line-webhook` | LINE platform POST | DashScope Qwen | Handle all LINE messages + HR keyword commands (7 modular files) |
+| `hr-notify` | Admin actions / webhooks | — | Push approve/reject/leave notifications with Flex Messages |
 | `send-payslips` | Admin clicks "發送薪資單" | — | Batch push payslip Flex Messages to all employees |
 | `liff-new-task` | LIFF form submit | — | Create tasks from mobile |
 | `liff-task` | LIFF task interaction | — | Update task status from mobile |
@@ -1050,6 +1083,8 @@ The following events trigger a LINE push notification to the employee:
 | `scheduling-ai` | Scheduling page "🤖 AI 自動排班" | Claude | AI schedule generation with 10+ labor law validations |
 | `demand-forecast` | Scheduling analytics | DashScope Qwen | Staffing prediction from POS/historical data |
 | `summarize-history` | Cron (weekly/monthly) | Qwen → Gemini → Claude | Generate weekly/monthly LINE group chat summaries |
+| `clock-in` | LIFF / API POST | — | GPS/WiFi clock-in/out with lateness detection (5min grace) |
+| `task-reminder` | pg_cron (every 15 min) | — | Check and send task deadline reminders |
 
 ---
 
@@ -1061,7 +1096,7 @@ Sidebar
 │   ├── / .................. Dashboard (HR KPI cards)
 │   └── /manager-dashboard . Operations Dashboard
 │
-├── 人資管理 (HR MANAGEMENT) [collapsible, 18 items]
+├── 人資管理 (HR MANAGEMENT) [collapsible, 19 items]
 │   ├── /hr-dashboard ...... HR Reports + Risk Alerts
 │   ├── /time-tracker ...... Clock-in Records + Corrections
 │   ├── /leave-management .. Leave Approvals + Balances
@@ -1079,10 +1114,11 @@ Sidebar
 │   ├── /onboarding ........ Onboarding/Offboarding ← NEW
 │   ├── /announcements ..... Company Announcements ← NEW
 │   ├── /training .......... Training & Certs ← NEW
-│   └── /disciplinary ...... Disciplinary Records ← NEW
+│   ├── /disciplinary ...... Disciplinary Records ← NEW
+│   └── /jobs .............. Jobs & Positions Management ← NEW
 │
 ├── 流程管理 (WORKFLOWS) [collapsible]
-│   └── /workflow-management (tabs: dashboard, workflows, tasks, checklists)
+│   └── /workflow-management (tabs: dashboard, workflows, tasks, checklists, templates)
 │
 ├── 組織管理 (ORG MANAGEMENT) [collapsible]
 │   └── /org-management .... (tabs: orgs, companies, locations, departments, employees, line, billing)
@@ -1096,7 +1132,12 @@ Sidebar
 │   ├── /performance ....... Performance ← NEW
 │   └── /admin ............. Admin Settings
 │
-├── AI 工具 (AI TOOLS) ← NEW section
+├── 營運管理 (OPERATIONS) [collapsible] ← NEW section
+│   ├── /operations-analytics Operations Analytics (KPIs, labor cost, store metrics)
+│   ├── /vendors ............ Vendor Management + Purchase Orders
+│   └── /inventory .......... Inventory Management + Stocktake
+│
+├── AI 工具 (AI TOOLS)
 │   ├── /help-center ....... Help Center (RAG + chatbot)
 │   └── /agent-console ..... Agent Console (orchestration)
 │
@@ -1123,8 +1164,11 @@ Sidebar
 | **Phase 6** | Scheduling AI (Claude + validation), Demand forecasting, Audit logging utility, Task attachments | ✅ Complete |
 | **Phase 6b** | Onboarding/offboarding workflows, Training/certification tracking, Announcements, Disciplinary records | ✅ Complete |
 | **Phase 6c** | Variable working hours (變形工時), Open shift marketplace, Schedule templates, Labor budgeting, Employee skills/certs, Employee numbers, Multi-level approvals, Work permit tracking, Scheduling KPIs | ✅ Complete |
-| **Phase 7** | Payroll ERP integration (鼎新/文中), Drag-and-drop schedule editor | 🔲 Planned |
-| **Phase 8** | AI predictive analytics, Multi-tenant SaaS, API platform | 🔲 Long-term |
+| **Phase 6d** | Tiered LINE summaries, LLM cost tracking, Data pruning, Minimum-admin safety, Access levels | ✅ Complete |
+| **Phase 7** | Codebase modularization (12 component dirs, 55+ components, 10 types, 9 helpers), line-webhook refactoring, task confirmation flow, Jobs Management, Dashboard analytics, Google Sheets sync | ✅ Complete |
+| **Phase 8** | ERP expansion (inventory, vendors, POs), Operations analytics, Clock-in edge function, Withholding certificate, Workflow template library, Playwright test suite (8 modules), Task reminders (pg_cron) | ✅ Complete |
+| **Phase 9** | Payroll ERP integration (鼎新/文中), Drag-and-drop schedule editor | 🔲 Planned |
+| **Phase 10** | AI predictive analytics, Multi-tenant SaaS, API platform | 🔲 Long-term |
 
 ---
 
@@ -1862,7 +1906,226 @@ Admin Settings page now exposes access level toggle per module with audit loggin
 
 ---
 
-## 20. Deployment
+## 20. Phase 7 — Codebase Modularization & Task Confirmation (2026-03-31)
+
+### 20.1 Component Architecture Refactoring
+
+All major page files were decomposed into feature-specific component directories under `admin/src/components/`. Each page now imports and composes sub-components, reducing page files from 1000+ lines to 200–400 lines.
+
+#### Component Directories (12)
+
+| Directory | Components | Extracted From |
+|-----------|-----------|----------------|
+| `Employees/` | EmployeeCreateForm, EmployeeListGrid, EmployeeEditCard, EmployeeDetailPanel, DepartmentTab | Employees.tsx |
+| `Leave/` | PendingTab, AllRequestsTab, BalancesTab, CalendarTab | LeaveManagement.tsx |
+| `Liff/` | ClockInPanel, SchedulePanel, HoursPanel, LeavePanel, PayslipPanel, ProfilePanel, PreferencesPanel | LiffApp.tsx |
+| `LiffManager/` | StoreProgressSection, DelayedTasksSection, ActivityTimeline | LiffManagerDashboard.tsx |
+| `LineLogs/` | CommandsTab, ErrorsTab, SummaryTab, MessagesTab | LineLogs.tsx |
+| `OrgManagement/` | CompanyTab, StoreTab, DepartmentTab, BillingTab, OrgChartTab, TemplatesTab, AnnouncementsTab | OrgManagement.tsx |
+| `Overtime/` | Badges, PendingTab, AllRecordsTab, RiskTab | OvertimeRequests.tsx |
+| `Payroll/` | SalaryStructureTab, RunPayrollTab, PayrollHistoryTab, InsuranceBracketsTab, PayrollToolsTab, shared | PayrollManagement.tsx |
+| `Scheduling/` | ScheduleCalendarTab, StoreSettingsTab, PreferencesTab, ShiftSwapsTab, AnalyticsTab, SchedulingModals, DragDropHelpers | Scheduling.tsx |
+| `Tasks/` | TaskDetailPanel, BucketManagementModal, TasksTable | Tasks.tsx |
+| `Workflows/` | TemplateTab, InstanceTab, InstanceCard, ArchiveTab | Workflows.tsx |
+
+### 20.2 Type Definition Files (10)
+
+Centralized TypeScript interfaces in `admin/src/types/`:
+
+| File | Key Types |
+|------|-----------|
+| `employees.ts` | Employee, EmployeeType ('full_time' / 'part_time' / 'contract'), special identities |
+| `leave.ts` | LeaveRequest, LeaveBalance, LeaveType |
+| `overtime.ts` | OvertimeRequest, NewRequestForm, RiskLevel |
+| `payroll.ts` | PayrollRecord, PayrollPreviewRow, PayrollRun |
+| `scheduling.ts` | Schedule, ShiftAssignment, ShiftTemplate, Availability, LaborViolation, ShiftSwapRequest, DemandForecast |
+| `lineLogs.ts` | LineMessage, LineCommand, LineError |
+| `orgManagement.ts` | Organization, Company, Store, Department, LineGroup |
+| `tasks.ts` | Task, TaskAttachment, TaskComment |
+| `workflows.ts` | WorkflowInstance, WorkflowStep, InstanceTask, TaskConfirmation |
+| `liffApp.ts` | Panel navigation, user data types |
+
+### 20.3 LINE Webhook Modularization
+
+`supabase/functions/line-webhook/` refactored from monolithic to 7 modular files:
+
+| File | Purpose |
+|------|---------|
+| `index.ts` | Main webhook entry point — event routing |
+| `types.ts` | SupabaseClient, PendingAction (multi-step conversational state) |
+| `constants.ts` | Badge styling, 30+ command labels in Chinese |
+| `line-api.ts` | `verifySignature()`, `reply()`, `push()`, `replyAndLog()` |
+| `db-helpers.ts` | `upsertLineUser()`, `upsertLineGroup()`, `logMessage()`, `logCommand()`, `logError()` |
+| `flex-builders.ts` | Flex message construction — menus, task lists, workflow status, multi-step flows |
+| `command-handlers.ts` | Task CRUD, help, register, payslip query, leave, overtime commands |
+| `command-handlers-workflow.ts` | Workflow status, tasks, manager menu/overview, pending action flows |
+
+### 20.4 Task Confirmation Flow
+
+New migration `20260331000000_task_confirmation_flow.sql`:
+
+**New columns on `tasks` table:**
+- `confirmation_required` (BOOLEAN) — marks task requiring approval
+- `confirmation_status` — 'pending' | 'approved' | 'rejected'
+- `confirmation_requested_at`, `confirmation_responded_at` (TIMESTAMPTZ)
+- `confirmation_notes` (TEXT)
+
+**New table: `task_confirmations`**
+- Per-approver tracking: task_id, approver_id, status, notes, responded_at
+- UNIQUE constraint (task_id, approver_id) — one record per approver
+- RLS enabled
+
+### 20.5 Dashboard Enhancements
+
+Dashboard.tsx now includes comprehensive HR metrics:
+
+| Widget | Data Source |
+|--------|-----------|
+| Task statistics | pending/in_progress/completed/blocked counts |
+| Workflow instances | Running/paused workflow count |
+| Pending leave/OT/corrections | leave_requests, overtime_requests, punch_corrections |
+| Headcount breakdown | Active, full-time, part-time, contract, inactive |
+| Regulatory compliance | Special identity quotas (disabled, low-income, indigenous) |
+| Probation alerts | Employees approaching probation end date |
+| Announcements | Recent announcements with priority/pinned badges |
+| Turnover analytics | Monthly, quarterly, annual + turnover rate % |
+| Work permit expiry | Foreign workers with upcoming permit expiration |
+
+### 20.6 Additional Changes
+
+- **JobsManagement.tsx** — New page for job title/position management
+- **AgentConsole.tsx** — Added LLM Usage tab (provider breakdown, cost tracking, date filtering)
+- **AdminSettings.tsx** — Module access control UI (enable/disable, required role, access level per module)
+- **hr-notify** — Leave submission/approval/rejection Flex Messages with type labels (特休, 病假, 事假, etc.)
+- **Google Sheets Sync** (`admin/docs/apps-script-sync.gs`) — Bidirectional sync: Google Sheets ↔ Supabase `project_tasks` table
+- **Migration renumbering** — Sequential `00001`–`00014` replacing timestamp-based naming
+- **Design system** — Enhanced dark mode palette with emerald accent, CSS variables for surfaces/shadows
+
+---
+
+## 21. Phase 8 — ERP Expansion & Test Suite (2026-04-01)
+
+### 21.1 Inventory Management (`InventoryManagement.tsx`)
+
+Route: `/inventory`
+
+#### Tabs (4)
+
+| Tab | Features |
+|-----|----------|
+| Stock Levels | Item CRUD, search/filter by store, low-stock alerts, min quantity tracking, vendor association |
+| Transactions | Audit trail of in/out/adjust/count operations, performed_by tracking |
+| Stocktake | Physical inventory counts (draft→in_progress→completed), expected vs counted variance |
+| Low Stock Alerts | Items below min_quantity, quick restock action |
+
+**Item Categories**: 食材, 飲料, 包材, 清潔用品, 設備耗材, 文具, 其他
+
+### 21.2 Vendor Management (`VendorManagement.tsx`)
+
+Route: `/vendors`
+
+#### Tabs (2)
+
+| Tab | Features |
+|-----|----------|
+| Vendors | CRUD, 1-5 star rating, tax_id (統編), enable/disable toggle, contact info |
+| Purchase Orders | PO workflow: draft → submitted → approved → received (or cancelled) |
+
+**PO Number Format**: `PO-{timestamp base36}` (auto-generated)
+
+**PO Items**: JSONB array of `{ name, qty, unit_price }` with real-time total calculation
+
+### 21.3 Operations Analytics (`OperationsAnalytics.tsx`)
+
+Route: `/operations-analytics`
+
+#### Tabs (4)
+
+| Tab | Features |
+|-----|----------|
+| Overview | 6 KPI cards (active staff, monthly payroll, workflow %, on-time rate, open tasks, OT hours) |
+| Labor Cost | 12-month trend table (payroll, OT cost, total, headcount, cost/HC) |
+| Workflows | Completion rates by template with bar charts |
+| Store Compare | Store-level metrics (headcount, avg hours/person, late % color-coded) |
+
+### 21.4 Clock-In Edge Function (`clock-in/index.ts`)
+
+Dedicated Supabase Edge Function for clock-in/out operations.
+
+**Clock-In Methods** (per store config):
+| Method | Validation |
+|--------|-----------|
+| `wifi` | Client IP must match `store.wifi_allowed_ips` |
+| `gps_required` | User must be within `gps_radius_m` of store |
+| `gps_or_wifi` | GPS first, fallback to WiFi if out of range |
+| `any` / `open` | Always allow (manual entry) |
+
+**Features**:
+- Haversine distance calculation (GPS range validation)
+- Auto clock-in vs clock-out detection (checks for open `time_record`)
+- Automatic lateness detection: compares against `shift_assignments` + `shift_templates.start_time` (5-minute grace period)
+- Records: `clock_in_lat`, `clock_in_lng`, `clock_in_distance_m`, `clock_in_method`, `is_late`
+
+### 21.5 Payroll Withholding Certificate (扣繳憑證)
+
+New tab in PayrollManagement.tsx for Taiwan annual tax filing.
+
+- Year selector (defaults to previous year)
+- Aggregates all `payroll_records` by user per fiscal year
+- Displays: name, national_id, store, total_gross, total_labor_ins, total_health_ins, total_income_tax, total_net, months_worked
+
+### 21.6 Workflow Template Library
+
+New tab in WorkflowManagement.tsx + `workflow_template_library` table.
+
+**6 Pre-Seeded Templates** (from migration `00016_erp_expansion.sql`):
+
+| Template | Category | Steps |
+|----------|----------|-------|
+| 新店開店準備 (Store Opening) | 營運 | 15 |
+| 員工入職流程 (Onboarding) | 人資 | 8 |
+| 月度盤點 (Monthly Stocktake) | 營運 | 7 |
+| 日常開店作業 (Daily Opening) | 營運 | 7 |
+| 日常關店作業 (Daily Closing) | 營運 | 7 |
+| 設備維護排程 (Equipment Maintenance) | 營運 | 7 |
+
+Click template → expand steps → "Create from Template" auto-creates workflow + steps.
+
+### 21.7 Playwright Test Suite
+
+8 test modules in `admin/tests/` with comprehensive page coverage.
+
+| Module | File | Test Cases |
+|--------|------|-----------|
+| Employee Management | `employee/test_employee_management.py` | TC-E-01 to TC-E-10: list, filters, CRUD, departments |
+| HR Dashboard | `hr_dashboard/test_hr_dashboard.py` | TC-HR-01 to TC-HR-10: KPIs, store filter, CSV export, risk alerts |
+| Leave & Overtime | `leave/test_leave_overtime.py` | TC-L-01 to TC-L-10: balances, approve/reject, routing rules |
+| Scheduling | `scheduling/test_scheduling.py` | TC-SC-01 to TC-SC-10: calendar, violations, AI panel, preferences |
+| Time Tracking | `time_tracking/test_time_tracker.py` | TC-T-01 to TC-T-10: tabs, filters, corrections, late flags |
+| Workflows | `workflows/test_workflows.py` | TC-W-01 to TC-W-12: templates, instances, tasks, AI chat |
+| Smoke Navigation | `smoke/test_navigation.py` | TC-S-01 to TC-S-05: 65 routes, locale toggle, console errors |
+| Scheduling AI | `test_scheduling_ai_validation.py` | Scheduling AI validation tests |
+
+**Test Runner**: `python admin/tests/run_all_tests.py` — launches Vite dev server, runs 15 suites sequentially, supports `--suite` filter.
+
+**Test Utilities** (`admin/tests/utils/helpers.py`): `goto()`, `wait_for_page_ready()`, `screenshot()`, `fill_and_submit()`, `assert_no_console_errors()`, `assert_page_heading()`, `wait_for_tab()`.
+
+### 21.8 Task Reminders (pg_cron)
+
+Migration `00017_task_reminder_cron.sql`:
+- `trigger_task_reminder()` function calls `POST /functions/v1/task-reminder` via `pg_net`
+- Schedule: every 15 minutes (`*/15 * * * *`)
+- Uses service role key for authenticated function invocation
+
+### 21.9 Additional Changes
+
+- **scheduling-ai** — Enhanced with advanced labor law validation (H1–H10), variable working hours support (2week/4week/8week), skill mismatch detection, demand forecast integration
+- **LINE webhook** — Group join handler with welcome message (wine red brand colors)
+- **ClockInPanel.tsx** — Updated to use new `clock-in` edge function endpoint
+
+---
+
+## 22. Deployment
 
 ### Docker (Production Build)
 
@@ -1928,7 +2191,7 @@ Runs locally (bypasses 60s edge function timeout). Calls `doc-flow-analyzer` →
 
 ---
 
-## 21. Related Documentation
+## 23. Related Documentation
 
 | Document | Path | Content |
 |----------|------|---------|
@@ -1937,3 +2200,4 @@ Runs locally (bypasses 60s edge function timeout). Calls `doc-flow-analyzer` →
 | Project Expansion | `project_expansion.md` | Strategic & low-priority gaps for future phases |
 | Agent Orchestrator | `project.md` | Multi-agent team architecture and collaboration protocol |
 | Insurance Brackets | `.claude/projects/.../memory/taiwan_insurance_brackets.md` | Taiwan labor/health insurance bracket tables (2020–2026) |
+| Google Sheets Sync | `admin/docs/apps-script-sync.gs` | Bidirectional sync: Google Sheets ↔ Supabase project_tasks |

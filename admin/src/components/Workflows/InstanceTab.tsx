@@ -97,6 +97,7 @@ export function InstanceTab({
             sort_order: maxOrder + 1,
             assigned_to: newTaskAssignee || null,
             due_date: newTaskDue || null,
+            store_id: selectedInstance.store_id || null,
         });
         setShowAddTask(false);
         setNewTaskTitle('');
@@ -403,7 +404,7 @@ export function InstanceTab({
                                 {zh ? '尚無任務' : 'No tasks'}
                             </p>
                         ) : (
-                            <div style={{ overflowX: 'auto' }}>
+                            <div style={{ overflowX: 'auto', marginLeft: '-24px', marginRight: '-24px', marginBottom: '-24px' }}>
                                 <table className="data-table" style={{ fontSize: '12px', margin: 0 }}>
                                     <thead>
                                         <tr>
@@ -444,7 +445,7 @@ export function InstanceTab({
                                                                     {(() => {
                                                                         const badge = getDueBadge(task.due_date, task.status);
                                                                         return badge ? (
-                                                                            <span style={{ fontSize: '9px', background: `${badge.color}18`, color: badge.color, borderRadius: '4px', padding: '1px 5px', marginLeft: '6px', verticalAlign: 'middle', fontWeight: 600 }}>
+                                                                            <span style={{ fontSize: '10px', padding: '1px 5px', borderRadius: '8px', background: badge.color, color: '#fff', whiteSpace: 'nowrap', marginLeft: '6px', verticalAlign: 'middle' }}>
                                                                                 {badge.label}
                                                                             </span>
                                                                         ) : null;

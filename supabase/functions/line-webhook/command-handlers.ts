@@ -325,15 +325,16 @@ export async function cmdTaskDone(rawId: string, userId: string, db: SupabaseCli
 
 // ── Task Update Command ──────────────────────────────────────────────────────
 
-export async function cmdTaskUpdate(rawId: string, note: string, db: SupabaseClient, lineUserRowId?: string) {
+export async function cmdTaskUpdate(rawId: string, note: string, db: SupabaseClient, lineUserRowId?: string, userId?: string) {
   const shortId = rawId.replace(/[[\]#\s]/g, "");
   if (!shortId) return text("請提供任務 ID。");
 
-  const { data: allTasks2 } = await db
+  let query = db
     .from("tasks")
     .select("id, title, notes")
-    .neq("status", "completed")
-    .limit(300);
+    .neq("status", "completed");
+  if (userId) query = query.eq("assigned_to", userId);
+  const { data: allTasks2 } = await query.limit(300);
 
   const tasks = allTasks2?.filter((t: any) => t.id.startsWith(shortId));
   if (!tasks || tasks.length === 0) return text(`❌ 找不到 ID 為 ${shortId} 的任務。`);

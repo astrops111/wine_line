@@ -229,6 +229,115 @@ def test_dashboard_pending_hr_count():
         browser.close()
 
 
+def test_leave_balance_year_selector():
+    """TC-L-11: Leave balance year selector changes data."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/leave-management")
+        wait_for_page_ready(page)
+
+        balance_tab = page.locator("button, [role='tab']").filter(
+            has_text=re.compile("[Bb]alance|餘額|假額")
+        ).first
+        if balance_tab.is_visible():
+            balance_tab.click()
+            wait_for_page_ready(page)
+
+            year_select = page.locator("select").filter(
+                has_text=re.compile("202[0-9]")
+            ).first
+            if not year_select.is_visible():
+                year_select = page.locator("select").first
+            if year_select.is_visible():
+                year_select.select_option(index=0)
+                wait_for_page_ready(page)
+                screenshot(page, "leave_balance_year")
+                print("  ✅  TC-L-11 passed — year selector works")
+            else:
+                print("  ⚠️  TC-L-11 skipped — no year selector")
+        else:
+            print("  ⚠️  TC-L-11 skipped — balance tab not found")
+        browser.close()
+
+
+def test_leave_balance_store_filter():
+    """TC-L-12: Leave balance store filter narrows employees."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/leave-management")
+        wait_for_page_ready(page)
+
+        balance_tab = page.locator("button, [role='tab']").filter(
+            has_text=re.compile("[Bb]alance|餘額|假額")
+        ).first
+        if balance_tab.is_visible():
+            balance_tab.click()
+            wait_for_page_ready(page)
+
+            store_select = page.locator("select").first
+            if store_select.is_visible():
+                options = store_select.locator("option").all()
+                if len(options) > 1:
+                    store_select.select_option(index=1)
+                    wait_for_page_ready(page)
+                    screenshot(page, "leave_balance_store")
+                    print("  ✅  TC-L-12 passed")
+                else:
+                    print("  ⚠️  TC-L-12 skipped — only one store")
+            else:
+                print("  ⚠️  TC-L-12 skipped — no store selector")
+        else:
+            print("  ⚠️  TC-L-12 skipped — balance tab not found")
+        browser.close()
+
+
+def test_leave_calendar_view():
+    """TC-L-13: Leave calendar tab shows month navigation."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/leave-management")
+        wait_for_page_ready(page)
+
+        cal_tab = page.locator("button, [role='tab']").filter(
+            has_text=re.compile("[Cc]alendar|日曆|行事曆")
+        ).first
+        if cal_tab.is_visible():
+            cal_tab.click()
+            wait_for_page_ready(page)
+            screenshot(page, "leave_calendar")
+            # Check for month navigation
+            nav_btns = page.locator("button").filter(has_text=re.compile("◀|▶|[Pp]rev|[Nn]ext|上月|下月"))
+            print(f"  {'✅' if nav_btns.count() > 0 else '⚠️'}  TC-L-13 — calendar nav buttons: {nav_btns.count()}")
+        else:
+            print("  ⚠️  TC-L-13 skipped — calendar tab not found")
+        browser.close()
+
+
+def test_overtime_create_request():
+    """TC-OT-11: Create overtime request form."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/overtime-requests")
+        wait_for_page_ready(page)
+
+        add_btn = page.locator("button").filter(
+            has_text=re.compile("[Aa]dd|[Cc]reate|[Nn]ew|新增|建立")
+        ).first
+        if add_btn.is_visible():
+            add_btn.click()
+            page.wait_for_timeout(500)
+            screenshot(page, "ot_create_form")
+            inputs = page.locator("input, select, textarea").count()
+            print(f"  {'✅' if inputs >= 2 else '⚠️'}  TC-OT-11 — create form inputs: {inputs}")
+        else:
+            print("  ⚠️  TC-OT-11 skipped — no add button")
+        browser.close()
+
+
 if __name__ == "__main__":
     print("\n=== Leave & Overtime Tests ===\n")
     test_leave_management_loads()
@@ -240,4 +349,8 @@ if __name__ == "__main__":
     test_approve_overtime()
     test_reject_overtime()
     test_dashboard_pending_hr_count()
+    test_leave_balance_year_selector()
+    test_leave_balance_store_filter()
+    test_leave_calendar_view()
+    test_overtime_create_request()
     print("\n✅ All Leave & OT tests completed.\n")

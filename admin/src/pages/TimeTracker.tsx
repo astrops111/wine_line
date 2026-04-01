@@ -6,6 +6,7 @@ import { useOrg } from '../lib/OrgContext';
 interface TimeRecord {
     id: string; user_id: string; clock_in: string; clock_out: string | null;
     clock_in_method: string; clock_out_method: string | null; break_minutes: number;
+    break_start: string | null; break_end: string | null;
     total_hours: number | null; notes: string | null; is_late: boolean;
     status: string; store_id: string | null;
     user?: { name: string; position: string | null };
@@ -377,6 +378,7 @@ export function TimeTracker() {
                                     <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '員工' : 'Employee'}</th>
                                     <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '上班' : 'Clock In'}</th>
                                     <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '下班' : 'Clock Out'}</th>
+                                    <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '休息' : 'Break'}</th>
                                     <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '工時' : 'Hours'}</th>
                                     <th style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, borderBottom: 'none' }}>{zh ? '管理' : 'Actions'}</th>
                                 </tr>
@@ -387,6 +389,17 @@ export function TimeTracker() {
                                         <td style={{ padding: '8px 14px', fontWeight: 600 }}>{(r.user as any)?.name}</td>
                                         <td style={{ padding: '8px 14px' }}>{formatTime(r.clock_in)} ({methodLabel[r.clock_in_method]})</td>
                                         <td style={{ padding: '8px 14px' }}>{r.clock_out ? `${formatTime(r.clock_out)} (${methodLabel[r.clock_out_method || 'admin']})` : <span style={{ color: '#22c55e' }}>🟢 {zh ? '在班' : 'Working'}</span>}</td>
+                                        <td style={{ padding: '8px 14px', fontSize: '12px' }}>
+                                            {r.break_start ? (
+                                                <span>
+                                                    {formatTime(r.break_start)}
+                                                    {r.break_end ? ` — ${formatTime(r.break_end)}` : <span style={{ color: '#f59e0b' }}> ☕</span>}
+                                                    {r.break_minutes > 0 && <span style={{ color: 'var(--text-muted)', marginLeft: '4px' }}>({r.break_minutes}m)</span>}
+                                                </span>
+                                            ) : r.break_minutes > 0 ? (
+                                                <span style={{ color: 'var(--text-muted)' }}>{r.break_minutes}m</span>
+                                            ) : '—'}
+                                        </td>
                                         <td style={{ padding: '8px 14px', fontWeight: 600, color: 'var(--accent-primary)' }}>
                                             {r.total_hours?.toFixed(1) || '—'}
                                             {r.is_late && <span className="badge" style={{ background: '#f43f5e33', color: '#f43f5e', fontSize: '10px', marginLeft: '4px' }}>{zh ? '遲到' : 'Late'}</span>}
@@ -400,7 +413,7 @@ export function TimeTracker() {
                                     </tr>
                                 ))}
                                 {records.length === 0 && (
-                                    <tr><td colSpan={5} style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>{zh ? '無紀錄' : 'No records'}</td></tr>
+                                    <tr><td colSpan={6} style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)' }}>{zh ? '無紀錄' : 'No records'}</td></tr>
                                 )}
                             </tbody>
                         </table>

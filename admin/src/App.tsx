@@ -41,6 +41,9 @@ import { Announcements } from './pages/Announcements';
 import { Training } from './pages/Training';
 import { Disciplinary } from './pages/Disciplinary';
 import { JobsManagement } from './pages/JobsManagement';
+import { OperationsAnalytics } from './pages/OperationsAnalytics';
+import { VendorManagement } from './pages/VendorManagement';
+import { InventoryManagement } from './pages/InventoryManagement';
 import './index.css';
 
 initLocale();
@@ -130,6 +133,8 @@ function Sidebar() {
   const isOrgPath = location.pathname === '/org-management';
   const isWfPath  = location.pathname === '/workflow-management';
   const hrPaths = ['/hr-dashboard', '/time-tracker', '/leave-management', '/overtime-requests', '/payroll', '/scheduling', '/holidays', '/shift-rules'];
+  const opsPaths = ['/operations-analytics', '/vendors', '/inventory'];
+  const [opsOpen, setOpsOpen] = useState(opsPaths.includes(location.pathname));
   const [orgOpen, setOrgOpen] = useState(isOrgPath);
   const [wfOpen,  setWfOpen]  = useState(isWfPath);
   const [hrOpen,  setHrOpen]  = useState(hrPaths.includes(location.pathname));
@@ -258,6 +263,42 @@ function Sidebar() {
                   {item.label}
                 </NavLink>
               ))}
+            </div>
+          )}
+        </div>}
+
+        {/* Operations Management collapsible group */}
+        {(isAccessible('operations-analytics') || isAccessible('vendors') || isAccessible('inventory')) && <div className="nav-section">
+          {!collapsed && <div className="nav-section-title">{zh ? '營運管理' : 'OPERATIONS'}</div>}
+          <button
+            className={`nav-item ${opsPaths.includes(location.pathname) ? 'active' : ''}`}
+            style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', justifyContent: 'space-between' }}
+            onClick={() => setOpsOpen(o => !o)}
+            title={collapsed ? (zh ? '營運管理' : 'Operations') : undefined}
+          >
+            <span style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+              <span className="icon">📈</span>
+              {!collapsed && (zh ? '營運管理' : 'Operations')}
+            </span>
+            {!collapsed && <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '4px' }}>{opsOpen ? '▾' : '▸'}</span>}
+          </button>
+          {opsOpen && !collapsed && (
+            <div style={{ paddingLeft: '10px', marginTop: '2px' }}>
+              {isAccessible('operations-analytics') && (
+                <NavLink to="/operations-analytics" className={`nav-item ${location.pathname === '/operations-analytics' ? 'active' : ''}`} style={{ fontSize: '12.5px', paddingLeft: '10px' }}>
+                  <span className="icon" style={{ fontSize: '13px' }}>📊</span>{zh ? '營運分析' : 'Analytics'}
+                </NavLink>
+              )}
+              {isAccessible('vendors') && (
+                <NavLink to="/vendors" className={`nav-item ${location.pathname === '/vendors' ? 'active' : ''}`} style={{ fontSize: '12.5px', paddingLeft: '10px' }}>
+                  <span className="icon" style={{ fontSize: '13px' }}>🏭</span>{zh ? '供應商' : 'Vendors'}
+                </NavLink>
+              )}
+              {isAccessible('inventory') && (
+                <NavLink to="/inventory" className={`nav-item ${location.pathname === '/inventory' ? 'active' : ''}`} style={{ fontSize: '12.5px', paddingLeft: '10px' }}>
+                  <span className="icon" style={{ fontSize: '13px' }}>📦</span>{zh ? '庫存' : 'Inventory'}
+                </NavLink>
+              )}
             </div>
           )}
         </div>}
@@ -452,6 +493,9 @@ function AppContent() {
             <Route path="/training" element={<Training />} />
             <Route path="/disciplinary" element={<Disciplinary />} />
             <Route path="/jobs" element={<JobsManagement />} />
+            <Route path="/operations-analytics" element={<OperationsAnalytics />} />
+            <Route path="/vendors" element={<VendorManagement />} />
+            <Route path="/inventory" element={<InventoryManagement />} />
           </Routes>
         </PermissionGuard>
       </main>

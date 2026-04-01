@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { format, parseISO } from 'date-fns';
 import { supabase } from '../../lib/supabase';
-import { getCurrentPosition, haversineDistance } from '../../lib/geo';
+import { getCurrentPosition } from '../../lib/geo';
 import type { StoreGpsConfig, CorrectionData, ClockInStatus } from '../../types/liffApp';
-import { getClientIp } from '../../types/liffApp';
 
 interface ClockInPanelProps {
   employeeId: string;
@@ -55,121 +54,63 @@ export function ClockInPanel({
     setClockInStatus('locating');
     setClockInMessage('');
 
-    const method = storeGpsConfig?.clock_in_method ?? 'open';
-    const wifiAllowedIps = storeGpsConfig?.wifi_allowed_ips ?? [];
+    try {
+      // Step 1: Collect GPS client-side (browser API must run here)
+      let userLat: number | null = null;
+      let userLng: number | null = null;
+      const method = storeGpsConfig?.clock_in_method ?? 'open';
+      const needsGps = method === 'gps_required' || method === 'gps_or_wifi';
 
-    const doClockRecord = async (
-      userLat: number | null,
-      userLng: number | null,
-      distanceM: number | null,
-      clockInMethod: string,
-    ) => {
-      const today = new Date().toISOString().split('T')[0];
-      const { data: existing } = await supabase
-        .from('time_records')
-        .select('id, clock_in, clock_out')
-        .eq('user_id', employeeId)
-        .gte('clock_in', today)
-        .is('clock_out', null)
-        .maybeSingle();
+      try {
+        const position = await getCurrentPosition();
+        userLat = position.coords.latitude;
+        userLng = position.coords.longitude;
+      } catch (gpsErr: any) {
+        if (needsGps) {
+          setClockInStatus('error');
+          setClockInMessage(
+            gpsErr.code === 1
+              ? '\u4F4D\u7F6E\u5B58\u53D6\u88AB\u62D2\u7D55\uFF0C\u8ACB\u5141\u8A31\u5B9A\u4F4D\u6B0A\u9650\u3002'
+              : `\u5B9A\u4F4D\u5931\u6557\uFF1A${gpsErr.message}`,
+          );
+          return;
+        }
+        // For 'open'/'any'/'wifi', GPS failure is non-fatal
+      }
 
-      if (existing) {
-        const { error } = await supabase.from('time_records').update({
-          clock_out: new Date().toISOString(),
-          clock_in_lat: userLat,
-          clock_in_lng: userLng,
-          clock_in_distance_m: distanceM,
-          clock_in_method: clockInMethod,
-        }).eq('id', existing.id);
-        if (error) throw error;
-        setClockInStatus('success');
-        setClockInMessage('\u2705 \u6253\u5361\u9000\u51FA\u6210\u529F\uFF01');
-      } else {
-        const { error } = await supabase.from('time_records').insert({
+      // Step 2: Call edge function for server-side validation & DB write
+      const { data, error } = await supabase.functions.invoke('clock-in', {
+        body: {
           user_id: employeeId,
           store_id: userStoreId,
-          clock_in: new Date().toISOString(),
-          is_late: false,
-          clock_in_lat: userLat,
-          clock_in_lng: userLng,
-          clock_in_distance_m: distanceM,
-          clock_in_method: clockInMethod,
-        });
-        if (error) throw error;
-        setClockInStatus('success');
-        if (clockInMethod === 'wifi') {
-          setClockInMessage('\u2705 \u6253\u5361\u6210\u529F\uFF01\uFF08WiFi \u9A57\u8B49\uFF09');
-        } else if (clockInMethod === 'gps') {
-          setClockInMessage(`\u2705 \u6253\u5361\u6210\u529F\uFF01\u8DDD\u9580\u5E02 ${distanceM ?? '?'}m`);
-        } else {
-          setClockInMessage('\u2705 \u6253\u5361\u6210\u529F\uFF01');
-        }
-      }
-      await onTimeRecordsRefresh();
-      setTimeout(() => setClockInStatus('idle'), 3000);
-    };
+          user_lat: userLat,
+          user_lng: userLng,
+        },
+      });
 
-    try {
-      if (method === 'wifi') {
-        const ip = await getClientIp();
-        if (!ip || !wifiAllowedIps.includes(ip)) {
-          setClockInStatus('out_of_range');
-          setClockInMessage('\u672A\u9023\u63A5\u9580\u5E02 WiFi \u7DB2\u8DEF');
-          return;
-        }
-        await doClockRecord(null, null, null, 'wifi');
-      } else if (method === 'gps_required') {
-        const position = await getCurrentPosition();
-        const { latitude: userLat, longitude: userLng } = position.coords;
-        let distanceM: number | null = null;
-        let withinRange = true;
-        if (storeGpsConfig?.gps_lat && storeGpsConfig?.gps_lng) {
-          distanceM = Math.round(haversineDistance(userLat, userLng, storeGpsConfig.gps_lat, storeGpsConfig.gps_lng));
-          withinRange = distanceM <= (storeGpsConfig.gps_radius_m || 200);
-        }
-        if (!withinRange) {
-          setClockInStatus('out_of_range');
-          setClockInMessage(`\u8DDD\u96E2\u9580\u5E02 ${distanceM}m\uFF0C\u8D85\u51FA\u5141\u8A31\u7BC4\u570D ${storeGpsConfig?.gps_radius_m || 200}m`);
-          return;
-        }
-        await doClockRecord(userLat, userLng, distanceM, 'gps');
-      } else if (method === 'gps_or_wifi') {
-        const position = await getCurrentPosition();
-        const { latitude: userLat, longitude: userLng } = position.coords;
-        let distanceM: number | null = null;
-        let withinRange = true;
-        if (storeGpsConfig?.gps_lat && storeGpsConfig?.gps_lng) {
-          distanceM = Math.round(haversineDistance(userLat, userLng, storeGpsConfig.gps_lat, storeGpsConfig.gps_lng));
-          withinRange = distanceM <= (storeGpsConfig.gps_radius_m || 200);
-        }
-        if (withinRange) {
-          await doClockRecord(userLat, userLng, distanceM, 'gps');
-        } else {
-          const ip = await getClientIp();
-          if (ip && wifiAllowedIps.includes(ip)) {
-            await doClockRecord(userLat, userLng, distanceM, 'wifi');
-          } else {
-            setClockInStatus('out_of_range');
-            setClockInMessage(`\u8DDD\u96E2\u9580\u5E02 ${distanceM}m\uFF0C\u4E14\u672A\u9023\u63A5\u9580\u5E02 WiFi`);
-          }
-        }
+      if (error) throw error;
+
+      if (data.success) {
+        setClockInStatus('success');
+        setClockInMessage(`\u2705 ${data.message}`);
+        await onTimeRecordsRefresh();
+        setTimeout(() => setClockInStatus('idle'), 3000);
+      } else if (data.code === 'OUT_OF_RANGE') {
+        setClockInStatus('out_of_range');
+        setClockInMessage(data.message);
+      } else if (data.code === 'WIFI_NOT_CONNECTED') {
+        setClockInStatus('out_of_range');
+        setClockInMessage(data.message);
+      } else if (data.code === 'GPS_REQUIRED') {
+        setClockInStatus('error');
+        setClockInMessage(data.message);
       } else {
-        const position = await getCurrentPosition().catch(() => null);
-        const userLat = position?.coords.latitude ?? null;
-        const userLng = position?.coords.longitude ?? null;
-        let distanceM: number | null = null;
-        if (userLat !== null && userLng !== null && storeGpsConfig?.gps_lat && storeGpsConfig?.gps_lng) {
-          distanceM = Math.round(haversineDistance(userLat, userLng, storeGpsConfig.gps_lat, storeGpsConfig.gps_lng));
-        }
-        await doClockRecord(userLat, userLng, distanceM, 'manual');
+        setClockInStatus('error');
+        setClockInMessage(data.message || '\u6253\u5361\u5931\u6557');
       }
     } catch (err: any) {
       setClockInStatus('error');
-      setClockInMessage(
-        err.code === 1
-          ? '\u4F4D\u7F6E\u5B58\u53D6\u88AB\u62D2\u7D55\uFF0C\u8ACB\u5141\u8A31\u5B9A\u4F4D\u6B0A\u9650\u3002'
-          : `\u5B9A\u4F4D\u5931\u6557\uFF1A${err.message}`,
-      );
+      setClockInMessage(`\u6253\u5361\u5931\u6557\uFF1A${err.message}`);
     }
   };
 
@@ -259,6 +200,48 @@ export function ClockInPanel({
           \uD83D\uDCDD \u63D0\u4EA4\u4EBA\u5DE5\u88DC\u6253\u7533\u8ACB
         </button>
       )}
+
+      {/* Break Tracking */}
+      {(() => {
+        const activeRecord = timeRecords.find((r: any) => r.clock_in && !r.clock_out);
+        if (!activeRecord) return null;
+        const onBreak = activeRecord.break_start && !activeRecord.break_end;
+        return (
+          <div className="bg-amber-50 rounded-xl p-3 border border-amber-200">
+            <div className="text-sm font-semibold text-amber-800 mb-2">{'\u2615'} {'\u4F11\u606F\u6642\u9593'}</div>
+            {onBreak ? (
+              <button
+                className="w-full py-3 rounded-xl bg-amber-500 text-white font-bold text-base"
+                onClick={async () => {
+                  const breakEnd = new Date().toISOString();
+                  const breakStartTime = new Date(activeRecord.break_start).getTime();
+                  const breakMins = Math.round((new Date(breakEnd).getTime() - breakStartTime) / 60000);
+                  await supabase.from('time_records').update({
+                    break_end: breakEnd,
+                    break_minutes: (activeRecord.break_minutes || 0) + breakMins,
+                  }).eq('id', activeRecord.id);
+                  await onTimeRecordsRefresh();
+                }}
+              >
+                {'\u7D50\u675F\u4F11\u606F'} ({Math.round((Date.now() - new Date(activeRecord.break_start).getTime()) / 60000)} {'\u5206\u9418'})
+              </button>
+            ) : (
+              <button
+                className="w-full py-3 rounded-xl border-2 border-amber-400 text-amber-700 font-bold text-base"
+                onClick={async () => {
+                  await supabase.from('time_records').update({
+                    break_start: new Date().toISOString(),
+                    break_end: null,
+                  }).eq('id', activeRecord.id);
+                  await onTimeRecordsRefresh();
+                }}
+              >
+                {'\u958B\u59CB\u4F11\u606F'}
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Today's Records Summary */}
       <div>

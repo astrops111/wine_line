@@ -626,7 +626,7 @@ export function LiffManagerDashboard() {
             <>
                 <style>{css}</style>
                 <div className="dash-error">
-                    <div className="error-icon">🔒</div>
+                    <div className="error-icon">⚠️</div>
                     <div className="error-text">{error}</div>
                     <div className="error-detail">請確認您的 LINE 帳號已綁定員工資料，且具有主管權限。</div>
                 </div>

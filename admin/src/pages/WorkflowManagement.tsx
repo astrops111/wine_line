@@ -7,7 +7,18 @@ import { Workflows } from './Workflows';
 import { Tasks } from './Tasks';
 import { Checklists } from './Checklists';
 
-type Tab = 'dashboard' | 'workflows' | 'tasks' | 'checklists';
+type Tab = 'dashboard' | 'workflows' | 'tasks' | 'checklists' | 'templates';
+
+interface TemplateItem {
+    id: string;
+    name: string;
+    name_en: string | null;
+    description: string | null;
+    description_en: string | null;
+    category: string | null;
+    icon: string;
+    steps: { name: string; owner: string }[];
+}
 
 interface WorkflowStat {
     total: number;
@@ -44,11 +55,62 @@ export function WorkflowManagement() {
     const [checklistCount, setChecklistCount] = useState(0);
     const [recentInstances, setRecentInstances] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [templates, setTemplates] = useState<TemplateItem[]>([]);
+    const [templatesLoading, setTemplatesLoading] = useState(false);
+    const [expandedTemplate, setExpandedTemplate] = useState<string | null>(null);
+    const [creatingFromTemplate, setCreatingFromTemplate] = useState<string | null>(null);
 
     useEffect(() => {
         if (!orgId) return;
         loadDashboard();
     }, [orgId]);
+
+    useEffect(() => {
+        if (tab === 'templates') loadTemplates();
+    }, [tab]);
+
+    async function loadTemplates() {
+        setTemplatesLoading(true);
+        const { data } = await supabase
+            .from('workflow_template_library')
+            .select('*')
+            .order('category, name');
+        setTemplates(data || []);
+        setTemplatesLoading(false);
+    }
+
+    async function createFromTemplate(tmpl: TemplateItem) {
+        if (!orgId) return;
+        setCreatingFromTemplate(tmpl.id);
+        // Create workflow template
+        const { data: wf } = await supabase
+            .from('workflows')
+            .insert({
+                organization_id: orgId,
+                name: tmpl.name,
+                description: tmpl.description || '',
+                status: 'active',
+                metadata: { type: tmpl.category, from_library: tmpl.id },
+            })
+            .select('id')
+            .single();
+
+        if (wf) {
+            // Create steps
+            const steps = (tmpl.steps || []).map((s, i) => ({
+                workflow_id: wf.id,
+                name: s.name,
+                step_order: i + 1,
+                step_type: 'task',
+                config: { owner: s.owner },
+            }));
+            if (steps.length > 0) {
+                await supabase.from('workflow_steps').insert(steps);
+            }
+        }
+        setCreatingFromTemplate(null);
+        switchTab('workflows');
+    }
 
     async function loadDashboard() {
         setLoading(true);
@@ -92,6 +154,7 @@ export function WorkflowManagement() {
         { key: 'workflows',  icon: '🔄', label: zh ? '流程'    : 'Workflows' },
         { key: 'tasks',      icon: '📋', label: zh ? '任務'    : 'Tasks' },
         { key: 'checklists', icon: '✅', label: zh ? '查核清單' : 'Checklists' },
+        { key: 'templates',  icon: '📚', label: zh ? '範本庫'  : 'Templates' },
     ];
 
     const statusColors: Record<string, { bg: string; color: string }> = {
@@ -254,6 +317,91 @@ export function WorkflowManagement() {
 
                 {/* ═══ CHECKLISTS ═══ */}
                 {tab === 'checklists' && <Checklists />}
+
+                {/* ═══ TEMPLATES ═══ */}
+                {tab === 'templates' && (
+                    <div>
+                        {templatesLoading ? (
+                            <p className="loading-pulse">{zh ? '載入中…' : 'Loading…'}</p>
+                        ) : templates.length === 0 ? (
+                            <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                {zh ? '尚無範本' : 'No templates available'}
+                            </div>
+                        ) : (
+                            <div style={{ display: 'grid', gap: '12px' }}>
+                                {(() => {
+                                    const categories = [...new Set(templates.map(t => t.category || '其他'))];
+                                    return categories.map(cat => (
+                                        <div key={cat}>
+                                            <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                                                {cat}
+                                            </h3>
+                                            <div style={{ display: 'grid', gap: '8px' }}>
+                                                {templates.filter(t => (t.category || '其他') === cat).map(tmpl => (
+                                                    <div key={tmpl.id} className="card" style={{ padding: '16px' }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                            <div style={{ flex: 1 }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                                                    <span style={{ fontSize: '20px' }}>{tmpl.icon}</span>
+                                                                    <span style={{ fontWeight: 600, fontSize: '14px' }}>
+                                                                        {zh ? tmpl.name : (tmpl.name_en || tmpl.name)}
+                                                                    </span>
+                                                                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', background: 'var(--bg-secondary)', padding: '1px 8px', borderRadius: '10px' }}>
+                                                                        {(tmpl.steps || []).length} {zh ? '步驟' : 'steps'}
+                                                                    </span>
+                                                                </div>
+                                                                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
+                                                                    {zh ? tmpl.description : (tmpl.description_en || tmpl.description)}
+                                                                </p>
+                                                            </div>
+                                                            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                                                <button
+                                                                    className="btn btn-ghost"
+                                                                    style={{ fontSize: '12px', padding: '4px 10px' }}
+                                                                    onClick={() => setExpandedTemplate(expandedTemplate === tmpl.id ? null : tmpl.id)}
+                                                                >
+                                                                    {expandedTemplate === tmpl.id ? (zh ? '收起' : 'Collapse') : (zh ? '預覽' : 'Preview')}
+                                                                </button>
+                                                                <button
+                                                                    className="btn btn-primary"
+                                                                    style={{ fontSize: '12px', padding: '4px 10px' }}
+                                                                    disabled={creatingFromTemplate === tmpl.id}
+                                                                    onClick={() => createFromTemplate(tmpl)}
+                                                                >
+                                                                    {creatingFromTemplate === tmpl.id ? '...' : (zh ? '套用' : 'Use')}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        {expandedTemplate === tmpl.id && (tmpl.steps || []).length > 0 && (
+                                                            <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border)' }}>
+                                                                <div style={{ display: 'grid', gap: '4px' }}>
+                                                                    {tmpl.steps.map((step, idx) => (
+                                                                        <div key={idx} style={{
+                                                                            display: 'flex', alignItems: 'center', gap: '8px',
+                                                                            fontSize: '12px', padding: '4px 8px', borderRadius: '6px',
+                                                                            background: 'var(--bg-secondary)',
+                                                                        }}>
+                                                                            <span style={{ color: 'var(--text-muted)', minWidth: '20px', fontFamily: 'monospace' }}>
+                                                                                {idx + 1}.
+                                                                            </span>
+                                                                            <span style={{ flex: 1, fontWeight: 500 }}>{step.name}</span>
+                                                                            <span style={{ color: 'var(--text-muted)', fontSize: '11px' }}>{step.owner}</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ));
+                                })()}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

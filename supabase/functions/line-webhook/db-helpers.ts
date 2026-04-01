@@ -67,7 +67,7 @@ export async function logMessage(
   }
 ): Promise<string | null> {
   try {
-    const { data } = await db.from("line_messages").insert({
+    const { data, error } = await db.from("line_messages").insert({
       line_user_id: opts.lineUserId,
       display_name: opts.displayName ?? null,
       message_text: opts.messageText,
@@ -76,6 +76,10 @@ export async function logMessage(
       group_id: opts.groupId ?? null,
       event_type: opts.eventType ?? "message",
     }).select("id").single();
+    if (error) {
+      console.error("[logMessage] insert error:", JSON.stringify(error));
+      return null;
+    }
     return data?.id ?? null;
   } catch (err) {
     console.error("[logMessage] insert failed:", err);

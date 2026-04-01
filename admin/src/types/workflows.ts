@@ -35,6 +35,7 @@ export interface WorkflowInstance {
     taskSummary: TaskSummary;
     assigned_user_id?: string | null;
     assigned_groups?: string[];
+    store_id?: string | null;
 }
 
 export interface InstanceTask {
@@ -82,6 +83,7 @@ export interface TaskSummary {
     in_progress: number;
     completed: number;
     blocked: number;
+    overdue: number;
 }
 
 export interface TaskEdit {

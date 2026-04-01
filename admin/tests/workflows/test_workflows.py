@@ -241,15 +241,152 @@ def test_workflow_management_hub():
         browser.close()
 
 
+def test_workflow_template_validation_bug02():
+    """TC-W-11: Verify BUG-02 fix — empty template name shows error."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/workflows")
+        wait_for_page_ready(page)
+
+        add_btn = page.locator("button").filter(
+            has_text=re.compile("[Aa]dd|[Nn]ew|[Cc]reate|建立|新增")
+        ).first
+        if add_btn.is_visible():
+            add_btn.click()
+            page.wait_for_timeout(400)
+
+            save_btn = page.locator("button").filter(
+                has_text=re.compile("[Ss]ave|[Cc]reate|建立|儲存")
+            ).first
+            if save_btn.is_visible():
+                save_btn.click()
+                page.wait_for_timeout(400)
+                screenshot(page, "wf_bug02_validation")
+                error_msg = page.locator("text=/範本名稱為必填欄位|[Tt]emplate.*name.*required/i")
+                if error_msg.count() > 0:
+                    print("  ✅  TC-W-11 passed — BUG-02 fix verified: error message shown")
+                else:
+                    invalid = page.locator("input:invalid").count()
+                    err_text = page.locator("text=/required|必填/i").count()
+                    if invalid > 0 or err_text > 0:
+                        print("  ✅  TC-W-11 passed — validation active")
+                    else:
+                        print("  ❌  TC-W-11 FAILED — BUG-02 regression: no validation shown")
+            else:
+                print("  ⚠️  TC-W-11 skipped — save button not found")
+        else:
+            print("  ⚠️  TC-W-11 skipped — add button not found")
+        browser.close()
+
+
+def test_task_status_workflow():
+    """TC-W-13: Task status transitions visible."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/tasks")
+        wait_for_page_ready(page)
+
+        # Check for status badges
+        body = page.locator("body").inner_text()
+        has_statuses = re.search(r"[Pp]ending|進行中|[Ii]n.?[Pp]rogress|已完成|[Cc]omplete|待處理", body) is not None
+        screenshot(page, "task_status_badges")
+        print(f"  {'✅' if has_statuses else '⚠️'}  TC-W-13 — task status badges visible: {has_statuses}")
+        browser.close()
+
+
+def test_task_detail_comments():
+    """TC-W-14: Task detail panel has comments section."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/tasks")
+        wait_for_page_ready(page)
+
+        rows = page.locator("tbody tr, [data-testid*='task'], .task-item, .task-row")
+        if rows.count() > 0:
+            rows.first.click()
+            wait_for_page_ready(page)
+            screenshot(page, "task_detail_panel")
+
+            # Check for comments section
+            body = page.locator("body").inner_text()
+            has_comments = re.search(r"[Cc]omment|留言|備註|討論", body) is not None
+            print(f"  {'✅' if has_comments else '⚠️'}  TC-W-14 — comments section: {has_comments}")
+        else:
+            print("  ⚠️  TC-W-14 skipped — no task rows")
+        browser.close()
+
+
+def test_checklist_crud():
+    """TC-W-17: Checklists page CRUD operations."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/checklists")
+        wait_for_page_ready(page)
+
+        add_btn = page.locator("button").filter(
+            has_text=re.compile("[Aa]dd|[Cc]reate|[Nn]ew|新增|建立")
+        ).first
+        if add_btn.is_visible():
+            add_btn.click()
+            page.wait_for_timeout(500)
+            screenshot(page, "checklist_create_form")
+            inputs = page.locator("input, select, textarea").count()
+            print(f"  {'✅' if inputs >= 1 else '⚠️'}  TC-W-17 — checklist form inputs: {inputs}")
+        else:
+            print("  ⚠️  TC-W-17 skipped — no add button")
+        browser.close()
+
+
+def test_task_create_form():
+    """TC-W-04: Task create form opens with required fields."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/tasks")
+        wait_for_page_ready(page)
+
+        add_btn = page.locator("button").filter(
+            has_text=re.compile("[Aa]dd|[Nn]ew|[Cc]reate|建立|新增")
+        ).first
+        if add_btn.is_visible():
+            add_btn.click()
+            page.wait_for_timeout(500)
+            screenshot(page, "task_create_form")
+            inputs = page.locator("input, select, textarea").count()
+            assert inputs >= 2, f"Task create form should have inputs, got {inputs}"
+
+            # Try empty submit
+            save_btn = page.locator("button").filter(
+                has_text=re.compile("[Ss]ave|[Cc]reate|建立|儲存")
+            ).first
+            if save_btn.is_visible():
+                save_btn.click()
+                page.wait_for_timeout(400)
+                screenshot(page, "task_create_validation")
+            print("  ✅  TC-W-04 passed")
+        else:
+            print("  ⚠️  TC-W-04 skipped — add button not found")
+        browser.close()
+
+
 if __name__ == "__main__":
     print("\n=== Workflow & Task Management Tests ===\n")
     test_workflows_page_loads()
     test_create_workflow_validation()
     test_tasks_page_loads()
+    test_task_create_form()
     test_task_ai_chat()
     test_workflow_ai_chat()
     test_checklists_page()
     test_notifications_page()
     test_triggers_page()
     test_workflow_management_hub()
+    test_workflow_template_validation_bug02()
+    test_task_status_workflow()
+    test_task_detail_comments()
+    test_checklist_crud()
     print("\n✅ All Workflow tests completed.\n")

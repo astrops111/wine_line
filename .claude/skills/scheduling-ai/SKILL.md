@@ -17,9 +17,10 @@ The complete PRD lives at `admin/docs/PRD-scheduling-ai.md` — read it first fo
 
 ## What This Skill Produces
 
-Two deliverables:
-1. **Edge Function**: `supabase/functions/scheduling-ai/index.ts` — a Deno function that accepts scheduling data, calls DashScope Qwen 3.5 Plus, validates output, and returns shift assignments
-2. **Frontend Patch**: Updates to `admin/src/pages/Scheduling.tsx` — adds missing payload fields (availability, operating_hours, previous_week_assignments)
+Primary deliverable:
+1. **Edge Function**: `supabase/functions/scheduling-ai/index.ts` — a Deno function that accepts scheduling data, calls DashScope Qwen 3.5 Plus, validates output with H1–H13 hard constraints + S1–S8 soft constraints, and returns shift assignments
+
+The frontend payload (`Scheduling.tsx:324-356`) is already complete — no patching needed.
 
 ## Architecture Overview
 
@@ -36,10 +37,12 @@ Generate schedule with LLM, validate with constraint checker, retry once if viol
 ## Step 1: Read the PRD and Existing Code
 
 Before writing any code:
-1. Read `admin/docs/PRD-scheduling-ai.md` for the full specification
+1. Read `admin/docs/PRD-scheduling-ai.md` for the full specification (v1.1)
 2. Read `supabase/functions/task-ai-agent/index.ts` as the template for DashScope integration pattern
-3. Read `admin/src/pages/Scheduling.tsx` lines 162–200 for the current frontend contract
-4. Read `references/constraint-rules.md` bundled with this skill for the exact validation logic
+3. Read `admin/src/pages/Scheduling.tsx` lines 324–382 for the current frontend contract (`runAiSchedule()`)
+4. Read `admin/src/lib/schedulingValidation.ts` for the existing client-side validation (mirror this server-side)
+5. Read `admin/src/types/scheduling.ts` for TypeScript interfaces
+6. Read `references/constraint-rules.md` bundled with this skill for the exact validation logic (H1–H13, S1–S8)
 
 ## Step 2: Build the Edge Function
 
@@ -47,15 +50,20 @@ Create `supabase/functions/scheduling-ai/index.ts` following this structure:
 
 ```
 1. CORS handler (copy pattern from task-ai-agent)
-2. Parse request body — extract all fields
-3. Data preparation (Phase 1 from PRD)
-4. Build LLM prompt (Phase 2 from PRD)
-5. Call DashScope Qwen 3.5 Plus
-6. Parse JSON response (handle markdown code fences)
-7. Validate assignments (Phase 4 from PRD)
-8. If violations → retry once with violation feedback (Phase 5)
-9. Calculate summary scores (Phase 6)
-10. Return response
+2. Parse request body — extract all fields (including working_hour_type, historical_assignments)
+3. Create Supabase client and fetch additional context:
+   a. employee_skills from employee_skills table
+   b. monthly OT context from overtime_requests table
+   c. store budget from stores table (default_labor_budget, hourly_rate_default)
+   d. demand forecasts (optional, from demand-forecast function or daily_demand table)
+4. Data preparation (Phase 1 from PRD) — build maps, determine dailyNormalCap, summarize history
+5. Build LLM prompt (Phase 2 from PRD) — encode H1-H13 and S1-S8
+6. Call DashScope Qwen 3.5 Plus
+7. Parse JSON response (handle markdown code fences)
+8. Validate assignments (Phase 4 from PRD) — pass all options including OT, skills, budget
+9. If violations → retry once with violation feedback (Phase 5)
+10. Calculate summary scores (Phase 6) — including budget utilization
+11. Return response
 ```
 
 ### Critical Implementation Details
@@ -84,7 +92,16 @@ const parsed = match ? JSON.parse(match[1]) : JSON.parse(text);
 
 ### System Prompt Template
 
-The system prompt must encode constraints in this exact priority order. Read `references/constraint-rules.md` for the full prompt template including all hard constraints (H1–H8) and soft constraints (S1–S6).
+The system prompt must encode constraints in this exact priority order. Read `references/constraint-rules.md` for the full prompt template including all hard constraints (H1–H13) and soft constraints (S1–S8).
+
+Key data sections in the prompt:
+- Employee data, shift templates, availability, leave dates, operating hours
+- Employee skills + template required skills (for H13)
+- Monthly OT context (for H11/H12)
+- Historical assignment patterns (for S3)
+- Demand forecasts (for S8)
+- Labor budget (for S7)
+- Working hour type — determines dailyNormalCap (8h standard, 10h 變形工時)
 
 ### Validation Function
 
@@ -96,12 +113,21 @@ The edge function must include a `validateSchedule()` function that checks:
 - H3: Employee exceeds max_hours_per_week
 - H4: 七休一 — 7+ consecutive working days
 - H5: Rest interval < 11 hours between shifts
+- H6: Shift times not in templates
 - H7: Part-time exceeds max hours (strict ceiling)
+- H9: Break time below legal minimum (§35)
+- H10: Daily hours > 12h absolute cap
+- H11: Monthly OT > 46h (or 54h hard cap) (§32-1)
+- H12: 3-month OT > 138h (§32-1)
+- H13: Employee lacks required skills for assigned shift
 
 **Warnings** (informational):
 - H8: Full-time under 80% of max hours (underutilized)
-- S1: Understaffed day (below min_staff_per_day)
-- S1: No senior employee on a day
+- H10: Daily hours > dailyNormalCap (overtime, not violation)
+- S1: Understaffed day / no senior employee
+- S7: Labor cost exceeds or approaching budget
+- S8: Staffing below demand forecast recommendation
+- Monthly OT approaching 46h cap (>38h)
 - Overtime detected
 
 See `references/constraint-rules.md` for the complete validation pseudocode.
@@ -110,53 +136,30 @@ See `references/constraint-rules.md` for the complete validation pseudocode.
 
 After validation, compute:
 - `total_hours`: sum of all (end_time - start_time - break_minutes) across assignments
-- `estimated_cost`: total_hours × 170 (default NT$ hourly rate)
+- `estimated_cost`: total_hours × hourly_rate (default NT$183 from store settings)
 - `preference_score`: see Appendix B in PRD
 - `consistency_score`: see Appendix C in PRD (0.0 if no previous week data)
 - `coverage_met`: true if no understaffed warnings
+- `budget_utilization`: estimated_cost / labor_budget (if budget available)
 
-## Step 3: Patch the Frontend
+## Step 3: Frontend (Already Complete)
 
-Update `admin/src/pages/Scheduling.tsx` `runAiSchedule()` function:
+The frontend payload in `Scheduling.tsx:324-356` already sends all required fields:
+- `availability`, `operating_hours`, `working_hour_type`
+- `previous_week_assignments`, `historical_assignments` (8 weeks)
+- `user_instructions`
 
-1. **Before the API call**, fetch previous week's assignments:
-```typescript
-const prevStart = new Date(weekStart + 'T00:00:00');
-prevStart.setDate(prevStart.getDate() - 7);
-const { data: prevSched } = await supabase.from('schedules').select('id')
-  .eq('store_id', selectedStore)
-  .eq('week_start', prevStart.toISOString().split('T')[0]).single();
-const prevAssignments = prevSched
-  ? (await supabase.from('shift_assignments')
-      .select('user_id, date, start_time, end_time, shift_template_id')
-      .eq('schedule_id', prevSched.id)).data
-  : [];
-```
-
-2. **Extend the payload** to include three new fields:
-```typescript
-body: {
-  store_id: selectedStore,
-  week_start: weekStart,
-  employees,
-  shift_templates: shiftTemplates,
-  leave_requests: leaves,
-  availability,                                                    // ADD
-  operating_hours: stores.find(s => s.id === selectedStore)?.operating_hours || {},  // ADD
-  previous_week_assignments: prevAssignments || [],                 // ADD
-  user_instructions: aiInstructions.trim() || undefined,
-}
-```
-
-3. **Handle new response fields** — the response now includes `warnings[]` and extended `summary` with scores. Update the schedule insert to store warnings if the `schedules` table supports it, otherwise just store violations as before.
+No frontend patching needed. The edge function is the only deliverable.
 
 ## Step 4: Verify
 
 After implementation:
 1. Check that the edge function handles all edge cases from the PRD (empty employees, no templates, malformed LLM response, etc.)
-2. Verify the frontend payload includes all required fields
-3. Confirm the validation function covers all H1–H8 checks and warning types
-4. Ensure bilingual notes (zh-TW primary, English secondary)
+2. Confirm the validation function covers all H1–H13 hard checks and S1–S8 soft checks
+3. Verify monthly OT context is fetched and used in validation
+4. Verify employee skills are fetched and cross-referenced with template required_skills
+5. Ensure bilingual notes (zh-TW primary, English secondary)
+6. Confirm 變形工時 daily cap is correctly applied (8h standard, 10h for 2week/4week)
 
 ## Common Pitfalls
 
@@ -165,3 +168,7 @@ After implementation:
 - **Handle timezone**: All dates are date strings (YYYY-MM-DD), all times are time strings (HH:MM). No timezone conversion needed — everything is local Taiwan time.
 - **Part-time ceiling is strict**: If a part-time employee's total hours exceed max_hours_per_week, it's a hard violation that triggers retry. Full-time under-scheduling is only a warning.
 - **Previous week may not exist**: If no previous schedule found, set consistency_score to 0 and skip consistency logic in the prompt.
+- **Monthly OT is cumulative**: The edge function must add this week's OT to existing monthly totals — not just check this week in isolation.
+- **變形工時 changes the daily cap**: When `working_hour_type` is `2week` or `4week`, hours between 8-10h/day are NOT overtime. The validation must use the correct `dailyNormalCap`.
+- **Skill data may be empty**: If `employee_skills` table has no rows, skip H13 checks entirely rather than blocking all assignments.
+- **Budget is soft**: Never reject a schedule for exceeding budget. Just warn. Coverage always takes priority.

@@ -9,6 +9,8 @@
 6. [Decision Priority Hierarchy](#decision-priority-hierarchy)
 7. [Edge Cases](#edge-cases)
 
+> **Last updated**: 2026-03-31 — Synced with codebase (`schedulingValidation.ts`, `Scheduling.tsx`).
+
 ---
 
 ## Taiwan Labor Law — Hours & Break Rules
@@ -19,10 +21,34 @@ All scheduling logic is governed by the Taiwan Labor Standards Act (勞基法).
 
 | Rule | Limit |
 |------|-------|
-| Regular work per day | **8 hours** |
+| Regular work per day | **8 hours** (standard) / **10 hours** (變形工時) |
 | Total per day (incl. overtime) | **12 hours** |
 | Regular work per week | **40 hours** |
-| Monthly overtime cap | **46 hours** |
+
+### §30-1 — Variable Working Hours (變形工時)
+
+Certain industries (including retail, hospitality, healthcare) may adopt variable working hour arrangements (變形工時) under employer-employee agreement:
+
+| Arrangement | Period | Daily Normal Cap | Weekly Cap | Notes |
+|-------------|--------|-----------------|------------|-------|
+| **Standard** | 1 week | 8h | 40h | Default for all |
+| **2-week** (§30-1) | 2 weeks | **10h** | 48h (but avg 40h over 2 weeks) | Requires labor-management agreement |
+| **4-week** (§30-1) | 4 weeks | **10h** | 48h (but avg 40h over 4 weeks) | Requires labor-management agreement |
+| **8-week** (§30-1) | 8 weeks | **8h** | 48h (but avg 40h over 8 weeks) | Less common in retail |
+
+**Impact on AI scheduler**: When `working_hour_type` is `2week` or `4week`, the daily normal cap extends from 8h to 10h. Hours between 8h and 10h are NOT overtime — they're redistributed regular hours. Only hours beyond 10h (or 12h total) count as overtime.
+
+### §32-1 — Monthly & Quarterly Overtime Caps
+
+| Rule | Limit |
+|------|-------|
+| Monthly overtime cap (base) | **46 hours** |
+| Monthly overtime cap (with employer-employee agreement) | **54 hours** |
+| Rolling 3-month total cap | **138 hours** |
+
+**Important**: Monthly OT is cumulative across all weeks in a calendar month. The AI scheduler must consider existing OT hours from earlier weeks in the month when assigning new shifts. The `otContext` parameter provides:
+- `monthly[user_id]`: OT hours already accumulated in current month
+- `threeMonth[user_id]`: OT hours accumulated in current 3-month window
 
 ### §35 — Mandatory Break Time
 
@@ -107,17 +133,23 @@ function validateBreakCompliance(start_time: string, end_time: string, break_min
 ### §30 Daily Hours Check
 
 ```typescript
-function validateDailyHours(start_time: string, end_time: string, break_minutes: number) {
+function validateDailyHours(
+  start_time: string, end_time: string, break_minutes: number,
+  working_hour_type: 'standard' | '2week' | '4week' | '8week' = 'standard'
+) {
   const [sh, sm] = start_time.split(':').map(Number);
   const [eh, em] = end_time.split(':').map(Number);
   const shiftMinutes = (eh * 60 + em) - (sh * 60 + sm);
   const workMinutes = shiftMinutes - break_minutes;
   const workHours = workMinutes / 60;
+  // Variable working hours: daily normal cap is 10h for 2week/4week
+  const dailyNormalCap = (working_hour_type === '2week' || working_hour_type === '4week') ? 10 : 8;
   return {
     workHours,
-    regularHours: Math.min(workHours, 8),           // first 8h = regular pay
-    overtimeHours: Math.max(0, workHours - 8),      // beyond 8h = overtime
+    regularHours: Math.min(workHours, dailyNormalCap),
+    overtimeHours: Math.max(0, workHours - dailyNormalCap),
     exceedsDaily: workHours > 12,                    // §30+§32: absolute max 12h/day
+    dailyNormalCap,
   };
 }
 
@@ -158,9 +190,24 @@ H9. MANDATORY BREAK (Taiwan §35): Break time must meet legal minimums based on 
     Each shift template's break_minutes must satisfy this rule.
 
 H10. DAILY HOURS CAP (Taiwan §30+§32):
-    - Regular work: max 8 hours per day (work hours = shift duration − break)
+    - Regular work: max {dailyNormalCap} hours per day (8h standard, 10h for 變形工時)
     - Total including overtime: max 12 hours per day
-    - Monthly overtime: max 46 hours
+    Working hour type for this store: {workingHourType}
+
+H11. MONTHLY OVERTIME CAP (Taiwan §32-1):
+    - Monthly OT must not exceed 46 hours (base limit)
+    - With employer-employee agreement: max 54 hours (hard cap)
+    - Current month accumulated OT per employee: {monthlyOtMap}
+    - The AI must account for existing OT when assigning new shifts
+
+H12. QUARTERLY OVERTIME CAP (Taiwan §32-1):
+    - Rolling 3-month OT total must not exceed 138 hours
+    - Current 3-month accumulated OT per employee: {threeMonthOtMap}
+
+H13. SKILL/CERTIFICATION MATCH:
+    - If a shift template has required_skills, only assign employees who have ALL required skills
+    - Employee skills: {employeeSkillsMap}
+    - Shift template required skills: {templateSkillsMap}
 
 === HOURS CALCULATION RULE ===
 WORK HOURS = (end_time − start_time) − break_minutes
@@ -177,14 +224,20 @@ S1. STAFF COVERAGE:
 S2. EMPLOYEE PREFERENCES:
     - Prefer scheduling employees on their "preferred" (⭐) days over merely "available" (✅) days
     - Match employee position to shift role when applicable
+    - Match employee skills to shift template required_skills (H13 is hard; S2 optimizes for best match)
     - Full-time employees get priority for hours up to their max
     - Part-time employees fill remaining gaps
 
 S3. SCHEDULE CONSISTENCY:
     - If previous_week_assignments are provided, try to keep ~70% of the pattern stable
       (same employee on same day-of-week with similar shift)
+    - If historical_assignments (8 weeks) are provided, learn recurring patterns:
+      * Which employees typically work which days of the week
+      * Common shift assignment patterns per employee
+      * Use these patterns as a baseline when no previous week data exists
     - Rotate weekend workers for fairness — if someone worked both Sat+Sun last week,
       try to give them at least one weekend day off this week
+    - Use historical weekend count to ensure long-term fairness (not just week-to-week)
 
 S4. FAIRNESS:
     - Distribute hours fairly across employees of the same type (full-time vs part-time)
@@ -193,10 +246,26 @@ S4. FAIRNESS:
 
 S5. MINIMIZE OVERTIME:
     - Prefer spreading hours across more employees rather than concentrating and creating overtime
+    - Be especially conservative when an employee is already near their monthly OT cap (H11/H12)
 
 S6. USER INSTRUCTIONS:
     - Honor the manager's natural language instructions when they don't conflict with higher-priority constraints
     {userInstructions}
+
+S7. LABOR BUDGET:
+    - If a labor_budget is provided, try to keep estimated total cost ≤ budget
+    - Estimated cost = total_work_hours × hourly_rate (default NT$196)
+    - Budget is a soft target; staffing coverage (S1) takes priority over budget
+    - Warn if projected cost exceeds budget or approaches threshold (90%)
+    Budget: {laborBudget or "No budget set"}
+    Hourly rate: {hourlyRate or 196}
+
+S8. DEMAND-BASED STAFFING:
+    - If demand_forecasts are provided, adjust daily staffing to match predicted demand
+    - Each forecast includes: date, recommended_staff, confidence (0-1), reason
+    - Higher confidence → weight the recommendation more heavily
+    - Override min_staff_per_day with recommended_staff when forecast confidence > 0.7
+    Forecasts: {demandForecasts or "No forecasts available"}
 
 === EMPLOYEE DATA ===
 {employeesJSON}
@@ -213,8 +282,28 @@ S6. USER INSTRUCTIONS:
 === STORE OPERATING HOURS ===
 {operatingHours}
 
+=== EMPLOYEE SKILLS ===
+{employeeSkillsJSON or "No skill data available."}
+
+=== SHIFT TEMPLATE REQUIRED SKILLS ===
+{templateSkillsJSON or "No skill requirements on templates."}
+
 === PREVIOUS WEEK ASSIGNMENTS (for consistency) ===
 {previousWeekJSON or "No previous week data available."}
+
+=== HISTORICAL ASSIGNMENTS (8 weeks, for pattern learning) ===
+{historicalSummaryJSON or "No historical data available."}
+Note: This is a summary of assignment patterns over the past 8 weeks.
+Use it to identify recurring patterns (e.g., "Employee A usually works Mon/Wed/Fri").
+
+=== MONTHLY OVERTIME CONTEXT ===
+{monthlyOtJSON or "No OT tracking data available."}
+
+=== DEMAND FORECASTS ===
+{demandForecastsJSON or "No demand forecasts available."}
+
+=== LABOR BUDGET ===
+{laborBudgetJSON or "No budget constraint."}
 
 === TARGET WEEK ===
 Dates: {weekDates[0]} (Mon) to {weekDates[6]} (Sun)
@@ -274,7 +363,16 @@ function validateSchedule(
   operatingDays: string[],
   closedDays: string[],
   minStaffPerDay: number,
-  shiftTemplates: ShiftTemplate[]
+  shiftTemplates: ShiftTemplate[],
+  options?: {
+    workingHourType?: 'standard' | '2week' | '4week' | '8week';
+    employeeSkills?: Record<string, string[]>;
+    otContext?: { monthly: Record<string, number>; threeMonth: Record<string, number> };
+    laborBudget?: number;
+    hourlyRate?: number;
+    budgetAlertThreshold?: number;
+    demandForecasts?: { date: string; recommended_staff: number; confidence: number }[];
+  }
 ): ValidationResult {
   const violations: Violation[] = [];
   const warnings: Warning[] = [];
@@ -282,6 +380,13 @@ function validateSchedule(
   const templateTimes = new Set(
     shiftTemplates.map(t => `${t.start_time}-${t.end_time}-${t.break_minutes}`)
   );
+  const templateMap = Object.fromEntries(shiftTemplates.map(t => [t.id, t]));
+
+  // Variable working hours — daily normal cap
+  const whType = options?.workingHourType || 'standard';
+  const dailyNormalCap = (whType === '2week' || whType === '4week') ? 10 : 8;
+  const empSkills = options?.employeeSkills || {};
+  const otCtx = options?.otContext;
 
   // Group assignments by user
   const byUser: Record<string, Assignment[]> = {};
@@ -355,7 +460,7 @@ function validateSchedule(
       });
     }
 
-    // H10: Daily hours cap (§30+§32)
+    // H10: Daily hours cap (§30+§32), uses dailyNormalCap for 變形工時
     const dailyWorkMinutes = shiftMinutes - a.break_minutes;
     const dailyWorkHours = dailyWorkMinutes / 60;
     if (dailyWorkHours > 12) {
@@ -364,13 +469,29 @@ function validateSchedule(
         type: 'daily_hours_exceeded', severity: 'error',
         message: `${emp.name}: ${a.date} 工時 ${dailyWorkHours.toFixed(1)}h 超過每日上限12h (§30+§32) / daily ${dailyWorkHours.toFixed(1)}h > 12h cap`
       });
-    } else if (dailyWorkHours > 8) {
+    } else if (dailyWorkHours > dailyNormalCap) {
       warnings.push({
         type: 'daily_overtime', date: a.date,
         employee_id: a.user_id, employee_name: emp.name,
         severity: 'warning',
-        message: `${emp.name}: ${a.date} 工時 ${dailyWorkHours.toFixed(1)}h (超過8h正常工時，${(dailyWorkHours - 8).toFixed(1)}h為加班) / ${(dailyWorkHours - 8).toFixed(1)}h daily overtime`
+        message: `${emp.name}: ${a.date} 工時 ${dailyWorkHours.toFixed(1)}h (超過${dailyNormalCap}h正常工時，${(dailyWorkHours - dailyNormalCap).toFixed(1)}h為加班) / ${(dailyWorkHours - dailyNormalCap).toFixed(1)}h daily overtime`
       });
+    }
+
+    // H13: Skill/certification match
+    if (a.shift_template_id) {
+      const tmpl = templateMap[a.shift_template_id];
+      if (tmpl?.required_skills && tmpl.required_skills.length > 0) {
+        const skills = empSkills[a.user_id] || [];
+        const missing = tmpl.required_skills.filter(s => !skills.includes(s));
+        if (missing.length > 0) {
+          violations.push({
+            employee_id: a.user_id, employee_name: emp.name,
+            type: 'skill_mismatch', severity: 'error',
+            message: `${emp.name}: ${a.date} 缺少技能 ${missing.join(', ')} / missing skills: ${missing.join(', ')}`
+          });
+        }
+      }
     }
   }
 
@@ -428,6 +549,41 @@ function validateSchedule(
       });
     }
 
+    // H11 + H12: Monthly & Quarterly OT caps (§32-1)
+    if (otCtx) {
+      const weeklyOt = totalHours > standardHours ? totalHours - standardHours : 0;
+      const monthlyTotal = (otCtx.monthly[userId] || 0) + weeklyOt;
+      const threeMonthTotal = (otCtx.threeMonth[userId] || 0) + weeklyOt;
+
+      if (monthlyTotal > 54) {
+        violations.push({
+          employee_id: userId, employee_name: emp.name,
+          type: 'monthly_ot_hard_cap', severity: 'error',
+          message: `${emp.name}: 月加班 ${monthlyTotal.toFixed(1)}h 超過絕對上限 54h (§32-1) / monthly OT ${monthlyTotal.toFixed(1)}h > 54h hard cap`
+        });
+      } else if (monthlyTotal > 46) {
+        violations.push({
+          employee_id: userId, employee_name: emp.name,
+          type: 'monthly_ot_exceeded', severity: 'error',
+          message: `${emp.name}: 月加班 ${monthlyTotal.toFixed(1)}h 超過上限 46h (§32-1) / monthly OT ${monthlyTotal.toFixed(1)}h > 46h cap`
+        });
+      } else if (monthlyTotal > 38) {
+        warnings.push({
+          type: 'monthly_ot_approaching', employee_id: userId, employee_name: emp.name,
+          severity: 'warning',
+          message: `${emp.name}: 月加班 ${monthlyTotal.toFixed(1)}h 接近上限 46h / monthly OT approaching 46h`
+        });
+      }
+
+      if (threeMonthTotal > 138) {
+        violations.push({
+          employee_id: userId, employee_name: emp.name,
+          type: 'quarterly_ot_exceeded', severity: 'error',
+          message: `${emp.name}: 三個月加班 ${threeMonthTotal.toFixed(1)}h 超過上限 138h (§32-1) / 3-month OT > 138h`
+        });
+      }
+    }
+
     // H4: 七休一 (consecutive days)
     let consecutive = 1;
     for (let i = 1; i < sorted.length; i++) {
@@ -483,6 +639,41 @@ function validateSchedule(
       warnings.push({
         type: 'no_senior', date, severity: 'warning',
         message: `${date}: 無資深員工值班 / no senior staff`
+      });
+    }
+
+    // S8: Demand-based staffing
+    if (options?.demandForecasts) {
+      const forecast = options.demandForecasts.find(f => f.date === date);
+      if (forecast && forecast.confidence > 0.7 && dailyStaff.length < forecast.recommended_staff) {
+        warnings.push({
+          type: 'demand_understaffed', date, severity: 'warning',
+          message: `${date}: ${dailyStaff.length}人值班，需求預測建議${forecast.recommended_staff}人 / ${dailyStaff.length} staff vs ${forecast.recommended_staff} recommended`
+        });
+      }
+    }
+  }
+
+  // === BUDGET CHECK (S7) ===
+  if (options?.laborBudget) {
+    const rate = options.hourlyRate || 196;
+    let totalH = 0;
+    for (const a of assignments) {
+      const [sh, sm] = a.start_time.split(':').map(Number);
+      const [eh, em] = a.end_time.split(':').map(Number);
+      totalH += ((eh * 60 + em) - (sh * 60 + sm) - a.break_minutes) / 60;
+    }
+    const cost = totalH * rate;
+    const threshold = options.budgetAlertThreshold || 0.90;
+    if (cost > options.laborBudget) {
+      warnings.push({
+        type: 'budget_exceeded', severity: 'warning',
+        message: `人力成本 NT$${Math.round(cost).toLocaleString()} 超過預算 NT$${Math.round(options.laborBudget).toLocaleString()} / labor cost exceeds budget`
+      });
+    } else if (cost > options.laborBudget * threshold) {
+      warnings.push({
+        type: 'budget_approaching', severity: 'warning',
+        message: `人力成本 NT$${Math.round(cost).toLocaleString()} 接近預算 (${Math.round(cost / options.laborBudget * 100)}%) / labor cost approaching budget`
       });
     }
   }
@@ -554,15 +745,18 @@ function calcConsistencyScore(
 When constraints conflict, resolve in this strict order:
 
 ```
-1. LABOR LAW (absolute)        — 七休一 §36, 11h rest §34, break time §35, daily cap §30+§32
-2. HARD BLOCKS (absolute)      — leave days, unavailable days, closed days
-3. HOURS COMPLIANCE (absolute) — part-time ceiling (never exceed), full-time floor (warn if under 80%)
-                                  work hours = shift − break (not raw shift duration)
-4. STAFF COVERAGE (high)       — min employees per day
-5. EMPLOYEE PREFERENCE (medium) — preferred days, position matching
-6. SCHEDULE CONSISTENCY (medium) — pattern continuity with prev week
-7. FAIRNESS ROTATION (low)     — weekend rotation, hour balancing
-8. USER INSTRUCTIONS (low)     — natural language criteria (best effort)
+1. LABOR LAW (absolute)         — 七休一 §36, 11h rest §34, break time §35, daily cap §30+§32,
+                                   monthly OT §32-1 (46h/54h), quarterly OT (138h), 變形工時 §30-1
+2. HARD BLOCKS (absolute)       — leave days, unavailable days, closed days
+3. SKILL/CERT MATCH (absolute)  — employee must have all required_skills for assigned shift template
+4. HOURS COMPLIANCE (absolute)  — part-time ceiling (never exceed), full-time floor (warn if under 80%)
+                                   work hours = shift − break (not raw shift duration)
+5. STAFF COVERAGE (high)        — min employees per day, demand forecast override when confidence > 0.7
+6. EMPLOYEE PREFERENCE (medium) — preferred days, position matching, skill affinity
+7. SCHEDULE CONSISTENCY (medium) — pattern continuity with prev week + historical 8-week patterns
+8. BUDGET AWARENESS (medium)    — keep labor cost within budget (soft target)
+9. FAIRNESS ROTATION (low)      — weekend rotation, hour balancing, long-term fairness via historical data
+10. USER INSTRUCTIONS (low)     — natural language criteria (best effort)
 ```
 
 ---
@@ -582,3 +776,13 @@ When constraints conflict, resolve in this strict order:
 | User instruction contradicts labor law | Labor law wins; explain in notes |
 | Employee with 0 max_hours_per_week | Skip employee, note in response |
 | All employees part-time | Distribute proportionally; warn if total coverage insufficient |
+| Employee near monthly OT cap (>38h) | Reduce assignments to stay within 46h; note in warnings |
+| Employee at 54h monthly OT hard cap | Do NOT assign any overtime shifts; hard violation |
+| 3-month OT approaching 138h | Reduce this month's OT; warning at 120h, error at 138h |
+| Store uses 變形工時 (2week/4week) | Daily normal cap = 10h (not 8h); hours 8-10h are NOT overtime |
+| Shift requires skills employee lacks | Hard violation (H13); reassign to qualified employee |
+| No employees have required skill | Assign anyway with warning; coverage > skill match |
+| Labor budget exceeded | Warning only; coverage takes priority over budget |
+| Demand forecast says 5 staff but only 3 available | Schedule all 3 + demand_understaffed warning |
+| No historical data (new store) | Skip consistency/pattern logic; generate fresh schedule |
+| Employee skills data unavailable | Skip H13 checks; treat all employees as qualified |

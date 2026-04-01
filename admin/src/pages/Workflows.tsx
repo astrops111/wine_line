@@ -77,7 +77,7 @@ export function Workflows() {
         setTaskEdits({});
         let { data, error } = await supabase
             .from('tasks')
-            .select('id, title, description, status, priority, sort_order, due_date, planned_start, completed_at, updated_at, created_at, assigned_to, workflow_step_id, notes, metadata, store_id, confirmation_required, confirmation_status, stores(id, name), workflow_steps(step_type)')
+            .select('id, title, description, status, priority, sort_order, due_date, planned_start, completed_at, updated_at, created_at, assigned_to, workflow_step_id, notes, metadata, store_id, confirmation_required, confirmation_status, reminder_at, stores(id, name), workflow_steps(step_type)')
             .eq('workflow_instance_id', inst.id)
             .order('sort_order', { ascending: true });
         if (error) {
@@ -87,7 +87,7 @@ export function Workflows() {
                 .select('id, title, status, priority, sort_order, due_date, assigned_to, workflow_step_id, notes, workflow_steps(step_type)')
                 .eq('workflow_instance_id', inst.id)
                 .order('sort_order', { ascending: true });
-            data = fallback.data;
+            data = fallback.data as any;
         }
         const mapped = mapTaskRows(data || []);
         setInstanceTasks(mapped);
@@ -159,7 +159,7 @@ export function Workflows() {
 
     async function loadInstances() {
         const { data: insts, error } = await supabase.from('workflow_instances')
-            .select('id, name, status, started_at, assigned_user_id, workflows(name)')
+            .select('id, name, status, started_at, assigned_user_id, store_id, workflows(name)')
             .eq('organization_id', orgId)
             .order('started_at', { ascending: false });
         if (error) console.error('loadInstances error:', error);
@@ -177,14 +177,21 @@ export function Workflows() {
         });
 
         const { data: allTasks } = instIds.length > 0
-            ? await supabase.from('tasks').select('workflow_instance_id, status').in('workflow_instance_id', instIds)
+            ? await supabase.from('tasks').select('workflow_instance_id, status, due_date').in('workflow_instance_id', instIds)
             : { data: [] };
 
+        const now = new Date();
         const summaryMap: Record<string, TaskSummary> = {};
-        instIds.forEach(id => { summaryMap[id] = { total: 0, pending: 0, in_progress: 0, completed: 0, blocked: 0 }; });
+        instIds.forEach(id => { summaryMap[id] = { total: 0, pending: 0, in_progress: 0, completed: 0, blocked: 0, overdue: 0 }; });
         (allTasks || []).forEach((t: any) => {
             const s = summaryMap[t.workflow_instance_id];
-            if (s) { s.total++; if (t.status in s) (s as any)[t.status]++; }
+            if (s) {
+                s.total++;
+                if (t.status in s) (s as any)[t.status]++;
+                if (t.due_date && t.status !== 'completed' && t.status !== 'cancelled' && new Date(t.due_date) < now) {
+                    s.overdue++;
+                }
+            }
         });
 
         const enriched = insts.map((inst: any) => ({

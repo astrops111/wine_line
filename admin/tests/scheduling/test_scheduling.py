@@ -223,13 +223,144 @@ def test_publish_button_exists():
         browser.close()
 
 
+def test_shift_template_crud():
+    """TC-SC-10: Shift template create on Store Settings tab."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/scheduling")
+        wait_for_page_ready(page)
+
+        settings_tab = page.locator("button, [role='tab']").filter(
+            has_text=re.compile("[Ss]etting|[Ss]hift [Ss]et|班別|設定|門市")
+        ).first
+        if settings_tab.is_visible():
+            settings_tab.click()
+            wait_for_page_ready(page)
+
+            add_btn = page.locator("button").filter(
+                has_text=re.compile("[Aa]dd|[Cc]reate|[Nn]ew|新增|建立")
+            ).first
+            if add_btn.is_visible():
+                add_btn.click()
+                page.wait_for_timeout(500)
+                screenshot(page, "sched_shift_template_form")
+                inputs = page.locator("input, select").count()
+                print(f"  {'✅' if inputs >= 2 else '⚠️'}  TC-SC-10 — shift template form inputs: {inputs}")
+            else:
+                print("  ⚠️  TC-SC-10 skipped — no add button in settings")
+        else:
+            print("  ⚠️  TC-SC-10 skipped — settings tab not found")
+        browser.close()
+
+
+def test_employee_preferences_save():
+    """TC-SC-11: Employee preferences tab save functionality."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/scheduling")
+        wait_for_page_ready(page)
+
+        pref_tab = page.locator("button, [role='tab']").filter(
+            has_text=re.compile("[Pp]reference|[Aa]vailability|偏好|可用")
+        ).first
+        if pref_tab.is_visible():
+            pref_tab.click()
+            wait_for_page_ready(page)
+
+            # Select an employee if selector exists
+            emp_select = page.locator("select").first
+            if emp_select.is_visible():
+                options = emp_select.locator("option").all()
+                if len(options) > 1:
+                    emp_select.select_option(index=1)
+                    wait_for_page_ready(page)
+
+            screenshot(page, "sched_preferences_loaded")
+
+            # Look for save button
+            save_btn = page.locator("button").filter(
+                has_text=re.compile("[Ss]ave|儲存|確認")
+            ).first
+            if save_btn.is_visible():
+                print("  ✅  TC-SC-11 passed — preference save button visible")
+            else:
+                print("  ⚠️  TC-SC-11 — save button not found (auto-save?)")
+        else:
+            print("  ⚠️  TC-SC-11 skipped — preferences tab not found")
+        browser.close()
+
+
+def test_ai_scheduling_run():
+    """TC-SC-13: AI auto-scheduling panel and run button."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/scheduling")
+        wait_for_page_ready(page)
+
+        # Toggle AI criteria panel open
+        ai_panel_btn = page.locator("button").filter(
+            has_text=re.compile("排班條件|AI Criteria|💡")
+        ).first
+        if ai_panel_btn.is_visible():
+            ai_panel_btn.click()
+            page.wait_for_timeout(400)
+
+            # Check for textarea
+            textarea = page.locator("textarea").first
+            if textarea.is_visible():
+                textarea.fill("週末需要3名員工")
+                screenshot(page, "sched_ai_criteria_filled")
+
+            # Check for AI run button (don't click — would make network calls)
+            ai_run_btn = page.locator("button").filter(
+                has_text=re.compile("AI 自動排班|[Aa][Ii] [Ss]chedule|🤖")
+            ).first
+            if ai_run_btn.is_visible():
+                print("  ✅  TC-SC-13 passed — AI scheduling panel + run button visible")
+            else:
+                print("  ⚠️  TC-SC-13 — AI run button not found")
+        else:
+            print("  ⚠️  TC-SC-13 skipped — AI criteria button not found")
+        browser.close()
+
+
+def test_store_selector():
+    """TC-SC-02: Store selector populates and loads data."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/scheduling")
+        wait_for_page_ready(page)
+
+        store_select = page.locator("select").first
+        if store_select.is_visible():
+            options = store_select.locator("option").all()
+            if len(options) > 1:
+                store_select.select_option(index=1)
+                wait_for_page_ready(page)
+                screenshot(page, "sched_store_selected")
+                print(f"  ✅  TC-SC-02 passed — {len(options)} store options")
+            else:
+                print("  ⚠️  TC-SC-02 — only one store option")
+        else:
+            print("  ⚠️  TC-SC-02 skipped — no store selector")
+        browser.close()
+
+
 if __name__ == "__main__":
     print("\n=== Scheduling & Labor Law Tests ===\n")
     test_scheduling_loads()
+    test_store_selector()
     test_week_navigation()
     test_shift_settings_tab()
     test_employee_preferences_tab()
     test_ai_panel_toggle()
     test_violation_warning_on_publish()
     test_publish_button_exists()
+    test_shift_template_crud()
+    test_employee_preferences_save()
+    test_ai_scheduling_run()
     print("\n✅ All Scheduling tests completed.\n")

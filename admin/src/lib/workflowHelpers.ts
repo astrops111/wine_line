@@ -40,8 +40,14 @@ export function mapTaskRows(data: any[]): InstanceTask[] {
  * Compute a TaskSummary from an array of tasks.
  */
 export function computeTaskSummary(tasks: InstanceTask[]): TaskSummary {
-    const summary: TaskSummary = { total: tasks.length, pending: 0, in_progress: 0, completed: 0, blocked: 0 };
-    tasks.forEach(t => { if (t.status in summary) (summary as any)[t.status]++; });
+    const now = new Date();
+    const summary: TaskSummary = { total: tasks.length, pending: 0, in_progress: 0, completed: 0, blocked: 0, overdue: 0 };
+    tasks.forEach(t => {
+        if (t.status in summary) (summary as any)[t.status]++;
+        if (t.due_date && t.status !== 'completed' && t.status !== 'cancelled' && new Date(t.due_date) < now) {
+            summary.overdue++;
+        }
+    });
     return summary;
 }
 

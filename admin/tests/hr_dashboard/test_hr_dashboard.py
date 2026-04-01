@@ -250,6 +250,109 @@ def test_liff_app_loads():
         browser.close()
 
 
+def test_dashboard_kpi_cards():
+    """TC-D-01: Main dashboard shows KPI stat cards."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/")
+        wait_for_page_ready(page)
+        screenshot(page, "dashboard_kpi_cards")
+
+        body = page.locator("body").inner_text()
+        has_stats = re.search(r"\d+", body) is not None
+        cards = page.locator(".stat-card, .kpi-card, [class*='card']").count()
+        print(f"  {'✅' if cards > 0 or has_stats else '⚠️'}  TC-D-01 — {cards} cards, numbers present: {has_stats}")
+        browser.close()
+
+
+def test_dashboard_announcements():
+    """TC-D-02: Dashboard announcements section visible."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/")
+        wait_for_page_ready(page)
+
+        ann_el = page.locator("text=/[Aa]nnounce|公告/").first
+        if ann_el.is_visible():
+            screenshot(page, "dashboard_announcements")
+            print("  ✅  TC-D-02 passed — announcements section visible")
+        else:
+            print("  ⚠️  TC-D-02 — announcements section not found")
+        browser.close()
+
+
+def test_manager_dashboard_progress():
+    """TC-D-06: Manager dashboard shows store progress cards."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/manager-dashboard")
+        wait_for_page_ready(page)
+        screenshot(page, "manager_progress_cards")
+
+        body = page.locator("body").inner_text()
+        has_progress = re.search(r"\d+%|進度|[Pp]rogress", body) is not None
+        print(f"  {'✅' if has_progress else '⚠️'}  TC-D-06 — progress indicators: {has_progress}")
+        browser.close()
+
+
+def test_manager_dashboard_delayed():
+    """TC-D-07: Manager dashboard delayed tasks section."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/manager-dashboard")
+        wait_for_page_ready(page)
+
+        delayed_el = page.locator("text=/[Dd]elay|逾期|[Oo]verdue/").first
+        if delayed_el.is_visible():
+            screenshot(page, "manager_delayed_tasks")
+            print("  ✅  TC-D-07 passed — delayed tasks section visible")
+        else:
+            print("  ⚠️  TC-D-07 — delayed tasks section not found")
+        browser.close()
+
+
+def test_manager_dashboard_attendance():
+    """TC-D-08: Manager dashboard today's attendance section."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/manager-dashboard")
+        wait_for_page_ready(page)
+
+        body = page.locator("body").inner_text()
+        has_attendance = re.search(r"出勤|打卡|[Aa]ttend|上班中|已下班|尚未打卡", body) is not None
+        screenshot(page, "manager_attendance")
+        print(f"  {'✅' if has_attendance else '⚠️'}  TC-D-08 — attendance section: {has_attendance}")
+        browser.close()
+
+
+def test_hr_dashboard_risk_alerts():
+    """TC-D-11: HR dashboard risk tab shows risk sections."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/hr-dashboard")
+        wait_for_page_ready(page)
+
+        risk_tab = page.locator("button, [role='tab']").filter(
+            has_text=re.compile("[Rr]isk|風險|警示")
+        ).first
+        if risk_tab.is_visible():
+            risk_tab.click()
+            wait_for_page_ready(page)
+            screenshot(page, "hr_risk_alerts")
+            body = page.locator("body").inner_text()
+            risk_count = len(re.findall(r"超時|遲到|[Ll]ate|[Oo]vertime|[Hh]igh|[Aa]bsence|缺勤|不足", body))
+            print(f"  {'✅' if risk_count >= 2 else '⚠️'}  TC-D-11 — risk indicators found: {risk_count}")
+        else:
+            print("  ⚠️  TC-D-11 skipped — risk tab not found")
+        browser.close()
+
+
 if __name__ == "__main__":
     print("\n=== HR Dashboard & Admin Tests ===\n")
     test_hr_dashboard_loads()
@@ -262,4 +365,10 @@ if __name__ == "__main__":
     test_admin_settings()
     test_users_page()
     test_liff_app_loads()
+    test_dashboard_kpi_cards()
+    test_dashboard_announcements()
+    test_manager_dashboard_progress()
+    test_manager_dashboard_delayed()
+    test_manager_dashboard_attendance()
+    test_hr_dashboard_risk_alerts()
     print("\n✅ All HR Dashboard & Admin tests completed.\n")

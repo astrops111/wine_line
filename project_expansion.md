@@ -1,11 +1,11 @@
 # Project Expansion — Strategic & Low Priority Gaps
 
-> **Last Updated**: 2026-03-29
+> **Last Updated**: 2026-04-01
 
 Items below were identified from the OE gap analysis (vs. 104 HRM, BambooHR, Rippling, NUEIP, MAYO).
 Quick Wins and High Value gaps have been implemented. The items below are for future phases.
 
-## Recently Completed (Phase 5–6, 2026-03-28/29)
+## Recently Completed (Phase 5–8, 2026-03-28 to 2026-04-01)
 
 The following gaps from the original analysis have been implemented:
 
@@ -38,6 +38,24 @@ The following gaps from the original analysis have been implemented:
 | — | Multi-level approval chains (leave/overtime/expense) | 6c | ✅ Done |
 | — | Foreign worker tracking (work permits + expiry) | 6c | ✅ Done |
 | — | Payroll supplements (NHI supplement, leave buyout) | 6c | ✅ Done |
+| — | Tiered LINE summaries (weekly/monthly AI generation + auto-pruning) | 6d | ✅ Done |
+| — | LLM usage tracking (`llm_usage_logs` table, cost estimation) | 6d | ✅ Done |
+| — | Minimum-admin safety (DB trigger prevents last admin deletion) | 6d | ✅ Done |
+| — | Codebase modularization (12 component dirs, 55+ components, 10 types) | 7 | ✅ Done |
+| — | Helper libraries (9 new: validation, exports, calculations, task/workflow) | 7 | ✅ Done |
+| — | LINE webhook refactoring (monolith → 7 modular files) | 7 | ✅ Done |
+| — | Task confirmation/approval flow (multi-approver) | 7 | ✅ Done |
+| — | Dashboard analytics (turnover, compliance, probation, permits) | 7 | ✅ Done |
+| — | Jobs/position management page | 7 | ✅ Done |
+| — | Google Sheets ↔ Supabase bidirectional sync | 7 | ✅ Done |
+| — | Inventory management (stock, transactions, stocktake, low-stock alerts) | 8 | ✅ Done |
+| — | Vendor management + Purchase order workflow (draft→approved→received) | 8 | ✅ Done |
+| — | Operations analytics (KPIs, labor cost trend, workflow rates, store compare) | 8 | ✅ Done |
+| — | Clock-in edge function (GPS/WiFi validation, lateness detection) | 8 | ✅ Done |
+| — | Withholding certificate tab (扣繳憑證) for annual tax filing | 8 | ✅ Done |
+| — | Workflow template library (6 pre-seeded templates) | 8 | ✅ Done |
+| — | Playwright test suite (8 modules, 65+ routes, automated runner) | 8 | ✅ Done |
+| — | Task reminder cron job (pg_cron every 15 min) | 8 | ✅ Done |
 
 ---
 

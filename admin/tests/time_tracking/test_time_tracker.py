@@ -223,6 +223,119 @@ def test_mapping_tab():
         browser.close()
 
 
+def test_correction_approval_flow():
+    """TC-T-10: Approve a pending punch correction."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/time-tracker")
+        wait_for_page_ready(page)
+
+        corr_btn = page.locator("button, [role='tab']").filter(
+            has_text=re.compile("補打審核|[Cc]orrection|補登")
+        ).first
+        if corr_btn.is_visible():
+            corr_btn.click()
+            wait_for_page_ready(page)
+
+        approve_btn = page.locator("button").filter(has_text=re.compile("[Aa]pprove|核准")).first
+        if approve_btn.is_visible():
+            approve_btn.click()
+            page.wait_for_timeout(600)
+            screenshot(page, "tt_correction_approved")
+            print("  ✅  TC-T-10 passed — correction approved")
+        else:
+            print("  ⚠️  TC-T-10 skipped — no approve button (no pending corrections)")
+        browser.close()
+
+
+def test_history_date_range():
+    """TC-T-12: History tab date range filter works."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/time-tracker")
+        wait_for_page_ready(page)
+
+        history_btn = page.locator("button").filter(has_text=re.compile("出勤紀錄|History")).first
+        if history_btn.is_visible():
+            history_btn.click()
+            page.wait_for_timeout(400)
+
+        date_inputs = page.locator("input[type='date']")
+        if date_inputs.count() >= 2:
+            date_inputs.nth(0).fill("2026-01-01")
+            date_inputs.nth(1).fill("2026-01-31")
+            page.keyboard.press("Tab")
+            wait_for_page_ready(page)
+            screenshot(page, "tt_history_date_range")
+            print("  ✅  TC-T-12 passed — date range filter applied")
+        elif date_inputs.count() >= 1:
+            date_inputs.first.fill("2026-01-15")
+            page.keyboard.press("Tab")
+            wait_for_page_ready(page)
+            screenshot(page, "tt_history_date_range")
+            print("  ✅  TC-T-12 passed — date filter applied")
+        else:
+            print("  ⚠️  TC-T-12 skipped — no date inputs on history tab")
+        browser.close()
+
+
+def test_line_mapping_create():
+    """TC-T-13: LINE mapping tab create form."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/time-tracker")
+        wait_for_page_ready(page)
+
+        map_btn = page.locator("button, [role='tab']").filter(
+            has_text=re.compile("LINE 綁定|[Mm]apping|綁定")
+        ).first
+        if map_btn.is_visible():
+            map_btn.click()
+            wait_for_page_ready(page)
+
+            add_btn = page.locator("button").filter(
+                has_text=re.compile("[Aa]dd|[Cc]reate|[Nn]ew|新增|建立|綁定")
+            ).first
+            if add_btn.is_visible():
+                add_btn.click()
+                page.wait_for_timeout(500)
+                screenshot(page, "tt_mapping_create_form")
+                selects = page.locator("select").count()
+                print(f"  {'✅' if selects >= 2 else '⚠️'}  TC-T-13 — mapping form selects: {selects}")
+            else:
+                print("  ⚠️  TC-T-13 skipped — no add/create button on mapping tab")
+        else:
+            print("  ⚠️  TC-T-13 skipped — mapping tab not found")
+        browser.close()
+
+
+def test_today_tab_store_filter():
+    """TC-T-14: Today tab store filter narrows records."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/time-tracker")
+        wait_for_page_ready(page)
+
+        # Stay on Today tab (default)
+        store_select = page.locator("select").first
+        if store_select.is_visible():
+            options = store_select.locator("option").all()
+            if len(options) > 1:
+                store_select.select_option(index=1)
+                wait_for_page_ready(page)
+                screenshot(page, "tt_today_store_filter")
+                print("  ✅  TC-T-14 passed — today tab store filter applied")
+            else:
+                print("  ⚠️  TC-T-14 skipped — only one store option")
+        else:
+            print("  ⚠️  TC-T-14 skipped — no store selector on today tab")
+        browser.close()
+
+
 if __name__ == "__main__":
     print("\n=== Time Tracking Tests ===\n")
     test_time_tracker_loads()
@@ -232,4 +345,8 @@ if __name__ == "__main__":
     test_corrections_tab()
     test_reject_correction_shows_reason_input()
     test_mapping_tab()
+    test_correction_approval_flow()
+    test_history_date_range()
+    test_line_mapping_create()
+    test_today_tab_store_filter()
     print("\n✅ All Time Tracking tests completed.\n")

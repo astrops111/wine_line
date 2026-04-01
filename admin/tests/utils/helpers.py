@@ -68,3 +68,54 @@ def assert_page_heading(page: Page, heading: str) -> None:
     """Assert that at least one h1/h2 or page-header text matches."""
     locator = page.locator(f"h1, h2, .page-header").filter(has_text=heading)
     expect(locator.first).to_be_visible(timeout=5_000)
+
+
+# ── Tab helpers ───────────────────────────────────────────────────────────────
+
+def wait_for_tab(page: Page, tab_text: str, timeout: int = 6_000) -> bool:
+    """Click a tab button matching tab_text regex and wait for content load.
+    Returns True if tab found and clicked, False otherwise."""
+    import re
+    btn = page.locator("button, [role='tab']").filter(
+        has_text=re.compile(tab_text)
+    ).first
+    if btn.is_visible():
+        btn.click()
+        page.wait_for_timeout(500)
+        wait_for_page_ready(page)
+        return True
+    return False
+
+
+def assert_table_has_rows(page: Page, min_rows: int = 0) -> int:
+    """Assert a table/list has at least min_rows. Returns actual count."""
+    rows = page.locator("tbody tr, [data-testid*='row'], .list-item, .data-row")
+    count = rows.count()
+    assert count >= min_rows, f"Expected ≥{min_rows} rows, got {count}"
+    return count
+
+
+def assert_download_triggered(page: Page, button_text: str) -> bool:
+    """Click export button and check if download event fires."""
+    import re
+    downloads = []
+    page.on("download", lambda d: downloads.append(d.suggested_filename))
+    page.locator("button").filter(has_text=re.compile(button_text)).first.click()
+    page.wait_for_timeout(1_500)
+    return len(downloads) > 0
+
+
+def create_mobile_page(browser):
+    """Create a new page with mobile viewport (390x844) for LIFF tests."""
+    return browser.new_page(viewport={"width": 390, "height": 844})
+
+
+def filter_console_errors(errors: list) -> list:
+    """Filter out known benign console errors (Supabase, VITE_, etc.)."""
+    return [
+        e for e in errors
+        if "supabase" not in e.lower()
+        and "missing" not in e.lower()
+        and "VITE_" not in e
+        and "AuthRetryableFetchError" not in e
+    ]

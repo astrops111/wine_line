@@ -7,7 +7,7 @@ colour-coded summary.
 Usage:
   python tests/run_all_tests.py [--suite SUITE]
 
-  SUITE options: smoke | employee | time_tracking | leave | scheduling | workflows | hr_dashboard | all (default)
+  SUITE options: smoke | employee | time_tracking | leave | scheduling | workflows | hr_dashboard | payroll | notifications | org | hr_modules | system | liff | rbac | cross_cutting | all (default)
 
 The script uses the with_server.py helper from the webapp-testing skill
 to start the Vite dev server and then runs each suite.
@@ -35,23 +35,39 @@ except ImportError:
     GREEN = RED = YELLOW = RESET = ""
 
 SUITES = {
-    "smoke":         "smoke/test_navigation.py",
-    "employee":      "employee/test_employee_management.py",
-    "time_tracking": "time_tracking/test_time_tracker.py",
-    "leave":         "leave/test_leave_overtime.py",
-    "scheduling":    "scheduling/test_scheduling.py",
-    "workflows":     "workflows/test_workflows.py",
-    "hr_dashboard":  "hr_dashboard/test_hr_dashboard.py",
+    "smoke":          "smoke/test_navigation.py",
+    "employee":       "employee/test_employee_management.py",
+    "time_tracking":  "time_tracking/test_time_tracker.py",
+    "leave":          "leave/test_leave_overtime.py",
+    "scheduling":     "scheduling/test_scheduling.py",
+    "workflows":      "workflows/test_workflows.py",
+    "hr_dashboard":   "hr_dashboard/test_hr_dashboard.py",
+    "payroll":        "payroll/test_payroll.py",
+    "notifications":  "notifications/test_notifications.py",
+    "org":            "org/test_org_management.py",
+    "hr_modules":     "hr_modules/test_hr_modules.py",
+    "system":         "system/test_system_admin.py",
+    "liff":           "liff/test_liff_app.py",
+    "rbac":           "rbac/test_permissions.py",
+    "cross_cutting":  "cross_cutting/test_cross_cutting.py",
 }
 
 SUITE_LABELS = {
-    "smoke":         "Smoke / Navigation",
-    "employee":      "Employee Management",
-    "time_tracking": "Time Tracking",
-    "leave":         "Leave & Overtime",
-    "scheduling":    "Scheduling & Labor Law",
-    "workflows":     "Workflow & Tasks",
-    "hr_dashboard":  "HR Dashboard & Admin",
+    "smoke":          "Smoke / Navigation",
+    "employee":       "Employee Management",
+    "time_tracking":  "Time Tracking",
+    "leave":          "Leave & Overtime",
+    "scheduling":     "Scheduling & Labor Law",
+    "workflows":      "Workflow & Tasks",
+    "hr_dashboard":   "HR Dashboard & Admin",
+    "payroll":        "Payroll Management",
+    "notifications":  "Notifications & Triggers",
+    "org":            "Organization Management",
+    "hr_modules":     "HR Modules (Performance, Docs, etc.)",
+    "system":         "System & Admin",
+    "liff":           "LIFF Mobile App",
+    "rbac":           "RBAC & Permissions",
+    "cross_cutting":  "Cross-Cutting Tests",
 }
 
 

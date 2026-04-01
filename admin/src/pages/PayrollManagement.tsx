@@ -27,7 +27,12 @@ export function PayrollManagement() {
   const { orgId, currentUser } = useOrg()
 
   // Tab state
-  const [tab, setTab] = useState<'salary' | 'run' | 'history' | 'brackets' | 'tools'>('salary')
+  const [tab, setTab] = useState<'salary' | 'run' | 'history' | 'brackets' | 'tools' | 'withholding'>('salary')
+
+  // ── Tab 6: Withholding Certificate ──────────────────────────────────────
+  const [withholdingYear, setWithholdingYear] = useState(new Date().getFullYear() - 1)
+  const [withholdingData, setWithholdingData] = useState<any[]>([])
+  const [withholdingLoading, setWithholdingLoading] = useState(false)
 
   // ── Tab 1: Salary Structures ───────────────────────────────────────────────
   const [salaryStructures, setSalaryStructures] = useState<SalaryStructure[]>([])
@@ -74,7 +79,54 @@ export function PayrollManagement() {
     if (tab === 'run') checkExistingRun()
     if (tab === 'history') loadPayrollRuns()
     if (tab === 'brackets') loadBrackets()
+    if (tab === 'withholding') loadWithholding()
   }, [tab, orgId, bracketYear])
+
+  async function loadWithholding() {
+    setWithholdingLoading(true)
+    // Aggregate all payroll records for the selected year
+    const { data: runs } = await supabase
+      .from('payroll_runs')
+      .select('id, pay_period')
+      .eq('org_id', orgId)
+      .gte('pay_period', `${withholdingYear}-01`)
+      .lte('pay_period', `${withholdingYear}-12`)
+    if (!runs || runs.length === 0) { setWithholdingData([]); setWithholdingLoading(false); return }
+
+    const runIds = runs.map(r => r.id)
+    const { data: records } = await supabase
+      .from('payroll_records')
+      .select('user_id, gross_salary, net_salary, labor_ins_employee, health_ins_employee, income_tax, users(name, national_id, stores(name))')
+      .in('payroll_run_id', runIds)
+
+    // Aggregate per user
+    const userMap: Record<string, any> = {}
+    ;(records || []).forEach((r: any) => {
+      if (!userMap[r.user_id]) {
+        userMap[r.user_id] = {
+          user_id: r.user_id,
+          name: r.users?.name || r.user_id,
+          national_id: r.users?.national_id || '',
+          store_name: r.users?.stores?.name || '',
+          total_gross: 0,
+          total_labor_ins: 0,
+          total_health_ins: 0,
+          total_income_tax: 0,
+          total_net: 0,
+          months: 0,
+        }
+      }
+      const u = userMap[r.user_id]
+      u.total_gross += r.gross_salary || 0
+      u.total_labor_ins += r.labor_ins_employee || 0
+      u.total_health_ins += r.health_ins_employee || 0
+      u.total_income_tax += r.income_tax || 0
+      u.total_net += r.net_salary || 0
+      u.months += 1
+    })
+    setWithholdingData(Object.values(userMap))
+    setWithholdingLoading(false)
+  }
 
   // Also check existing run when payPeriod changes while on run tab
   useEffect(() => {
@@ -671,6 +723,12 @@ export function PayrollManagement() {
         >
           {zh ? '薪資工具' : 'Payroll Tools'}
         </button>
+        <button
+          className={`tab-item${tab === 'withholding' ? ' active' : ''}`}
+          onClick={() => setTab('withholding')}
+        >
+          {zh ? '扣繳憑單' : 'Withholding Cert'}
+        </button>
       </div>
 
       {/* ── TAB 1: SALARY STRUCTURES ──────────────────────────────────────── */}
@@ -751,6 +809,95 @@ export function PayrollManagement() {
           onExportInsuranceReport={handleExportInsuranceReport}
           onExportAccounting={handleExportAccounting}
         />
+      )}
+
+      {/* ── TAB 6: WITHHOLDING CERTIFICATE (扣繳憑單) ──────────────────────── */}
+      {tab === 'withholding' && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+            <label style={{ fontSize: '13px', fontWeight: 600 }}>{zh ? '年度' : 'Year'}:</label>
+            <select
+              value={withholdingYear}
+              onChange={e => { setWithholdingYear(Number(e.target.value)); }}
+              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--border)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+            >
+              {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 1 - i).map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            {withholdingData.length > 0 && (
+              <button className="btn btn-secondary" onClick={() => {
+                const BOM = '\uFEFF'
+                const headers = ['姓名', '身分證字號', '門市', '給付總額', '勞保費', '健保費', '所得稅扣繳', '實發總額', '月數']
+                const rows = withholdingData.map((d: any) => [
+                  d.name, d.national_id, d.store_name,
+                  d.total_gross, d.total_labor_ins, d.total_health_ins,
+                  d.total_income_tax, d.total_net, d.months,
+                ])
+                const csv = BOM + [headers.join(','), ...rows.map((r: any) => r.join(','))].join('\n')
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a')
+                a.href = url; a.download = `扣繳憑單_${withholdingYear}.csv`; a.click()
+                URL.revokeObjectURL(url)
+              }}>
+                📥 {zh ? '匯出 CSV' : 'Export CSV'}
+              </button>
+            )}
+          </div>
+
+          {withholdingLoading ? (
+            <p className="loading-pulse">{zh ? '載入中…' : 'Loading…'}</p>
+          ) : withholdingData.length === 0 ? (
+            <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+              {zh ? `${withholdingYear} 年無薪資記錄` : `No payroll records for ${withholdingYear}`}
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto' }}>
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>{zh ? '姓名' : 'Name'}</th>
+                    <th>{zh ? '身分證字號' : 'National ID'}</th>
+                    <th>{zh ? '門市' : 'Store'}</th>
+                    <th style={{ textAlign: 'right' }}>{zh ? '給付總額' : 'Total Gross'}</th>
+                    <th style={{ textAlign: 'right' }}>{zh ? '勞保費' : 'Labor Ins'}</th>
+                    <th style={{ textAlign: 'right' }}>{zh ? '健保費' : 'Health Ins'}</th>
+                    <th style={{ textAlign: 'right' }}>{zh ? '所得稅扣繳' : 'Income Tax'}</th>
+                    <th style={{ textAlign: 'right' }}>{zh ? '實發總額' : 'Net Total'}</th>
+                    <th style={{ textAlign: 'right' }}>{zh ? '月數' : 'Months'}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {withholdingData.map((d: any) => (
+                    <tr key={d.user_id}>
+                      <td style={{ fontWeight: 500 }}>{d.name}</td>
+                      <td style={{ fontFamily: 'monospace', fontSize: '12px' }}>{d.national_id || '—'}</td>
+                      <td>{d.store_name || '—'}</td>
+                      <td style={{ textAlign: 'right' }}>${Math.round(d.total_gross).toLocaleString()}</td>
+                      <td style={{ textAlign: 'right' }}>${Math.round(d.total_labor_ins).toLocaleString()}</td>
+                      <td style={{ textAlign: 'right' }}>${Math.round(d.total_health_ins).toLocaleString()}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600 }}>${Math.round(d.total_income_tax).toLocaleString()}</td>
+                      <td style={{ textAlign: 'right' }}>${Math.round(d.total_net).toLocaleString()}</td>
+                      <td style={{ textAlign: 'right' }}>{d.months}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr style={{ fontWeight: 700 }}>
+                    <td colSpan={3}>{zh ? '合計' : 'Total'}</td>
+                    <td style={{ textAlign: 'right' }}>${Math.round(withholdingData.reduce((s: number, d: any) => s + d.total_gross, 0)).toLocaleString()}</td>
+                    <td style={{ textAlign: 'right' }}>${Math.round(withholdingData.reduce((s: number, d: any) => s + d.total_labor_ins, 0)).toLocaleString()}</td>
+                    <td style={{ textAlign: 'right' }}>${Math.round(withholdingData.reduce((s: number, d: any) => s + d.total_health_ins, 0)).toLocaleString()}</td>
+                    <td style={{ textAlign: 'right' }}>${Math.round(withholdingData.reduce((s: number, d: any) => s + d.total_income_tax, 0)).toLocaleString()}</td>
+                    <td style={{ textAlign: 'right' }}>${Math.round(withholdingData.reduce((s: number, d: any) => s + d.total_net, 0)).toLocaleString()}</td>
+                    <td style={{ textAlign: 'right' }}>{withholdingData.length} {zh ? '人' : 'ppl'}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
+        </div>
       )}
     </div>
   )

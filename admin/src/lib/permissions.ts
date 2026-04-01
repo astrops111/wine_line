@@ -90,6 +90,9 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
     'business-trips':      '/business-trips',
     'expense-claims':      '/expense-claims',
     'jobs':                '/jobs',
+    'operations-analytics': '/operations-analytics',
+    'vendors':             '/vendors',
+    'inventory':           '/inventory',
 };
 
 /**

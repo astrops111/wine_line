@@ -43,6 +43,25 @@ ROUTES = [
     ("/workflow-management","流程",        "Workflow"),
     ("/admin",             "設定",         "Setting"),
     ("/liff/app",          "打卡",         "Clock"),
+    # ── New routes (TC-S-06) ──
+    ("/payroll",           "薪資",         "Payroll"),
+    ("/holidays",          "假日",         "Holiday"),
+    ("/shift-rules",       "勞動",         "Shift"),
+    ("/performance",       "績效",         "Performance"),
+    ("/documents",         "文件",         "Document"),
+    ("/recruitment",       "招募",         "Recruit"),
+    ("/business-trips",    "出差",         "Business"),
+    ("/expense-claims",    "核銷",         "Expense"),
+    ("/onboarding",        "到職",         "Onboard"),
+    ("/announcements",     "公告",         "Announce"),
+    ("/training",          "訓練",         "Training"),
+    ("/disciplinary",      "獎懲",         "Disciplin"),
+    ("/jobs",              "職務",         "Job"),
+    ("/audit-logs",        "稽核",         "Audit"),
+    ("/line-logs",         "LINE",         "LINE Log"),
+    ("/help-center",       "說明",         "Help"),
+    ("/agent-console",     "Agent",        "Agent"),
+    ("/liff/dashboard",    "員工",         "Manager"),
 ]
 
 
@@ -138,12 +157,124 @@ def test_locale_toggle():
         browser.close()
 
 
+def test_theme_toggle():
+    """TC-S-07: Theme toggle changes data-theme attribute."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/")
+        wait_for_page_ready(page)
+
+        initial_theme = page.evaluate("document.documentElement.getAttribute('data-theme')")
+        theme_btn = page.locator("button").filter(has_text=re.compile("🌙|☀️|[Tt]heme|主題")).first
+        if theme_btn.is_visible():
+            theme_btn.click()
+            page.wait_for_timeout(500)
+            new_theme = page.evaluate("document.documentElement.getAttribute('data-theme')")
+            screenshot(page, "smoke_theme_toggled")
+            assert initial_theme != new_theme, f"Theme didn't change: {initial_theme}"
+            # Toggle back
+            theme_btn.click()
+            page.wait_for_timeout(300)
+            print(f"  ✅  TC-S-07 passed — theme: '{initial_theme}' → '{new_theme}'")
+        else:
+            print("  ⚠️  TC-S-07 skipped — theme button not found")
+        browser.close()
+
+
+def test_sidebar_collapse():
+    """TC-S-08: Sidebar collapse/expand changes layout."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/")
+        wait_for_page_ready(page)
+
+        collapse_btn = page.locator("button").filter(has_text=re.compile("▸|◂|[Cc]ollapse|收合")).first
+        if collapse_btn.is_visible():
+            collapse_btn.click()
+            page.wait_for_timeout(400)
+            screenshot(page, "smoke_sidebar_collapsed")
+            # Check for collapsed class
+            sidebar = page.locator("nav, .sidebar, [class*='sidebar']").first
+            sidebar_classes = sidebar.get_attribute("class") or ""
+            is_collapsed = "collapsed" in sidebar_classes or "mini" in sidebar_classes
+            # Expand back
+            expand_btn = page.locator("button").filter(has_text=re.compile("▸|◂|[Ee]xpand|展開")).first
+            if expand_btn.is_visible():
+                expand_btn.click()
+                page.wait_for_timeout(300)
+            print(f"  {'✅' if is_collapsed else '⚠️'}  TC-S-08 — sidebar collapsed state: {is_collapsed}")
+        else:
+            print("  ⚠️  TC-S-08 skipped — collapse button not found")
+        browser.close()
+
+
+def test_locale_persists_navigation():
+    """TC-S-10: Locale persists across page navigation."""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        goto(page, "/")
+        wait_for_page_ready(page)
+
+        # Toggle to English
+        locale_btn = page.locator("button.locale-btn").first
+        if not locale_btn.is_visible():
+            locale_btn = page.locator("button").filter(
+                has_text=re.compile("English|中文|切換|Switch")
+            ).first
+        if locale_btn.is_visible():
+            locale_btn.click()
+            page.wait_for_timeout(800)
+            page.wait_for_load_state("networkidle")
+
+            # Navigate to 3 different pages and check for English text
+            en_pages = 0
+            for route in ["/employees", "/payroll", "/scheduling"]:
+                goto(page, route)
+                wait_for_page_ready(page)
+                body = page.locator("body").inner_text()
+                if re.search(r"[A-Za-z]{4,}", body):
+                    en_pages += 1
+
+            screenshot(page, "smoke_locale_persists")
+
+            # Toggle back to Chinese
+            locale_btn2 = page.locator("button.locale-btn, button").filter(
+                has_text=re.compile("English|中文|切換|Switch")
+            ).first
+            if locale_btn2.is_visible():
+                locale_btn2.click()
+                page.wait_for_timeout(500)
+
+            print(f"  {'✅' if en_pages >= 2 else '⚠️'}  TC-S-10 — {en_pages}/3 pages kept English locale")
+        else:
+            print("  ⚠️  TC-S-10 skipped — locale button not found")
+        browser.close()
+
+
 if __name__ == "__main__":
-    print("\n=== TC-S-01 to TC-S-05: Smoke / Navigation Tests ===\n")
+    print("\n=== TC-S-01 to TC-S-10: Smoke / Navigation Tests ===\n")
     passed = run_smoke_tests()
     print("\n=== TC-S-04: Locale Toggle ===\n")
     try:
         test_locale_toggle()
     except Exception as e:
         print("  [WARN] Locale toggle test error:", e)
+    print("\n=== TC-S-07: Theme Toggle ===\n")
+    try:
+        test_theme_toggle()
+    except Exception as e:
+        print("  [WARN] Theme toggle test error:", e)
+    print("\n=== TC-S-08: Sidebar Collapse ===\n")
+    try:
+        test_sidebar_collapse()
+    except Exception as e:
+        print("  [WARN] Sidebar collapse test error:", e)
+    print("\n=== TC-S-10: Locale Persistence ===\n")
+    try:
+        test_locale_persists_navigation()
+    except Exception as e:
+        print("  [WARN] Locale persistence test error:", e)
     exit(0 if passed else 1)

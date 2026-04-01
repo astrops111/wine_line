@@ -281,7 +281,7 @@ export function checkLaborLawViolations(
   // === GAP-6: Budget check ===
   if (schedule?.labor_budget || store?.default_labor_budget) {
     const budget = schedule?.labor_budget || store?.default_labor_budget || 0;
-    const rate = store?.hourly_rate_default || 183;
+    const rate = store?.hourly_rate_default || 196;
     let totalH = 0;
     for (const a of assignmentList) {
       if (a.start_time && a.end_time) totalH += calcWorkHours(a.start_time, a.end_time, a.break_minutes || 0);

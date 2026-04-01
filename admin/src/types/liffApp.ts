@@ -99,15 +99,5 @@ export const availColor = (val: string): string => {
   }
 };
 
-export const getClientIp = async (): Promise<string | null> => {
-  try {
-    const res = await fetch('https://api.ipify.org?format=json');
-    const json = await res.json();
-    return json.ip as string;
-  } catch {
-    return null;
-  }
-};
-
 export const fmtCurrency = (n: number): string =>
   new Intl.NumberFormat('zh-TW').format(Math.round(n));

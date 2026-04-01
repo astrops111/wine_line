@@ -130,7 +130,7 @@ export function Tasks() {
         const { data, error } = await supabase.from('tasks')
             .select(`
                 id, title, description, status, priority, sort_order, due_date, planned_start, completed_at, updated_at, created_at, metadata,
-                store_id, workflow_instance_id,
+                store_id, workflow_instance_id, reminder_at, reminder_sent,
                 users!tasks_assigned_to_fkey(id, name),
                 workflow_steps(name, step_order),
                 stores(id, name),
@@ -154,6 +154,7 @@ export function Tasks() {
                 note1: t.metadata?.note1 ?? null,
                 note2: t.metadata?.note2 ?? null,
                 note3: t.metadata?.note3 ?? null,
+                reminder_at: t.reminder_at ?? null,
             })));
         }
         setLoading(false);

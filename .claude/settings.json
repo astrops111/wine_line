@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/TING/AppData/Local/Temp/claude/c--Users-TING-Documents-Astro8-AI-wines/tasks/**)"
+    ]
+  }
+}

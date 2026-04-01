@@ -111,22 +111,16 @@ serve(async (req) => {
     const lower = rawText.toLowerCase().replace(/\u3000/g, " ").replace(/\s+/g, " ").trim();
     console.log(`[cmd] isGroup=${isGroup} lower="${lower}"`);
 
+    const sourceType = isGroup ? (event.source?.type ?? "group") : "user";
+
     if (isGroup && groupId) {
       const summary = await getGroupSummary(groupId, accessToken);
       await upsertLineGroup(groupId, summary.groupName, db);
     }
 
     const profile = await getLineProfile(lineUserId, accessToken, groupId);
-    const { row: lineUser, isNew } = await upsertLineUser(lineUserId, profile.displayName, db);
 
-    if (!lineUser) {
-      console.error("Failed to upsert line_user for", lineUserId);
-      continue;
-    }
-
-    const sourceType = isGroup ? (event.source?.type ?? "group") : "user";
-
-    // ── Log ALL incoming messages (before any filtering) ──────────────────────
+    // ── Log ALL incoming messages FIRST (before user lookup or filtering) ─────
     await logMessage(db, {
       lineUserId,
       displayName: profile.displayName,
@@ -136,6 +130,13 @@ serve(async (req) => {
       groupId,
       eventType: "message",
     });
+
+    const { row: lineUser, isNew } = await upsertLineUser(lineUserId, profile.displayName, db);
+
+    if (!lineUser) {
+      console.error("Failed to upsert line_user for", lineUserId);
+      continue;
+    }
 
     // Check for enhanced task creation triggers (group: @linebot 新增任務 or 新增任務)
     const isNewTaskTrigger =
@@ -342,7 +343,7 @@ serve(async (req) => {
       const m = rawText.match(/^\/任務\s+(\S+)\s+更新\s*(.*)/i) || rawText.match(/^\/task\s+(\S+)\s+update\s*(.*)/i);
       const rawId = m ? m[1] : "";
       const note = m ? m[2].trim() : "";
-      responseMsg = await cmdTaskUpdate(rawId, note, db, lineUser.id);
+      responseMsg = await cmdTaskUpdate(rawId, note, db, lineUser.id, lineUser.user_id);
 
     } else if (lower === "/備註" || lower === "備註" || lower === "/notes") {
       commandName = "notes";
@@ -365,7 +366,7 @@ serve(async (req) => {
 
     } else if (lower === "/管理" || lower === "/管理 選單" || lower === "管理") {
       commandName = "manager_menu";
-      if (isGroup) continue; // Manager commands: private chat only
+      if (isGroup) { responseMsg = text("🔒 管理功能請私訊機器人使用。"); } else
       if (!lineUser.is_verified || !lineUser.user_id) {
         responseMsg = text("您尚未連結帳號。\n請輸入：/註冊 您的姓名");
       } else if (!await checkManager(lineUser.user_id, db)) {
@@ -376,7 +377,7 @@ serve(async (req) => {
 
     } else if (lower === "/管理 全覽" || lower === "/manage overview") {
       commandName = "manager_overview";
-      if (isGroup) continue; // Manager commands: private chat only
+      if (isGroup) { responseMsg = text("🔒 管理功能請私訊機器人使用。"); } else
       if (!lineUser.is_verified || !lineUser.user_id) {
         responseMsg = text("您尚未連結帳號。\n請輸入：/註冊 您的姓名");
       } else if (!await checkManager(lineUser.user_id, db)) {
@@ -387,7 +388,7 @@ serve(async (req) => {
 
     } else if (lower.startsWith("/管理 指派") || lower.startsWith("/manage assign")) {
       commandName = "manager_assign";
-      if (isGroup) continue; // Manager commands: private chat only
+      if (isGroup) { responseMsg = text("🔒 管理功能請私訊機器人使用。"); } else
       if (!lineUser.is_verified || !lineUser.user_id) {
         responseMsg = text("您尚未連結帳號。\n請輸入：/註冊 您的姓名");
       } else if (!await checkManager(lineUser.user_id, db)) {
@@ -402,7 +403,7 @@ serve(async (req) => {
 
     } else if (lower.startsWith('/管理 核准請假') || lower.startsWith('/管理 退回請假')) {
       commandName = "manager_leave_review";
-      if (isGroup) continue;
+      if (isGroup) { responseMsg = text("🔒 管理功能請私訊機器人使用。"); } else
       if (!lineUser.is_verified || !lineUser.user_id) {
         responseMsg = text("您尚未連結帳號。");
       } else if (!await checkManager(lineUser.user_id, db)) {

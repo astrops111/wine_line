@@ -1,7 +1,7 @@
 # PRD: AI Auto-Scheduler (`scheduling-ai` Edge Function)
 
-**Version**: 1.0
-**Date**: 2026-03-29
+**Version**: 1.1
+**Date**: 2026-03-31
 **Status**: Draft
 **Route**: `/scheduling` → 🤖 AI 自動排班 button
 
@@ -55,21 +55,25 @@ checkLaborLawViolations() runs client-side
 Published (or acknowledged with violations)
 ```
 
-### Input Payload (from Scheduling.tsx:162–173)
+### Input Payload (from Scheduling.tsx:324–356)
 
 ```typescript
 {
-  store_id: string,           // UUID — selected retail store
-  week_start: string,         // "YYYY-MM-DD" — Monday of target week
-  employees: Employee[],      // active employees assigned to store
-  shift_templates: ShiftTemplate[],  // store-specific shift types
-  leave_requests: LeaveRequest[],    // approved leaves overlapping the week
-  availability: Availability[],      // per-employee day-of-week preferences ✅⭐❌
-  user_instructions?: string  // natural-language criteria from 💡 panel
+  store_id: string,                    // UUID — selected retail store
+  week_start: string,                  // "YYYY-MM-DD" — Monday of target week
+  employees: Employee[],               // active employees assigned to store
+  shift_templates: ShiftTemplate[],    // store-specific shift types (may include required_skills[])
+  leave_requests: LeaveRequest[],      // approved leaves overlapping the week
+  availability: Availability[],        // per-employee day-of-week preferences ✅⭐❌
+  operating_hours: object,             // store operating hours by day (open/closed + times)
+  working_hour_type: string,           // 'standard' | '2week' | '4week' — 變形工時 setting
+  previous_week_assignments: any[],    // last week's shifts for consistency
+  historical_assignments: any[],       // 8 weeks of historical shifts for pattern learning
+  user_instructions?: string           // natural-language criteria from 💡 panel
 }
 ```
 
-> **Gap identified**: The current `runAiSchedule()` does NOT send `availability` or `store.operating_hours` in the payload. The frontend must be patched to include both (see Appendix A).
+> **Frontend payload status**: All fields above are already sent by `runAiSchedule()` in the current codebase. Additional context (employee_skills, monthly OT, demand forecasts, budget) is computed in the edge function or passed by the validation context.
 
 ### Expected Output (from Scheduling.tsx:175–194)
 
@@ -129,10 +133,32 @@ Published (or acknowledged with violations)
 **Schedule consistency**
 14. When a previous week's schedule exists, the AI references it as a baseline to maintain pattern continuity (same employees on similar days/shifts when possible)
 15. Employees who worked weekends last week should be rotated off weekends this week when feasible (fairness rotation)
+16. Historical assignments (8 weeks) are used for pattern learning when available
+
+**Variable working hours (變形工時)**
+17. When `working_hour_type` is `2week` or `4week`, daily normal cap extends to 10h (hours between 8-10h are NOT overtime)
+18. When `working_hour_type` is `standard`, daily normal cap remains 8h
+
+**Monthly/Quarterly overtime (§32-1)**
+19. Monthly OT must not exceed 46h (base) or 54h (with agreement — hard cap)
+20. Rolling 3-month OT must not exceed 138h
+21. AI considers existing month's OT when assigning new shifts
+
+**Skill/certification matching**
+22. Shift templates with `required_skills` only assigned to employees who have all required skills
+23. Skill mismatch is a hard violation (H13) that triggers retry
+
+**Budget awareness**
+24. If store has `default_labor_budget`, AI tries to stay within budget (soft constraint)
+25. Budget exceeded → warning, not hard block (coverage takes priority)
+
+**Demand forecasting**
+26. If demand forecasts are available, daily staffing adjusted to match predicted demand
+27. High-confidence forecasts (>0.7) override default `min_staff_per_day`
 
 **Non-functional**
-16. Response time < 10 seconds (P95)
-17. Bilingual `notes` field (zh-TW primary, English secondary)
+28. Response time < 10 seconds (P95)
+29. Bilingual `notes` field (zh-TW primary, English secondary)
 
 ---
 
@@ -201,24 +227,42 @@ supabase/functions/scheduling-ai/
 
 ```
 INPUT: store_id, week_start, employees[], shift_templates[], leave_requests[],
-       availability[], store_operating_hours, previous_week_assignments[]?, user_instructions?
+       availability[], operating_hours, working_hour_type, previous_week_assignments[]?,
+       historical_assignments[]?, user_instructions?
+
+ADDITIONAL CONTEXT (fetched by edge function from Supabase):
+       employee_skills, monthly_ot_context, demand_forecasts, store.default_labor_budget
 
 1. Build date array: [Mon, Tue, Wed, Thu, Fri, Sat, Sun] from week_start
-2. Filter out closed days: check store.operating_hours — if day is "closed", exclude from scheduling
+2. Filter out closed days: check operating_hours — if day is "closed", exclude from scheduling
 3. Build leave map: { user_id → Set<date> } from leave_requests
 4. Build availability map: { user_id → { dow → "available"|"preferred"|"unavailable" } }
    - From availability[] passed in payload (fetched from employee_availability table)
    - Employees with no availability record default to "available" all days
 5. Calculate shift durations: for each template, work_hours = (end - start - break) in hours
 6. Calculate per-employee budget: remaining_hours = max_hours_per_week
-7. Build previous-week pattern map (if previous_week_assignments provided):
+7. Determine daily normal cap from working_hour_type:
+   - 'standard' → 8h, '2week'/'4week' → 10h (變形工時 §30-1)
+8. Build previous-week pattern map (if previous_week_assignments provided):
    { user_id → { day_of_week → shift_template_id } }
    - Used by LLM for schedule consistency (S3)
-8. Derive min_staff_per_day:
-   - Parse from user_instructions if specified (e.g. "每天至少2人" → 2)
-   - Otherwise default to: ceil(employees.length / 3) or 1, whichever is greater
-9. Classify employees: group by employee_type (full-time vs part-time)
-   and by position (for role-based assignment)
+9. Summarize historical patterns (if historical_assignments provided — up to 8 weeks):
+   - Per-employee: which days of week they typically work, average hours/week
+   - Weekend rotation tracking: how many weekends each employee has worked recently
+   - Used for long-term fairness and pattern learning
+10. Derive min_staff_per_day:
+    - If demand_forecasts available with confidence > 0.7, use recommended_staff
+    - Else parse from user_instructions if specified (e.g. "每天至少2人" → 2)
+    - Otherwise default to: ceil(employees.length / 3) or 1, whichever is greater
+11. Classify employees: group by employee_type (full-time vs part-time)
+    and by position (for role-based assignment)
+12. Build employee skills map: { user_id → skill_name[] }
+    - Fetch from employee_skills table
+    - Cross-reference with shift_templates[].required_skills[]
+13. Fetch monthly OT context:
+    - monthly: { user_id → OT hours already used this month }
+    - threeMonth: { user_id → OT hours used in rolling 3-month window }
+14. Get labor budget: store.default_labor_budget and store.hourly_rate_default (default NT$183)
 ```
 
 #### Phase 2 — LLM Prompt Construction
@@ -233,27 +277,34 @@ HARD CONSTRAINTS (must NOT violate):
   H2. Never schedule an employee on an "unavailable" day
   H3. Never exceed max_hours_per_week for any employee
   H4. 七休一: max 6 consecutive working days (§36)
-  H5. 11-hour minimum rest between shifts (§35)
+  H5. 11-hour minimum rest between shifts (§34)
   H6. Only use shift templates provided (don't invent times)
   H7. Part-time employees: total weekly hours ≤ max_hours_per_week (strict ceiling)
   H8. Full-time employees: total weekly hours ≥ min_hours_threshold (max_hours × 0.8)
-      - If impossible due to leaves/availability, flag as 'underutilized' warning (not violation)
+      - If impossible due to leaves/availability, flag as 'underutilized' warning
+  H9. Break time must meet legal minimums per §35 (30min/4h segment)
+  H10. Daily hours cap: regular ≤ dailyNormalCap (8h standard, 10h 變形工時), total ≤ 12h
+  H11. Monthly OT ≤ 46h base / 54h hard cap (§32-1)
+  H12. Rolling 3-month OT ≤ 138h (§32-1)
+  H13. Shift templates with required_skills → only assign qualified employees
 
 SOFT CONSTRAINTS (optimize for, in priority order):
   S1. STAFF COVERAGE: Meet min_staff_per_day threshold every operating day
-      - Default: 1; overridden by user_instructions (e.g. "週末至少3人")
+      - Use demand_forecasts when confidence > 0.7
       - At least 1 senior employee (position != null) per day when possible
   S2. EMPLOYEE PREFERENCES: Prefer "preferred" (⭐) days over "available" (✅) days
       - Match employee position to shift role when applicable
+      - Prefer employees with matching skills for skill-required shifts
       - Respect part-time vs full-time proportional hour distribution
-  S3. SCHEDULE CONSISTENCY: Maintain pattern continuity with previous week
+  S3. SCHEDULE CONSISTENCY: Maintain pattern continuity with previous week + historical data
       - If previous_week_assignments provided, keep ~70% of pattern stable
-      - Rotate weekend workers for fairness across weeks
+      - Use historical_assignments (8 weeks) for long-term pattern learning
+      - Rotate weekend workers for fairness across weeks (track via historical data)
   S4. FAIRNESS: Distribute hours fairly across employees of same type
-      - Full-time employees get priority for hours up to their max
-      - Part-time employees fill remaining gaps
-  S5. Minimize overtime assignments (prefer spreading hours over creating OT)
+  S5. Minimize overtime, especially for employees near monthly OT cap
   S6. Honor user_instructions when provided (natural language)
+  S7. BUDGET: Try to keep total labor cost within store budget (soft target)
+  S8. DEMAND: Adjust staffing levels to match demand forecasts
 
 OUTPUT FORMAT: strict JSON array of assignments (schema provided)
 ```
@@ -405,6 +456,15 @@ Authorization: Bearer <supabase-anon-key>
 | All employees are part-time | Distribute shifts proportionally; warn if total hours < coverage need |
 | User instruction contradicts labor law | Labor law wins; note conflict in `notes` (e.g. "無法安排7天連續上班") |
 | Employee with no availability records | Treat as "available" all days (default) |
+| Employee near monthly OT cap (>38h) | Reduce assignments; warning at 38h, error at 46h/54h |
+| 3-month OT approaching 138h | Reduce this month's OT; hard violation at 138h |
+| Store uses 變形工時 (2week/4week) | Daily normal cap = 10h; hours 8-10h are NOT overtime |
+| Shift requires skills employee lacks | Hard violation → reassign to qualified employee |
+| No employees have required skill for a shift | Assign best available + warning; coverage > skills |
+| Labor budget exceeded | Warning only; coverage takes priority |
+| Demand forecast says 5 staff but only 3 available | Schedule all 3 + demand_understaffed warning |
+| No historical assignments (new store) | Skip pattern learning; generate fresh |
+| Employee skills table empty | Skip H13 checks; all employees treated as qualified |
 
 ---
 
@@ -415,12 +475,15 @@ Authorization: Bearer <supabase-anon-key>
 | Table | Fields Used | Purpose |
 |-------|-------------|---------|
 | `users` | id, name, position, employee_type, max_hours_per_week | Employee roster + role classification |
-| `shift_templates` | id, name, start_time, end_time, break_minutes, color | Available shifts |
+| `shift_templates` | id, name, start_time, end_time, break_minutes, color, required_skills | Available shifts + skill requirements |
 | `leave_requests` | user_id, start_date, end_date, status | Block leave days |
 | `employee_availability` | user_id, day_of_week, availability, notes | Preference matrix (✅⭐❌) |
-| `stores` | operating_hours (JSONB) | Closed-day detection + open/close times |
-| `schedules` | previous week's schedule (if exists) | Consistency baseline |
-| `shift_assignments` | previous week's assignments | Pattern continuity reference |
+| `stores` | operating_hours, working_hour_type, default_labor_budget, hourly_rate_default | Store config |
+| `schedules` | previous + historical (8 weeks) | Consistency baseline + pattern learning |
+| `shift_assignments` | previous + historical assignments | Pattern continuity reference |
+| `employee_skills` | user_id, skill_name | Employee certifications/skills |
+| `overtime_requests` | user_id, request_date, ot_hours | Monthly OT accumulation |
+| `daily_demand` | date, revenue, transactions, foot_traffic | Demand forecasting input |
 
 ### Tables Written (by frontend after response)
 
@@ -530,6 +593,11 @@ Authorization: Bearer <supabase-anon-key>
 | Server-side validation duplication | Intentional — edge function validates proactively, frontend validates reactively as safety net |
 | Consistency vs. preference changes | If an employee changed their availability since last week, new preferences override consistency |
 | Fairness rotation vs. coverage | Coverage wins — if only 2 people can work weekends, they work weekends regardless of rotation |
+| Budget vs. coverage | Coverage wins — understaffing is worse than exceeding budget; budget is informational |
+| Skill match vs. coverage | If no qualified employees available, assign anyway with warning; coverage > skill match |
+| Demand forecast vs. available staff | Schedule all available staff; warn if below forecast recommendation |
+| Monthly OT vs. coverage | If an employee is at the OT cap, do NOT assign more OT even if understaffed; use alternate staff |
+| 變形工時 vs. standard rules | working_hour_type determines daily cap; once set, all calculations use that cap |
 
 ---
 
@@ -546,45 +614,31 @@ Authorization: Bearer <supabase-anon-key>
 
 ---
 
-## Appendix A: Frontend Payload Patch Required
+## Appendix A: Frontend Payload (Already Implemented)
 
-The current `runAiSchedule()` in [Scheduling.tsx:162-173](admin/src/pages/Scheduling.tsx#L162-L173) is missing three data sources. The payload must be extended:
+The `runAiSchedule()` in [Scheduling.tsx:324-356](admin/src/pages/Scheduling.tsx#L324-L356) sends the complete payload:
 
 ```typescript
-// Current (incomplete)
 body: {
   store_id: selectedStore,
   week_start: weekStart,
   employees,
   shift_templates: shiftTemplates,
   leave_requests: leaves,
-  user_instructions: aiInstructions.trim() || undefined,
-}
-
-// Required (complete)
-body: {
-  store_id: selectedStore,
-  week_start: weekStart,
-  employees,
-  shift_templates: shiftTemplates,
-  leave_requests: leaves,
-  availability,                                    // ← ADD: employee_availability[]
-  operating_hours: stores.find(s => s.id === selectedStore)?.operating_hours || {},  // ← ADD
-  previous_week_assignments: prevAssignments || [], // ← ADD: fetched from prev week
+  availability,                                                                  // ✅ employee_availability[]
+  operating_hours: stores.find(s => s.id === selectedStore)?.operating_hours || {}, // ✅ store hours
+  working_hour_type: stores.find(s => s.id === selectedStore)?.working_hour_type || 'standard', // ✅ 變形工時
+  previous_week_assignments: prevAssignments || [],                               // ✅ prev week
+  historical_assignments: historicalAssignments,                                   // ✅ 8 weeks history
   user_instructions: aiInstructions.trim() || undefined,
 }
 ```
 
-**To fetch previous week assignments**, add before the function call:
-```typescript
-const prevStart = new Date(weekStart + 'T00:00:00');
-prevStart.setDate(prevStart.getDate() - 7);
-const { data: prevSched } = await supabase.from('schedules').select('id')
-  .eq('store_id', selectedStore).eq('week_start', prevStart.toISOString().split('T')[0]).single();
-const prevAssignments = prevSched
-  ? (await supabase.from('shift_assignments').select('user_id, date, start_time, end_time, shift_template_id').eq('schedule_id', prevSched.id)).data
-  : [];
-```
+**Additional context fetched by the edge function** (not sent by frontend):
+- `employee_skills` — queried from `employee_skills` table using employee IDs
+- `otContext` — computed from `overtime_requests` table for monthly/3-month OT tracking
+- `demand_forecasts` — if `demand-forecast` edge function is available
+- `labor_budget` — from `stores.default_labor_budget` and `stores.hourly_rate_default`
 
 ---
 
@@ -628,14 +682,17 @@ Where:
 When constraints conflict, the AI resolves in this strict order:
 
 ```
-1. LABOR LAW (absolute)       — 七休一, 11h rest
-2. HARD BLOCKS (absolute)     — leave days, unavailable days, closed days
-3. HOURS COMPLIANCE (absolute) — part-time ceiling (never exceed), full-time floor (warn if under 80%)
-4. STAFF COVERAGE (high)      — min employees per day
-5. EMPLOYEE PREFERENCE (medium) — preferred days, position matching
-6. SCHEDULE CONSISTENCY (medium) — pattern continuity with prev week
-7. FAIRNESS ROTATION (low)    — weekend rotation, hour balancing
-8. USER INSTRUCTIONS (low)    — natural language criteria (best effort)
+ 1. LABOR LAW (absolute)         — 七休一 §36, 11h rest §34, break §35, daily cap §30+§32,
+                                    monthly OT §32-1 (46h/54h), quarterly OT (138h), 變形工時 §30-1
+ 2. HARD BLOCKS (absolute)       — leave days, unavailable days, closed days
+ 3. SKILL/CERT MATCH (absolute)  — employee must have all required_skills for assigned shift
+ 4. HOURS COMPLIANCE (absolute)  — part-time ceiling, full-time floor (warn at 80%)
+ 5. STAFF COVERAGE (high)        — min employees per day, demand forecast override
+ 6. EMPLOYEE PREFERENCE (medium) — preferred days, position matching, skill affinity
+ 7. SCHEDULE CONSISTENCY (medium) — prev week continuity + 8-week historical patterns
+ 8. BUDGET AWARENESS (medium)    — keep labor cost within budget (soft target)
+ 9. FAIRNESS ROTATION (low)      — weekend rotation, hour balancing, long-term fairness
+10. USER INSTRUCTIONS (low)      — natural language criteria (best effort)
 ```
 
 If a user instruction contradicts labor law (e.g. "排王小明7天"), the AI:
