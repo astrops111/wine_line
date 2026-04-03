@@ -1,5 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { t, getLocale } from '../../lib/i18n';
+import { useOrg } from '../../lib/OrgContext';
+import { supabase } from '../../lib/supabase';
 import {
     getBucket,
     normalizeTriggers,
@@ -9,6 +11,7 @@ import {
     downloadAttachmentFile,
     deleteAttachmentFile,
     extractTime,
+    extractLocalDate,
     getDueBadge,
     combineDatetime,
 } from '../../lib/taskHelpers';
@@ -52,6 +55,7 @@ interface TaskDetailPanelProps {
     priorityLabel: Record<string, string>;
     closePanel: () => void;
     saveTaskEdits: () => Promise<void>;
+    reloadTasks: () => Promise<void>;
     deleteTask: (id: string) => void;
     withConfirm: (msg: string, action: () => void) => void;
 }
@@ -85,11 +89,42 @@ export function TaskDetailPanel({
     priorityLabel,
     closePanel,
     saveTaskEdits,
+    reloadTasks,
     deleteTask,
     withConfirm,
 }: TaskDetailPanelProps) {
     const zh = getLocale() === 'zh-TW';
+    const { orgSettings } = useOrg();
+    const defaultStartTime = orgSettings.default_work_start || '09:00';
+    const defaultEndTime = orgSettings.default_work_end || '18:00';
     const [uploading, setUploading] = useState(false);
+    const [showApproverPicker, setShowApproverPicker] = useState(false);
+    const [selectedApprovers, setSelectedApprovers] = useState<string[]>([]);
+    const [confirmations, setConfirmations] = useState<{ approver_id: string; status: string }[]>([]);
+
+    // Load existing approvers when task changes
+    useEffect(() => {
+        if (!selectedTask.confirmation_required) { setConfirmations([]); return; }
+        supabase.from('task_confirmations')
+            .select('approver_id, status')
+            .eq('task_id', selectedTask.id)
+            .then(({ data }) => setConfirmations(data || []));
+    }, [selectedTask.id, selectedTask.confirmation_required, selectedTask.confirmation_status]);
+
+    async function submitApprovalRequest(approverIds: string[]) {
+        if (approverIds.length === 0) return;
+        const inserts = approverIds.map(id => ({ task_id: selectedTask.id, approver_id: id, status: 'pending' }));
+        await supabase.from('task_confirmations').upsert(inserts, { onConflict: 'task_id,approver_id' });
+        await supabase.from('tasks').update({
+            confirmation_required: true,
+            confirmation_status: 'pending',
+            confirmation_requested_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        }).eq('id', selectedTask.id);
+        setShowApproverPicker(false);
+        setSelectedApprovers([]);
+        await reloadTasks();
+    }
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     async function handleUpload(file: File) {
@@ -182,7 +217,7 @@ export function TaskDetailPanel({
                     <div>
                         <label className="detail-label">{zh ? '計畫開始日' : 'Plan Start'}</label>
                         <input type="date" className="select" style={{ width: '100%' }}
-                            value={(localEdits?.planned_start ?? selectedTask.planned_start ?? '').split('T')[0]}
+                            value={extractLocalDate(localEdits?.planned_start ?? selectedTask.planned_start ?? '')}
                             onChange={e => {
                                 const time = extractTime(localEdits?.planned_start || selectedTask.planned_start || null);
                                 patchEdit({ planned_start: time ? combineDatetime(e.target.value, time, 'start') : e.target.value });
@@ -194,15 +229,15 @@ export function TaskDetailPanel({
                                 <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginTop: '4px' }}>
                                     <input type="time" className="input-field" style={{ fontSize: '11px', padding: '2px 4px', flex: 1 }}
                                         value={t}
-                                        onChange={e => patchEdit({ planned_start: combineDatetime(raw.split('T')[0], e.target.value, 'start') })} />
+                                        onChange={e => patchEdit({ planned_start: combineDatetime(extractLocalDate(raw), e.target.value, 'start') })} />
                                     <button className="btn btn-sm btn-secondary" style={{ fontSize: '10px', padding: '1px 4px' }}
-                                        onClick={() => patchEdit({ planned_start: raw.split('T')[0] })}>✕</button>
+                                        onClick={() => patchEdit({ planned_start: extractLocalDate(raw) })}>✕</button>
                                 </div>
                             ) : (
                                 <button className="btn btn-sm btn-secondary" style={{ fontSize: '10px', padding: '1px 6px', marginTop: '4px', opacity: 0.6 }}
                                     onClick={() => {
-                                        const date = (localEdits?.planned_start ?? selectedTask.planned_start ?? '').split('T')[0];
-                                        if (date) patchEdit({ planned_start: combineDatetime(date, '09:00', 'start') });
+                                        const date = extractLocalDate(localEdits?.planned_start ?? selectedTask.planned_start ?? '');
+                                        if (date) patchEdit({ planned_start: combineDatetime(date, defaultStartTime, 'start') });
                                     }}>
                                     🕐 {zh ? '設定時間' : 'Set time'}
                                 </button>
@@ -218,7 +253,7 @@ export function TaskDetailPanel({
                             })()}
                         </label>
                         <input type="date" className="select" style={{ width: '100%' }}
-                            value={(localEdits?.due_date ?? selectedTask.due_date ?? '').split('T')[0]}
+                            value={extractLocalDate(localEdits?.due_date ?? selectedTask.due_date ?? '')}
                             onChange={e => {
                                 const time = extractTime(localEdits?.due_date || selectedTask.due_date || null);
                                 patchEdit({ due_date: time ? combineDatetime(e.target.value, time, 'end') : e.target.value });
@@ -230,15 +265,15 @@ export function TaskDetailPanel({
                                 <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginTop: '4px' }}>
                                     <input type="time" className="input-field" style={{ fontSize: '11px', padding: '2px 4px', flex: 1 }}
                                         value={t}
-                                        onChange={e => patchEdit({ due_date: combineDatetime(raw.split('T')[0], e.target.value, 'end') })} />
+                                        onChange={e => patchEdit({ due_date: combineDatetime(extractLocalDate(raw), e.target.value, 'end') })} />
                                     <button className="btn btn-sm btn-secondary" style={{ fontSize: '10px', padding: '1px 4px' }}
-                                        onClick={() => patchEdit({ due_date: raw.split('T')[0] })}>✕</button>
+                                        onClick={() => patchEdit({ due_date: extractLocalDate(raw) })}>✕</button>
                                 </div>
                             ) : (
                                 <button className="btn btn-sm btn-secondary" style={{ fontSize: '10px', padding: '1px 6px', marginTop: '4px', opacity: 0.6 }}
                                     onClick={() => {
-                                        const date = (localEdits?.due_date ?? selectedTask.due_date ?? '').split('T')[0];
-                                        if (date) patchEdit({ due_date: combineDatetime(date, '17:00', 'end') });
+                                        const date = extractLocalDate(localEdits?.due_date ?? selectedTask.due_date ?? '');
+                                        if (date) patchEdit({ due_date: combineDatetime(date, defaultEndTime, 'end') });
                                     }}>
                                     🕐 {zh ? '設定時間' : 'Set time'}
                                 </button>
@@ -273,7 +308,7 @@ export function TaskDetailPanel({
                                         const dd = localEdits?.due_date || selectedTask.due_date || '';
                                         const d = new Date(dd);
                                         d.setDate(d.getDate() - 1);
-                                        d.setHours(9, 0, 0, 0);
+                                        d.setHours(parseInt(defaultStartTime.split(':')[0]), parseInt(defaultStartTime.split(':')[1] || '0'), 0, 0);
                                         patchEdit({ reminder_at: d.toISOString() });
                                     }}>
                                     {zh ? '到期前1天' : '1 day before'}
@@ -282,11 +317,114 @@ export function TaskDetailPanel({
                                     onClick={() => {
                                         const dd = localEdits?.due_date || selectedTask.due_date || '';
                                         const d = new Date(dd);
-                                        d.setHours(9, 0, 0, 0);
+                                        d.setHours(parseInt(defaultStartTime.split(':')[0]), parseInt(defaultStartTime.split(':')[1] || '0'), 0, 0);
                                         patchEdit({ reminder_at: d.toISOString() });
                                     }}>
                                     {zh ? '當天09:00' : 'Same day 9AM'}
                                 </button>
+                            </div>
+                        )}
+                    </div>
+                    {/* Confirmation / Approval */}
+                    <div style={{ gridColumn: '1 / -1' }}>
+                        <label className="detail-label">🔐 {zh ? '確認審批' : 'Approval'}</label>
+                        {selectedTask.confirmation_required ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span className={`status-badge ${selectedTask.confirmation_status === 'approved' ? 'completed' : selectedTask.confirmation_status === 'rejected' ? 'cancelled' : 'in_progress'}`}
+                                        style={{ fontSize: '11px' }}>
+                                        {selectedTask.confirmation_status === 'approved' ? (zh ? '✅ 已核准' : '✅ Approved')
+                                            : selectedTask.confirmation_status === 'rejected' ? (zh ? '❌ 已拒絕' : '❌ Rejected')
+                                            : selectedTask.confirmation_status === 'pending' ? (zh ? '⏳ 等待確認' : '⏳ Pending')
+                                            : (zh ? '— 尚未送出' : '— Not sent')}
+                                    </span>
+                                    {selectedTask.confirmation_requested_at && (
+                                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                                            {new Date(selectedTask.confirmation_requested_at).toLocaleString('zh-TW', { timeZone: orgSettings.timezone || 'Asia/Taipei' })}
+                                        </span>
+                                    )}
+                                </div>
+                                {/* Show current approvers */}
+                                {confirmations.length > 0 && (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                        {confirmations.map(c => {
+                                            const u = users.find(u => u.id === c.approver_id);
+                                            return (
+                                                <span key={c.approver_id} style={{
+                                                    fontSize: '11px', padding: '2px 8px', borderRadius: '10px',
+                                                    background: c.status === 'approved' ? '#dcfce7' : c.status === 'rejected' ? '#fee2e2' : '#fef3c7',
+                                                    color: c.status === 'approved' ? '#166534' : c.status === 'rejected' ? '#991b1b' : '#92400e',
+                                                }}>
+                                                    {c.status === 'approved' ? '✅' : c.status === 'rejected' ? '❌' : '⏳'} {u?.name || c.approver_id.slice(0, 6)}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                {selectedTask.confirmation_notes && (
+                                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '6px 8px', borderRadius: '6px' }}>
+                                        {selectedTask.confirmation_notes}
+                                    </div>
+                                )}
+                                {selectedTask.confirmation_status !== 'approved' && selectedTask.status !== 'completed' && (
+                                    <button className="btn btn-sm btn-primary" style={{ alignSelf: 'flex-start' }}
+                                        onClick={() => {
+                                            setSelectedApprovers(confirmations.map(c => c.approver_id));
+                                            setShowApproverPicker(true);
+                                        }}>
+                                        🔐 {selectedTask.confirmation_status === 'pending' ? (zh ? '重新送出確認' : 'Resend') : (zh ? '請求確認' : 'Request Approval')}
+                                    </button>
+                                )}
+                            </div>
+                        ) : (
+                            <button className="btn btn-sm btn-secondary" style={{ fontSize: '11px' }}
+                                onClick={() => {
+                                    setSelectedApprovers([]);
+                                    setShowApproverPicker(true);
+                                }}>
+                                🔐 {zh ? '啟用審批' : 'Enable Approval'}
+                            </button>
+                        )}
+                        {/* Approver picker */}
+                        {showApproverPicker && (
+                            <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--bg-secondary)', padding: '12px', borderRadius: '8px', border: '1px solid var(--outline-variant)' }}>
+                                <div style={{ fontSize: '12px', fontWeight: 600 }}>{zh ? '選擇審批人員' : 'Select Approvers'}</div>
+                                <select className="select" style={{ width: '100%', fontSize: '12px' }}
+                                    value="__placeholder__"
+                                    onChange={e => {
+                                        const val = e.target.value;
+                                        if (val && val !== '__placeholder__' && !selectedApprovers.includes(val)) {
+                                            setSelectedApprovers(prev => [...prev, val]);
+                                        }
+                                    }}>
+                                    <option value="__placeholder__">{zh ? '— 選擇人員 —' : '— Select person —'}</option>
+                                    {users.filter(u => !selectedApprovers.includes(u.id)).map(u => (
+                                        <option key={u.id} value={u.id}>{u.name}</option>
+                                    ))}
+                                </select>
+                                {selectedApprovers.length > 0 && (
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                        {selectedApprovers.map(id => {
+                                            const u = users.find(u => u.id === id);
+                                            return (
+                                                <span key={id} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '3px 8px', borderRadius: '10px', background: '#dbeafe', color: '#1d4ed8' }}>
+                                                    {u?.name || id.slice(0, 6)}
+                                                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '12px', color: '#1d4ed8', lineHeight: 1 }}
+                                                        onClick={() => setSelectedApprovers(prev => prev.filter(a => a !== id))}>✕</button>
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    <button className="btn btn-sm btn-primary" disabled={selectedApprovers.length === 0}
+                                        onClick={() => submitApprovalRequest(selectedApprovers)}>
+                                        🔐 {zh ? `送出 (${selectedApprovers.length})` : `Submit (${selectedApprovers.length})`}
+                                    </button>
+                                    <button className="btn btn-sm btn-secondary" onClick={() => { setShowApproverPicker(false); setSelectedApprovers([]); }}>
+                                        {zh ? '取消' : 'Cancel'}
+                                    </button>
+                                </div>
                             </div>
                         )}
                     </div>

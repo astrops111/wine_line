@@ -41,6 +41,13 @@ export function getDueBadge(dueDate: string | null, status: string): { label: st
     return null;
 }
 
+/** Extract local date string (YYYY-MM-DD) from ISO datetime. */
+export function extractLocalDate(datetime: string | null): string {
+    if (!datetime) return '';
+    const d = new Date(datetime);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 /** Extract time string (HH:mm) from ISO datetime, returns '' if no meaningful time. */
 export function extractTime(datetime: string | null): string {
     if (!datetime) return '';

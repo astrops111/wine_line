@@ -33,8 +33,8 @@
 
   /* ── On-surface text ── */
   --on-surface:         #191c1e;
-  --on-surface-variant: #64748b;
-  --on-surface-muted:   #94a3b8;
+  --on-surface-variant: #475569;
+  --on-surface-muted:   #64748b;
 
   /* ── Outline ── */
   --outline:         #c4c7cc;
@@ -132,9 +132,9 @@
   --surface-container-high:    #1a2035;
   --surface-bright:            #1e2440;
 
-  --on-surface:         #dde2f0;
-  --on-surface-variant: #7a8099;
-  --on-surface-muted:   #454c66;
+  --on-surface:         #e4e8f4;
+  --on-surface-variant: #9ba2bc;
+  --on-surface-muted:   #6b7394;
 
   --outline:         #2a3048;
   --outline-variant: rgba(42, 48, 72, 0.5);

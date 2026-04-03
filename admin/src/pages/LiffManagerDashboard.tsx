@@ -417,10 +417,12 @@ export function LiffManagerDashboard() {
     const [userName, setUserName] = useState<string>('');
     const [refreshing, setRefreshing] = useState(false);
     const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
-    const [stats, setStats] = useState({ completed: 0, pending: 0, delayed: 0, total: 0 });
+    const [stats, setStats] = useState({ completed: 0, pending: 0, delayed: 0, approvals: 0, total: 0 });
     const [storeProgress, setStoreProgress] = useState<StoreProgress[]>([]);
     const [delayedTasks, setDelayedTasks] = useState<DelayedTask[]>([]);
     const [activity, setActivity] = useState<ActivityItem[]>([]);
+    const [pendingApprovals, setPendingApprovals] = useState<{ id: string; taskTitle: string; requester: string; requestedAt: string; taskId: string; shortId: string }[]>([]);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     // LIFF initialization & employee lookup (mirrors LiffApp.tsx pattern)
     useEffect(() => {
@@ -486,8 +488,9 @@ export function LiffManagerDashboard() {
             }
 
             setOrgId(user.organization_id);
+            setCurrentUserId(user.id);
             if (user.name) setUserName(user.name);
-            await loadData(user.organization_id);
+            await loadData(user.organization_id, user.id);
         } catch (err) {
             console.error('lookupEmployee error:', err);
             setError('驗證身份時發生錯誤');
@@ -495,8 +498,9 @@ export function LiffManagerDashboard() {
         }
     }
 
-    const loadData = useCallback(async (organizationId?: string) => {
+    const loadData = useCallback(async (organizationId?: string, userId?: string) => {
         const oid = organizationId || orgId;
+        const uid = userId || currentUserId;
         if (!oid) return;
 
         try {
@@ -528,7 +532,26 @@ export function LiffManagerDashboard() {
                 if (t.status === 'completed' || t.status === 'cancelled') return false;
                 return t.status === 'blocked' || (t.due_date && new Date(t.due_date) < now);
             }).length;
-            setStats({ completed, pending: pendingCount, delayed: delayedCount, total: tasks.length });
+            // Pending approvals for this manager
+            let approvalCount = 0;
+            if (uid) {
+                const { data: approvals } = await supabase.from('task_confirmations')
+                    .select('id, task_id, created_at, tasks!inner(title, assigned_to, users!tasks_assigned_to_fkey(name))')
+                    .eq('approver_id', uid)
+                    .eq('status', 'pending');
+                const items = (approvals || []).map((a: any) => ({
+                    id: a.id,
+                    taskId: a.task_id,
+                    shortId: (a.task_id as string).slice(0, 8),
+                    taskTitle: a.tasks?.title || '—',
+                    requester: a.tasks?.users?.name || '未知',
+                    requestedAt: a.created_at ? new Date(a.created_at).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '',
+                }));
+                setPendingApprovals(items);
+                approvalCount = items.length;
+            }
+
+            setStats({ completed, pending: pendingCount, delayed: delayedCount, approvals: approvalCount, total: tasks.length });
 
             // Store progress
             const map = new Map<string, StoreProgress>();
@@ -595,7 +618,7 @@ export function LiffManagerDashboard() {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [orgId]);
+    }, [orgId, currentUserId]);
 
     // Auto-refresh every 5 minutes
     useEffect(() => {
@@ -658,7 +681,7 @@ export function LiffManagerDashboard() {
                 </div>
 
                 {/* ── Summary Cards ── */}
-                <div className="summary-grid">
+                <div className="summary-grid" style={stats.approvals > 0 ? { gridTemplateColumns: 'repeat(4, 1fr)' } : undefined}>
                     <div className="summary-card">
                         <div className="summary-val green">{stats.completed}</div>
                         <div className="summary-lbl">已完成</div>
@@ -671,6 +694,12 @@ export function LiffManagerDashboard() {
                         <div className="summary-val red">{stats.delayed}</div>
                         <div className="summary-lbl">延遲</div>
                     </div>
+                    {stats.approvals > 0 && (
+                        <div className="summary-card">
+                            <div className="summary-val" style={{ color: '#a78bfa' }}>{stats.approvals}</div>
+                            <div className="summary-lbl">待審批</div>
+                        </div>
+                    )}
                 </div>
 
                 {/* ── Refresh Bar ── */}
@@ -685,6 +714,28 @@ export function LiffManagerDashboard() {
                         </span>
                     )}
                 </div>
+
+                {/* ── Awaiting Approvals ── */}
+                {pendingApprovals.length > 0 && (
+                    <div className="glass-section">
+                        <div className="section-head">
+                            <span className="section-title">🔐 待審批任務</span>
+                            <span className="count-badge red">{pendingApprovals.length}</span>
+                        </div>
+                        <div className="section-body">
+                            {pendingApprovals.map(a => (
+                                <div key={a.id} className="delay-card" style={{ borderLeftColor: '#a78bfa' }}>
+                                    <div className="delay-title">{a.taskTitle}</div>
+                                    <div className="delay-meta">
+                                        <span>申請人：{a.requester}</span>
+                                        <span>{a.requestedAt}</span>
+                                        <span style={{ color: '#a78bfa', fontWeight: 700 }}>#{a.shortId}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* ── Store Progress ── */}
                 <StoreProgressSection storeProgress={storeProgress} />

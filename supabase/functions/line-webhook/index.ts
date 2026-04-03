@@ -4,7 +4,7 @@ import type { PendingAction } from './types.ts';
 import { verifySignature, getLineProfile, getGroupSummary, text, replyAndLog, pushAndLog } from './line-api.ts';
 import { upsertLineUser, upsertLineGroup, logMessage, logCommand, logError } from './db-helpers.ts';
 import { mkBtn, withQuickReplies, flexMenu, flexSuccess, flexManagerMenu, buildWorkflowSelectionFlex } from './flex-builders.ts';
-import { cmdTaskList, cmdTaskCreate, cmdTaskDone, cmdTaskUpdate, cmdNotes, cmdProjectList, cmdProjectDone, cmdProjectNote, cmdProjectStatus } from './command-handlers.ts';
+import { cmdTaskList, cmdTaskCreate, cmdTaskDone, cmdTaskUpdate, cmdTaskRequestConfirm, cmdTaskConfirmRespond, cmdNotes, cmdProjectList, cmdProjectDone, cmdProjectNote, cmdProjectStatus } from './command-handlers.ts';
 import { cmdWorkflowStatus, cmdWorkflowTasks, checkManager, cmdManagerOverview, cmdManagerAssign, cmdManagerLeaveReview, cmdRegister, handleCreateTaskStep } from './command-handlers-workflow.ts';
 
 serve(async (req) => {
@@ -169,6 +169,14 @@ serve(async (req) => {
           await replyAndLog(event.replyToken, [text("❌ 找不到對應任務，備註未儲存。")], accessToken, db, { lineUserId, displayName: profile.displayName, sourceType, groupId });
         }
         continue;
+      } else if (pending.action === "reject_reason") {
+        const cmdStart = Date.now();
+        await db.from("line_users").update({ pending_action: null }).eq("id", lineUser.id);
+        const reason = rawText.trim();
+        const responseMsg = await cmdTaskConfirmRespond(pending.short_id, "拒絕", lineUser.user_id!, db, accessToken, reason);
+        await logCommand(db, { lineUserId, displayName: profile.displayName, commandMatched: "pending_reject_reason", rawInput: rawText, sourceType, groupId, success: true, executionMs: Date.now() - cmdStart });
+        await replyAndLog(event.replyToken, [responseMsg], accessToken, db, { lineUserId, displayName: profile.displayName, sourceType, groupId });
+        continue;
       } else if (pending.action === "create_task") {
         const cmdStart = Date.now();
         const stepResult = await handleCreateTaskStep(lineUser, rawText, db, accessToken);
@@ -256,7 +264,7 @@ serve(async (req) => {
         }
       }
 
-    } else if (lower === "/任務 全部" || lower === "/任務全部" || lower === "/task all") {
+    } else if (lower === "/任務 列表 全部" || lower === "/任務 全部" || lower === "/任務全部" || lower === "/task all" || lower === "/任務列表全部" || lower === "/task list all") {
       commandName = "task_list_all";
       if (!lineUser.is_verified || !lineUser.user_id) {
         responseMsg = isGroup
@@ -336,6 +344,39 @@ serve(async (req) => {
           : text("您尚未連結帳號。\n請輸入：/註冊 您的姓名");
       } else {
         responseMsg = await cmdTaskDone(m ? m[1] : "", lineUser.user_id, db, accessToken, groupId, profile.displayName);
+      }
+
+    } else if (lower.match(/^\/任務\s+\S+\s+請求確認/)) {
+      commandName = "task_request_confirm";
+      const m = rawText.match(/^\/任務\s+(\S+)\s+請求確認/i);
+      if (!lineUser.is_verified || !lineUser.user_id) {
+        responseMsg = isGroup
+          ? text(`${profile.displayName}，請先私訊機器人：\n/註冊 您的姓名`)
+          : text("您尚未連結帳號。\n請輸入：/註冊 您的姓名");
+      } else {
+        responseMsg = await cmdTaskRequestConfirm(m ? m[1] : "", lineUser.user_id, db, accessToken, profile.displayName);
+      }
+
+    } else if (lower.match(/^\/確認\s+\S+\s+(核准|拒絕)/)) {
+      commandName = "task_confirm_respond";
+      const m = rawText.match(/^\/確認\s+(\S+)\s+(核准|拒絕)\s*(.*)/i);
+      if (!lineUser.is_verified || !lineUser.user_id) {
+        responseMsg = text("您尚未連結帳號。\n請輸入：/註冊 您的姓名");
+      } else if (m && m[2] === "拒絕" && !(m[3] || "").trim()) {
+        // Rejection without reason → ask for reason via pending action
+        const rid = (m[1] || "").replace(/[[\]#\s]/g, "").toLowerCase();
+        const { data: matchTasks } = await db.from("tasks").select("id, title").neq("status", "completed").limit(300);
+        const found = matchTasks?.filter((t: any) => t.id.toLowerCase().startsWith(rid));
+        if (found && found.length > 0) {
+          await db.from("line_users").update({
+            pending_action: { action: "reject_reason", task_id: found[0].id, task_title: found[0].title, short_id: rid },
+          }).eq("id", lineUser.id);
+          responseMsg = text(`請輸入拒絕「${found[0].title}」的原因：`);
+        } else {
+          responseMsg = text(`❌ 找不到任務 ${rid}。`);
+        }
+      } else {
+        responseMsg = await cmdTaskConfirmRespond(m ? m[1] : "", m ? m[2] : "", lineUser.user_id, db, accessToken, m ? (m[3] || "").trim() : "");
       }
 
     } else if (lower.match(/^\/任務\s+\S+\s+更新/) || lower.match(/^\/task\s+\S+\s+update/)) {

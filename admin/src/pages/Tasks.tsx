@@ -33,6 +33,7 @@ export function Tasks() {
     const [filterWorkflowTemplate, setFilterWorkflowTemplate] = useState('all');
     const [filterWorkflow, setFilterWorkflow] = useState('all');
     const [filterBucket, setFilterBucket] = useState('all');
+    const [filterAssignee, setFilterAssignee] = useState('all');
 
     // Quick create state
     const [showCreate, setShowCreate] = useState(false);
@@ -131,6 +132,7 @@ export function Tasks() {
             .select(`
                 id, title, description, status, priority, sort_order, due_date, planned_start, completed_at, updated_at, created_at, metadata,
                 store_id, workflow_instance_id, reminder_at, reminder_sent,
+                confirmation_required, confirmation_status, confirmation_requested_at, confirmation_responded_at, confirmation_notes,
                 users!tasks_assigned_to_fkey(id, name),
                 workflow_steps(name, step_order),
                 stores(id, name),
@@ -141,7 +143,7 @@ export function Tasks() {
 
         if (error) console.error('loadTasks error:', error);
         if (data) {
-            setTasks(data.map((t: any) => ({
+            const mapped = data.map((t: any) => ({
                 ...t,
                 assigned_user: t.users,
                 workflow_step: t.workflow_steps,
@@ -155,7 +157,10 @@ export function Tasks() {
                 note2: t.metadata?.note2 ?? null,
                 note3: t.metadata?.note3 ?? null,
                 reminder_at: t.reminder_at ?? null,
-            })));
+            }));
+            setTasks(mapped);
+            // Sync selectedTask with refreshed data
+            setSelectedTask(prev => prev ? mapped.find((t: Task) => t.id === prev.id) ?? null : null);
         }
         setLoading(false);
     }
@@ -426,6 +431,7 @@ export function Tasks() {
         if (filterStore !== 'all' && t.store_id !== filterStore) return false;
         if (filterWorkflow !== 'all' && t.workflow_instance_id !== filterWorkflow) return false;
         if (filterBucket !== 'all' && getBucket(t) !== filterBucket) return false;
+        if (filterAssignee !== 'all' && (t.assigned_user?.id || '') !== filterAssignee) return false;
         return true;
     });
 
@@ -495,6 +501,10 @@ export function Tasks() {
                                 <select className="select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
                                     <option value="all">{zh ? '狀態: 全部' : 'Status: All'}</option>
                                     {Object.entries(statusLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                                </select>
+                                <select className="select" value={filterAssignee} onChange={e => setFilterAssignee(e.target.value)}>
+                                    <option value="all">{zh ? '負責人: 全部' : 'Assignee: All'}</option>
+                                    {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                                 </select>
                                 <select className="select" value={filterStore} onChange={e => setFilterStore(e.target.value)}>
                                     <option value="all">{zh ? '門市: 全部' : 'Store: All'}</option>
@@ -700,6 +710,7 @@ export function Tasks() {
                         priorityLabel={priorityLabel}
                         closePanel={closePanel}
                         saveTaskEdits={saveTaskEdits}
+                        reloadTasks={loadTasks}
                         deleteTask={deleteTask}
                         withConfirm={withConfirm}
                     />

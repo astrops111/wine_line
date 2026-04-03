@@ -8,6 +8,7 @@ export type SupabaseClient = ReturnType<typeof createClient>;
 
 export type PendingAction =
   | { action: "add_note"; task_id: string; task_title: string }
+  | { action: "reject_reason"; task_id: string; task_title: string; short_id: string }
   | {
       action: "create_task";
       step: "workflow" | "due_date" | "reminder" | "owner" | "confirm";

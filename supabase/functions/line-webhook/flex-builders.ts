@@ -152,6 +152,9 @@ export function flexTaskList(tasks: any[], ownerName?: string, liffNewTaskId = "
     const due = t.due_date ? t.due_date.slice(0, 10) : "無截止日";
     const pColor = PRIORITY_COLOR[t.priority] ?? "#95A5A6";
     const sColor = STATUS_COLOR[t.status] ?? "#95A5A6";
+    const headerBg = t.status === "pending" ? "#4A4A4A" : pColor;
+    const wfName = t.workflow_instance?.name ?? null;
+    const noteLines = t.notes ? t.notes.split("\n").filter(Boolean) : [];
 
     return {
       type: "bubble",
@@ -160,8 +163,9 @@ export function flexTaskList(tasks: any[], ownerName?: string, liffNewTaskId = "
         type: "box",
         layout: "vertical",
         paddingAll: "10px",
-        backgroundColor: pColor,
+        backgroundColor: headerBg,
         contents: [
+          ...(wfName ? [{ type: "text", text: wfName, color: "#FFFFFFAA", size: "xxs" }] : []),
           {
             type: "text",
             text: `${i + 1}. ${t.title}`,
@@ -181,6 +185,11 @@ export function flexTaskList(tasks: any[], ownerName?: string, liffNewTaskId = "
           infoRow("狀態", statusLabel(t.status), sColor),
           infoRow("優先", priorityLabel(t.priority), pColor),
           infoRow("截止", due),
+          ...(noteLines.length > 0 ? [
+            { type: "separator", margin: "sm" },
+            { type: "text", text: "📝 備註", color: "#333333", size: "xxs", weight: "bold", margin: "sm" },
+            ...noteLines.slice(-5).map((n: string) => ({ type: "text", text: n, color: "#666666", size: "xxs", wrap: true })),
+          ] : []),
           { type: "text", text: `#${shortId}`, color: "#CCCCCC", size: "xxs", margin: "sm" },
         ],
       },
@@ -190,13 +199,21 @@ export function flexTaskList(tasks: any[], ownerName?: string, liffNewTaskId = "
         spacing: "xs",
         paddingAll: "8px",
         contents: [
-          {
-            type: "button",
-            action: { type: "message", label: "✅ 標記完成", text: `/任務 #${shortId} 完成` },
-            style: "primary",
-            height: "sm",
-            color: "#27AE60",
-          },
+          t.confirmation_required
+            ? {
+                type: "button",
+                action: { type: "message", label: "🔐 請求確認", text: `/任務 ${shortId} 請求確認` },
+                style: "primary",
+                height: "sm",
+                color: "#8b5cf6",
+              }
+            : {
+                type: "button",
+                action: { type: "message", label: "✅ 標記完成", text: `/任務 #${shortId} 完成` },
+                style: "primary",
+                height: "sm",
+                color: "#27AE60",
+              },
           {
             type: "button",
             action: { type: "message", label: "📝 更新備註", text: `/任務 #${shortId} 更新` },
@@ -266,7 +283,10 @@ export function flexGroupTaskList(tasks: any[]) {
     const due = t.due_date ? t.due_date.slice(0, 10) : "無截止日";
     const pColor = PRIORITY_COLOR[t.priority] ?? "#95A5A6";
     const sColor = STATUS_COLOR[t.status] ?? "#95A5A6";
+    const headerBg = t.status === "pending" ? "#4A4A4A" : pColor;
     const assigneeName = t.assignee?.name ?? "—";
+    const wfName = t.workflow_instance?.name ?? null;
+    const noteLines = t.notes ? t.notes.split("\n").filter(Boolean) : [];
 
     return {
       type: "bubble",
@@ -275,8 +295,9 @@ export function flexGroupTaskList(tasks: any[]) {
         type: "box",
         layout: "vertical",
         paddingAll: "10px",
-        backgroundColor: pColor,
+        backgroundColor: headerBg,
         contents: [
+          ...(wfName ? [{ type: "text", text: wfName, color: "#FFFFFFAA", size: "xxs" }] : []),
           { type: "text", text: `${i + 1}. ${t.title}`, color: "#FFFFFF", weight: "bold", size: "sm", wrap: true, maxLines: 2 },
         ],
       },
@@ -289,6 +310,11 @@ export function flexGroupTaskList(tasks: any[]) {
           infoRow("狀態", statusLabel(t.status), sColor),
           infoRow("優先", priorityLabel(t.priority), pColor),
           infoRow("截止", due),
+          ...(noteLines.length > 0 ? [
+            { type: "separator", margin: "sm" },
+            { type: "text", text: "📝 備註", color: "#333333", size: "xxs", weight: "bold", margin: "sm" },
+            ...noteLines.slice(-5).map((n: string) => ({ type: "text", text: n, color: "#666666", size: "xxs", wrap: true })),
+          ] : []),
           { type: "text", text: `#${shortId}`, color: "#CCCCCC", size: "xxs", margin: "sm" },
         ],
       },
@@ -298,13 +324,21 @@ export function flexGroupTaskList(tasks: any[]) {
         spacing: "xs",
         paddingAll: "8px",
         contents: [
-          {
-            type: "button",
-            action: { type: "message", label: "✅ 標記完成", text: `/任務 #${shortId} 完成` },
-            style: "primary",
-            height: "sm",
-            color: "#27AE60",
-          },
+          t.confirmation_required
+            ? {
+                type: "button",
+                action: { type: "message", label: "🔐 請求確認", text: `/任務 ${shortId} 請求確認` },
+                style: "primary",
+                height: "sm",
+                color: "#8b5cf6",
+              }
+            : {
+                type: "button",
+                action: { type: "message", label: "✅ 標記完成", text: `/任務 #${shortId} 完成` },
+                style: "primary",
+                height: "sm",
+                color: "#27AE60",
+              },
         ],
       },
     };

@@ -32,9 +32,9 @@ export async function cmdTaskList(userId: string, db: SupabaseClient, displayNam
         const instanceIds = instanceAssignments.map((a: any) => a.workflow_instance_id);
         const { data: allTasks } = await db
           .from("tasks")
-          .select("id, title, status, priority, due_date, assignee:users!tasks_assigned_to_fkey(name)")
+          .select("id, title, status, priority, due_date, notes, confirmation_required, assignee:users!tasks_assigned_to_fkey(name), workflow_instance:workflow_instances(name)")
           .in("workflow_instance_id", instanceIds)
-          .in("status", ["pending", "in_progress"])
+          .in("status", showAll ? ["pending", "in_progress", "completed", "cancelled"] : ["in_progress"])
           .order("priority", { ascending: false })
           .limit(10);
         tasks = allTasks;
@@ -46,9 +46,9 @@ export async function cmdTaskList(userId: string, db: SupabaseClient, displayNam
       console.log("[cmdTaskList] falling back to user tasks for userId=", userId);
       const { data: fallback, error: fallbackErr } = await db
         .from("tasks")
-        .select("id, title, status, priority, due_date")
+        .select("id, title, status, priority, due_date, notes, confirmation_required, workflow_instance:workflow_instances(name)")
         .eq("assigned_to", userId)
-        .in("status", ["pending", "in_progress"])
+        .in("status", showAll ? ["pending", "in_progress", "completed", "cancelled"] : ["in_progress"])
         .order("priority", { ascending: false })
         .limit(10);
       console.log("[cmdTaskList] fallback tasks=", JSON.stringify(fallback), "err=", fallbackErr);
@@ -64,12 +64,12 @@ export async function cmdTaskList(userId: string, db: SupabaseClient, displayNam
       .eq("assigned_user_id", userId)
       .in("status", ["running", "paused"]);
 
-    const statusFilter = showAll ? ["pending", "in_progress", "completed", "cancelled"] : ["pending", "in_progress"];
+    const statusFilter = showAll ? ["pending", "in_progress", "completed", "cancelled"] : ["in_progress"];
     if (instances && instances.length > 0) {
       const instanceIds = instances.map((i: any) => i.id);
       const { data: wfTasks } = await db
         .from("tasks")
-        .select("id, title, status, priority, due_date")
+        .select("id, title, status, priority, due_date, notes, confirmation_required, workflow_instance:workflow_instances(name)")
         .in("workflow_instance_id", instanceIds)
         .in("status", statusFilter)
         .order("priority", { ascending: false })
@@ -80,7 +80,7 @@ export async function cmdTaskList(userId: string, db: SupabaseClient, displayNam
     if (!tasks || tasks.length === 0) {
       const { data: fallback } = await db
         .from("tasks")
-        .select("id, title, status, priority, due_date")
+        .select("id, title, status, priority, due_date, notes, confirmation_required, workflow_instance:workflow_instances(name)")
         .eq("assigned_to", userId)
         .in("status", statusFilter)
         .order("priority", { ascending: false })
@@ -356,6 +356,383 @@ export async function cmdTaskUpdate(rawId: string, note: string, db: SupabaseCli
   const { error: updateErr } = await db.from("tasks").update({ notes: newNotes }).eq("id", task.id);
   if (updateErr) return text(`❌ 備註更新失敗：${updateErr.message}`);
   return flexSuccess("📝", "備註已更新", `「${task.title}」\n${note}`);
+}
+
+// ── Task Request Confirmation Command ────────────────────────────────────────
+
+export async function cmdTaskRequestConfirm(rawId: string, userId: string, db: SupabaseClient, accessToken: string, displayName?: string) {
+  const shortId = rawId.replace(/[[\]#\s]/g, "").toLowerCase();
+  if (!shortId) return text("請提供任務 ID。例如：/任務 #abc123 請求確認");
+
+  const { data: allTasks } = await db
+    .from("tasks")
+    .select("id, title, confirmation_required, confirmation_status, workflow_instance:workflow_instances(name)")
+    .eq("assigned_to", userId)
+    .neq("status", "completed")
+    .limit(300);
+
+  const tasks = allTasks?.filter((t: any) => t.id.toLowerCase().startsWith(shortId));
+  if (!tasks || tasks.length === 0) return text(`❌ 找不到 ID 為 ${shortId} 的任務。`);
+  const task = tasks[0];
+
+  if (!task.confirmation_required) {
+    return text(`任務「${task.title}」不需要確認審批，可直接完成。\n輸入：/任務 ${shortId} 完成`);
+  }
+
+  const isResend = task.confirmation_status === "pending";
+
+  if (!isResend) {
+    // Set confirmation status to pending
+    await db.from("tasks").update({
+      confirmation_status: "pending",
+      confirmation_requested_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq("id", task.id);
+
+    // Reset any existing confirmation records to pending
+    await db.from("task_confirmations")
+      .update({ status: "pending", responded_at: null })
+      .eq("task_id", task.id);
+  }
+
+  // Check if approvers exist; if not, auto-assign manager(s) as approvers
+  const { data: existingConfs } = await db.from("task_confirmations")
+    .select("id")
+    .eq("task_id", task.id)
+    .limit(1);
+
+  if (!existingConfs || existingConfs.length === 0) {
+    // Find managers: first check workflow instance owner, then user's managers
+    const approverCandidates: string[] = [];
+
+    // 1. Workflow instance owner (if task belongs to a workflow)
+    const { data: fullTask } = await db.from("tasks")
+      .select("workflow_instance_id")
+      .eq("id", task.id)
+      .maybeSingle();
+
+    if (fullTask?.workflow_instance_id) {
+      const { data: wfInstance } = await db.from("workflow_instances")
+        .select("assigned_user_id")
+        .eq("id", fullTask.workflow_instance_id)
+        .maybeSingle();
+      if (wfInstance?.assigned_user_id && wfInstance.assigned_user_id !== userId) {
+        approverCandidates.push(wfInstance.assigned_user_id);
+      }
+    }
+
+    // 2. Users with is_line_manager = true (if no workflow owner found)
+    if (approverCandidates.length === 0) {
+      const { data: managers } = await db.from("users")
+        .select("id")
+        .eq("is_line_manager", true)
+        .neq("id", userId)
+        .limit(5);
+      if (managers) approverCandidates.push(...managers.map((m: any) => m.id));
+    }
+
+    if (approverCandidates.length === 0) {
+      return text(`❌ 無法找到審批人員。請先在管理後台設定任務確認人。`);
+    }
+
+    // Insert approver records
+    const inserts = approverCandidates.map(appId => ({
+      task_id: task.id,
+      approver_id: appId,
+      status: "pending",
+    }));
+    await db.from("task_confirmations").insert(inserts);
+  }
+
+  // Notify approvers via LINE
+  const { data: confirmations } = await db.from("task_confirmations")
+    .select("approver_id")
+    .eq("task_id", task.id)
+    .eq("status", "pending");
+
+  if (confirmations && confirmations.length > 0 && accessToken) {
+    const approverIds = confirmations.map((c: any) => c.approver_id);
+
+    // Resolve approver LINE IDs via line_users then line_employee_mapping
+    for (const approverId of approverIds) {
+      let lineId: string | null = null;
+      const { data: lu } = await db.from("line_users")
+        .select("line_user_id")
+        .eq("user_id", approverId)
+        .eq("is_verified", true)
+        .maybeSingle();
+      lineId = lu?.line_user_id ?? null;
+
+      if (!lineId) {
+        const { data: mapping } = await db.from("line_employee_mapping")
+          .select("line_user_id")
+          .eq("user_id", approverId)
+          .eq("is_verified", true)
+          .maybeSingle();
+        lineId = mapping?.line_user_id ?? null;
+      }
+
+      if (!lineId) continue;
+
+      const requesterName = displayName || "員工";
+      const wfName = (task as any).workflow_instance?.name ?? null;
+      const headerTitle = wfName ? `${wfName} 任務確認請求` : "🔐 任務確認請求";
+      await pushAndLog(lineId, [{
+        type: "flex",
+        altText: `🔐 確認請求：「${task.title}」`,
+        contents: {
+          type: "bubble",
+          size: "kilo",
+          header: {
+            type: "box", layout: "vertical", backgroundColor: "#8b5cf6", paddingAll: "14px",
+            contents: [
+              ...(wfName ? [{ type: "text", text: wfName, size: "xs", color: "#e9d5ff" }] : []),
+              { type: "text", text: "🔐 任務確認請求", weight: "bold", color: "#FFFFFF", size: "md" },
+            ],
+          },
+          body: {
+            type: "box", layout: "vertical", spacing: "sm", paddingAll: "14px",
+            contents: [
+              { type: "text", text: task.title, weight: "bold", size: "md", wrap: true },
+              { type: "text", text: `申請人：${requesterName}`, size: "sm", color: "#666666" },
+              { type: "text", text: "請審核此任務是否完成。", size: "sm", color: "#8b5cf6", wrap: true },
+            ],
+          },
+          footer: {
+            type: "box", layout: "horizontal", spacing: "sm", paddingAll: "14px",
+            contents: [
+              {
+                type: "button", style: "primary", height: "sm", color: "#16a34a",
+                action: { type: "message", label: "✅ 核准", text: `/確認 ${shortId} 核准` },
+              },
+              {
+                type: "button", style: "primary", height: "sm", color: "#dc2626",
+                action: { type: "message", label: "❌ 拒絕", text: `/確認 ${shortId} 拒絕` },
+              },
+            ],
+          },
+        },
+      }], accessToken, db, { sourceType: "system" });
+    }
+  }
+
+  // Add system comment
+  if (!isResend) {
+    await db.from("task_comments").insert({
+      task_id: task.id,
+      content: `🔐 確認請求已送出 (${new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })})`,
+      source: "system",
+    });
+  }
+
+  const msg = isResend
+    ? `「${task.title}」確認通知已重新發送給審批人員。`
+    : `「${task.title}」已提交確認審批，等待主管回覆。`;
+  return flexSuccess("🔐", isResend ? "確認通知已重送" : "確認請求已送出", msg);
+}
+
+// ── Task Confirm Respond Command ─────────────────────────────────────────────
+
+export async function cmdTaskConfirmRespond(rawId: string, action: string, userId: string, db: SupabaseClient, accessToken: string, notes?: string) {
+  const shortId = rawId.replace(/[[\]#\s]/g, "").toLowerCase();
+  const approved = action === "核准";
+
+  // Find the task by short ID
+  const { data: allTasks } = await db
+    .from("tasks")
+    .select("id, title, confirmation_status")
+    .neq("status", "completed")
+    .limit(300);
+
+  const tasks = allTasks?.filter((t: any) => t.id.toLowerCase().startsWith(shortId));
+  if (!tasks || tasks.length === 0) return text(`❌ 找不到 ID 為 ${shortId} 的任務。`);
+  const task = tasks[0];
+
+  // Check this user is an approver
+  const { data: conf } = await db.from("task_confirmations")
+    .select("id, status")
+    .eq("task_id", task.id)
+    .eq("approver_id", userId)
+    .maybeSingle();
+
+  if (!conf) return text(`❌ 您不是任務「${task.title}」的審批人員。`);
+  if (conf.status !== "pending") return text(`此任務您已回覆：${conf.status === "approved" ? "核准" : "拒絕"}`);
+
+  // Update this approver's response
+  await db.from("task_confirmations").update({
+    status: approved ? "approved" : "rejected",
+    notes: notes || null,
+    responded_at: new Date().toISOString(),
+  }).eq("id", conf.id);
+
+  // Check if all approvers responded
+  const { data: allConfs } = await db.from("task_confirmations")
+    .select("status")
+    .eq("task_id", task.id);
+
+  const confirmations = allConfs || [];
+  const allApproved = confirmations.length > 0 && confirmations.every((c: any) => c.status === "approved");
+  const anyRejected = confirmations.some((c: any) => c.status === "rejected");
+
+  if (allApproved) {
+    await db.from("tasks").update({
+      confirmation_status: "approved",
+      confirmation_responded_at: new Date().toISOString(),
+      confirmation_notes: "所有確認人已核准",
+      status: "completed",
+      completed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }).eq("id", task.id);
+
+    await db.from("task_comments").insert({
+      task_id: task.id,
+      content: `✅ 所有審批人已核准，任務自動完成 (${new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })})`,
+      source: "system",
+    });
+
+    // Notify task owner that approval passed and task is completed
+    const { data: approvedTask } = await db.from("tasks")
+      .select("assigned_to")
+      .eq("id", task.id)
+      .maybeSingle();
+
+    if (approvedTask?.assigned_to) {
+      let ownerLineId: string | null = null;
+      const { data: lu } = await db.from("line_users")
+        .select("line_user_id")
+        .eq("user_id", approvedTask.assigned_to)
+        .eq("is_verified", true)
+        .maybeSingle();
+      ownerLineId = lu?.line_user_id ?? null;
+      if (!ownerLineId) {
+        const { data: mapping } = await db.from("line_employee_mapping")
+          .select("line_user_id")
+          .eq("user_id", approvedTask.assigned_to)
+          .eq("is_verified", true)
+          .maybeSingle();
+        ownerLineId = mapping?.line_user_id ?? null;
+      }
+      if (ownerLineId) {
+        await pushAndLog(ownerLineId, [{
+          type: "flex",
+          altText: `✅ 任務「${task.title}」已核准完成`,
+          contents: {
+            type: "bubble",
+            size: "kilo",
+            header: {
+              type: "box", layout: "vertical", backgroundColor: "#16a34a", paddingAll: "14px",
+              contents: [
+                { type: "text", text: "✅ 任務確認通過", weight: "bold", color: "#FFFFFF", size: "md" },
+              ],
+            },
+            body: {
+              type: "box", layout: "vertical", spacing: "sm", paddingAll: "14px",
+              contents: [
+                { type: "text", text: task.title, weight: "bold", size: "md", wrap: true },
+                { type: "text", text: "所有審批人已核准，任務已自動標記完成。", size: "sm", color: "#666666", wrap: true },
+              ],
+            },
+            footer: {
+              type: "box", layout: "vertical", paddingAll: "14px",
+              contents: [
+                {
+                  type: "button", style: "primary", height: "sm", color: "#4f46e5",
+                  action: { type: "message", label: "📋 查看任務列表", text: "/任務 列表" },
+                },
+              ],
+            },
+          },
+        }], accessToken, db, { sourceType: "system" });
+      }
+    }
+
+    return flexSuccess("✅", "已核准 — 任務完成", `「${task.title}」所有審批人已核准，任務已標記完成。`);
+  } else if (anyRejected) {
+    // Keep task in_progress, reset confirmation so owner can re-request
+    await db.from("tasks").update({
+      confirmation_status: null,
+      confirmation_responded_at: new Date().toISOString(),
+      confirmation_notes: notes || "審批被拒絕",
+      updated_at: new Date().toISOString(),
+    }).eq("id", task.id);
+
+    await db.from("task_comments").insert({
+      task_id: task.id,
+      content: `❌ 審批被拒絕${notes ? `：${notes}` : ""} (${new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei" })})`,
+      source: "system",
+    });
+
+    // Notify task owner to review and re-request
+    const { data: fullTask } = await db.from("tasks")
+      .select("assigned_to")
+      .eq("id", task.id)
+      .maybeSingle();
+
+    if (fullTask?.assigned_to) {
+      // Resolve owner's LINE ID
+      let ownerLineId: string | null = null;
+      const { data: lu } = await db.from("line_users")
+        .select("line_user_id")
+        .eq("user_id", fullTask.assigned_to)
+        .eq("is_verified", true)
+        .maybeSingle();
+      ownerLineId = lu?.line_user_id ?? null;
+
+      if (!ownerLineId) {
+        const { data: mapping } = await db.from("line_employee_mapping")
+          .select("line_user_id")
+          .eq("user_id", fullTask.assigned_to)
+          .eq("is_verified", true)
+          .maybeSingle();
+        ownerLineId = mapping?.line_user_id ?? null;
+      }
+
+      if (ownerLineId) {
+        const sid = shortId.slice(0, 8);
+        await pushAndLog(ownerLineId, [{
+          type: "flex",
+          altText: `❌ 任務「${task.title}」確認被拒絕`,
+          contents: {
+            type: "bubble",
+            size: "kilo",
+            header: {
+              type: "box", layout: "vertical", backgroundColor: "#dc2626", paddingAll: "14px",
+              contents: [
+                { type: "text", text: "❌ 確認請求被拒絕", weight: "bold", color: "#FFFFFF", size: "md" },
+              ],
+            },
+            body: {
+              type: "box", layout: "vertical", spacing: "sm", paddingAll: "14px",
+              contents: [
+                { type: "text", text: task.title, weight: "bold", size: "md", wrap: true },
+                ...(notes ? [{ type: "text", text: `拒絕原因：${notes}`, size: "sm", color: "#dc2626", wrap: true }] : []),
+                { type: "text", text: "請檢視任務後重新送出確認請求。", size: "sm", color: "#666666", wrap: true, margin: "md" },
+              ],
+            },
+            footer: {
+              type: "box", layout: "horizontal", spacing: "sm", paddingAll: "14px",
+              contents: [
+                {
+                  type: "button", style: "secondary", height: "sm",
+                  action: { type: "message", label: "📝 更新備註", text: `/任務 ${sid} 更新 ` },
+                },
+                {
+                  type: "button", style: "primary", height: "sm", color: "#8b5cf6",
+                  action: { type: "message", label: "🔐 重新請求確認", text: `/任務 ${sid} 請求確認` },
+                },
+              ],
+            },
+          },
+        }], accessToken, db, { sourceType: "system" });
+      }
+    }
+
+    return flexSuccess("❌", "已拒絕", `「${task.title}」的確認請求已被拒絕，已通知任務負責人。${notes ? `\n原因：${notes}` : ""}`);
+  }
+
+  // Partial — some approved, waiting for others
+  const pending = confirmations.filter((c: any) => c.status === "pending").length;
+  return flexSuccess(approved ? "✅" : "❌", approved ? "已核准" : "已拒絕", `「${task.title}」— 還有 ${pending} 位審批人尚未回覆。`);
 }
 
 // ── Notes Command ────────────────────────────────────────────────────────────

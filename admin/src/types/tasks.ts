@@ -22,6 +22,11 @@ export interface Task {
     note2?: string | null;
     note3?: string | null;
     reminder_at: string | null;
+    confirmation_required: boolean;
+    confirmation_status: string | null;
+    confirmation_requested_at: string | null;
+    confirmation_responded_at: string | null;
+    confirmation_notes: string | null;
 }
 
 export interface TaskComment {

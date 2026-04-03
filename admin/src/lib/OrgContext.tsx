@@ -13,9 +13,18 @@ interface OrgUser {
     roles: string[];
 }
 
+export interface OrgSettings {
+    locale?: string;
+    industry?: string;
+    timezone?: string;
+    default_work_start?: string;  // HH:mm
+    default_work_end?: string;    // HH:mm
+}
+
 interface OrgContextValue {
     orgId: string;
     orgName: string;
+    orgSettings: OrgSettings;
     currentUser: OrgUser | null;
     userRoles: string[];
     modules: ModuleAccess[];
@@ -25,6 +34,7 @@ interface OrgContextValue {
 const OrgContext = createContext<OrgContextValue>({
     orgId: '',
     orgName: '',
+    orgSettings: {},
     currentUser: null,
     userRoles: [],
     modules: [],
@@ -38,6 +48,7 @@ export function useOrg() {
 export function OrgProvider({ children }: { children: ReactNode }) {
     const [orgId, setOrgId] = useState('');
     const [orgName, setOrgName] = useState('');
+    const [orgSettings, setOrgSettings] = useState<OrgSettings>({});
     const [currentUser, setCurrentUser] = useState<OrgUser | null>(null);
     const [userRoles, setUserRoles] = useState<string[]>([]);
     const [modules, setModules] = useState<ModuleAccess[]>([]);
@@ -80,7 +91,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
                     const [org, mods] = await Promise.all([
                         supabase
                             .from('organizations')
-                            .select('id, name')
+                            .select('id, name, settings')
                             .eq('id', appUser.organization_id)
                             .single()
                             .then(r => r.data),
@@ -89,6 +100,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 
                     setOrgId(appUser.organization_id);
                     setOrgName(org?.name ?? '');
+                    setOrgSettings((org?.settings as OrgSettings) ?? {});
                     setCurrentUser({
                         id: appUser.id,
                         name: appUser.name,
@@ -108,7 +120,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
                 // Dev fallback: pick first active org, grant admin role
                 const { data: orgs } = await supabase
                     .from('organizations')
-                    .select('id, name')
+                    .select('id, name, settings')
                     .eq('status', 'active')
                     .order('created_at')
                     .limit(1);
@@ -118,6 +130,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
                     const mods = await fetchModules(devOrgId);
                     setOrgId(devOrgId);
                     setOrgName(orgs[0].name);
+                    setOrgSettings((orgs[0].settings as OrgSettings) ?? {});
                     setModules(mods);
                 }
                 setUserRoles(['admin']);
@@ -140,7 +153,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
     }
 
     return (
-        <OrgContext.Provider value={{ orgId, orgName, currentUser, userRoles, modules, loading }}>
+        <OrgContext.Provider value={{ orgId, orgName, orgSettings, currentUser, userRoles, modules, loading }}>
             {children}
         </OrgContext.Provider>
     );

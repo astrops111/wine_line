@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { getLocale } from '../lib/i18n';
-import { useOrg } from '../lib/OrgContext';
+import { useOrg, type OrgSettings } from '../lib/OrgContext';
 import { writeAuditLog } from '../lib/auditLog';
 
 interface ModuleAccess {
@@ -10,11 +10,32 @@ interface ModuleAccess {
     access_level: string;
 }
 
+const TIMEZONES = [
+    { value: 'Asia/Taipei', label: '(UTC+8) 台北' },
+    { value: 'Asia/Tokyo', label: '(UTC+9) 東京' },
+    { value: 'Asia/Shanghai', label: '(UTC+8) 上海' },
+    { value: 'Asia/Hong_Kong', label: '(UTC+8) 香港' },
+    { value: 'Asia/Singapore', label: '(UTC+8) 新加坡' },
+    { value: 'America/New_York', label: '(UTC-5) 紐約' },
+    { value: 'America/Los_Angeles', label: '(UTC-8) 洛杉磯' },
+    { value: 'Europe/London', label: '(UTC+0) 倫敦' },
+];
+
 export function AdminSettings() {
     const zh = getLocale() === 'zh-TW';
-    const { orgId, currentUser } = useOrg();
+    const { orgId, orgSettings, currentUser } = useOrg();
     const [modules, setModules] = useState<ModuleAccess[]>([]);
     const [loading, setLoading] = useState(true);
+    const [tz, setTz] = useState(orgSettings.timezone || 'Asia/Taipei');
+    const [workStart, setWorkStart] = useState(orgSettings.default_work_start || '09:00');
+    const [workEnd, setWorkEnd] = useState(orgSettings.default_work_end || '18:00');
+    const [savingSettings, setSavingSettings] = useState(false);
+
+    useEffect(() => {
+        setTz(orgSettings.timezone || 'Asia/Taipei');
+        setWorkStart(orgSettings.default_work_start || '09:00');
+        setWorkEnd(orgSettings.default_work_end || '18:00');
+    }, [orgSettings]);
 
     const loadModules = async () => {
         const { data } = await supabase.from('module_access').select('*')
@@ -87,6 +108,25 @@ export function AdminSettings() {
             old_values: { access_level: oldLevel },
             new_values: { access_level: level },
         });
+    };
+
+    const saveOrgSettings = async () => {
+        setSavingSettings(true);
+        const newSettings = { ...orgSettings, timezone: tz, default_work_start: workStart, default_work_end: workEnd };
+        await supabase.from('organizations').update({ settings: newSettings }).eq('id', orgId);
+        writeAuditLog({
+            organization_id: orgId,
+            user_id: currentUser?.id,
+            user_name: currentUser?.name,
+            action: 'update',
+            module: 'admin-settings',
+            table_name: 'organizations',
+            record_id: orgId,
+            record_label: 'org_settings',
+            old_values: { timezone: orgSettings.timezone, default_work_start: orgSettings.default_work_start, default_work_end: orgSettings.default_work_end },
+            new_values: { timezone: tz, default_work_start: workStart, default_work_end: workEnd },
+        });
+        setSavingSettings(false);
     };
 
     const enabledCount = modules.filter(m => m.is_enabled).length;
@@ -191,6 +231,34 @@ export function AdminSettings() {
                         ))}
                     </div>
                 )}
+            </div>
+
+            {/* Org Settings */}
+            <div className="card" style={{ marginTop: '16px', padding: 0 }}>
+                <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--outline-variant)', fontWeight: 600, fontSize: '14px' }}>
+                    🌐 {zh ? '組織時區與工時設定' : 'Timezone & Work Hours'}
+                </div>
+                <div style={{ padding: '16px 18px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', alignItems: 'end' }}>
+                    <div>
+                        <label className="detail-label">{zh ? '時區' : 'Timezone'}</label>
+                        <select className="select" style={{ width: '100%' }} value={tz} onChange={e => setTz(e.target.value)}>
+                            {TIMEZONES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="detail-label">{zh ? '預設上班時間' : 'Work Start'}</label>
+                        <input type="time" className="input-field" style={{ width: '100%' }} value={workStart} onChange={e => setWorkStart(e.target.value)} />
+                    </div>
+                    <div>
+                        <label className="detail-label">{zh ? '預設下班時間' : 'Work End'}</label>
+                        <input type="time" className="input-field" style={{ width: '100%' }} value={workEnd} onChange={e => setWorkEnd(e.target.value)} />
+                    </div>
+                </div>
+                <div style={{ padding: '0 18px 14px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button className="btn btn-primary btn-sm" disabled={savingSettings} onClick={saveOrgSettings}>
+                        {savingSettings ? (zh ? '儲存中…' : 'Saving…') : `💾 ${zh ? '儲存設定' : 'Save Settings'}`}
+                    </button>
+                </div>
             </div>
 
             {/* Info note */}
