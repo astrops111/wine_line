@@ -170,13 +170,24 @@ export async function handleTaskCompletion(
         const triggers: string[] = Array.isArray(config.triggers)
             ? (config.triggers as string[]).filter(Boolean) : [];
         if (triggers.length > 0) {
-            const pendingTriggered = updatedTasks.filter(t =>
-                t.workflow_step_id && triggers.includes(t.workflow_step_id) && t.status === 'pending'
+            const triggeredTasks = updatedTasks.filter(t =>
+                t.workflow_step_id && triggers.includes(t.workflow_step_id) && t.status !== 'completed' && t.status !== 'cancelled'
             );
-            for (const pt of pendingTriggered) {
-                await supabase.from('tasks').update({ status: 'in_progress' }).eq('id', pt.id);
+            let changed = false;
+            for (const pt of triggeredTasks) {
+                if (pt.status === 'pending') {
+                    await supabase.from('tasks').update({ status: 'in_progress' }).eq('id', pt.id);
+                    changed = true;
+                } else {
+                    // Already in_progress/blocked — keep status, just notify
+                    await supabase.from('task_comments').insert({
+                        task_id: pt.id,
+                        content: `[TRIGGER] ${task.title} — ${task.title} completed, this task was triggered but status kept as-is.`,
+                        source: 'system',
+                    });
+                }
             }
-            if (pendingTriggered.length > 0) {
+            if (changed) {
                 await loadInstanceTasks(selectedInstance);
                 return;
             }

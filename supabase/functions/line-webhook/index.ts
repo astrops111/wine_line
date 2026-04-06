@@ -144,7 +144,7 @@ serve(async (req) => {
       (lower.includes("@linebot") && lower.includes("新增任務"));
 
     // In groups, only respond to command-like messages (unless user has a pending action or new-task trigger)
-    if (isGroup && !rawText.startsWith("/") && !["說明","任務","流程"].some(w => rawText.startsWith(w)) && !isNewTaskTrigger) {
+    if (isGroup && !rawText.startsWith("/") && !["說明","任務","流程","專案"].some(w => rawText.startsWith(w)) && !isNewTaskTrigger) {
       if (!lineUser.pending_action) continue;
     }
 

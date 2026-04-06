@@ -438,7 +438,7 @@ export function LiffManagerDashboard() {
 
     async function initLiff() {
         try {
-            await liff.init({ liffId: import.meta.env.VITE_LIFF_DASHBOARD_ID || 'YOUR_LIFF_ID' });
+            await liff.init({ liffId: import.meta.env.VITE_LIFF_DASHBOARD_ID || '' });
             if (liff.isLoggedIn()) {
                 const profile = await liff.getProfile();
                 setUserName(profile.displayName);

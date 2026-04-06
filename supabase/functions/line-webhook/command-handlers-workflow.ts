@@ -585,20 +585,23 @@ async function finalizeTaskCreation(
 // ── Registration Command ─────────────────────────────────────────────────────
 
 export async function cmdRegister(lineUserRowId: string, namePart: string, db: SupabaseClient) {
-  if (!namePart) return text("請提供姓名。例如：/註冊 張小明");
+  if (!namePart) return text("請提供姓名。例如：/註冊 張小明 或 /註冊 John");
 
   const { data: users } = await db
     .from("users")
-    .select("id, name")
-    .ilike("name", `%${namePart}%`)
+    .select("id, name, english_name")
+    .or(`name.ilike.%${namePart}%,english_name.ilike.%${namePart}%`)
     .eq("status", "active")
     .limit(5);
 
   if (!users || users.length === 0) {
-    return text(`❌ 找不到「${namePart}」的員工記錄。\n請確認姓名正確或聯絡管理員。`);
+    return text(`❌ 找不到「${namePart}」的員工記錄。\n請確認姓名或英文名正確，或聯絡管理員。`);
   }
   if (users.length > 1) {
-    const list = users.map((u: any) => `• ${u.name}`).join("\n");
+    const list = users.map((u: any) => {
+      const eng = u.english_name ? ` (${u.english_name})` : "";
+      return `• ${u.name}${eng}`;
+    }).join("\n");
     return text(`找到多位符合的員工，請輸入完整姓名：\n${list}`);
   }
 

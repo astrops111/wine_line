@@ -104,25 +104,48 @@ export function TaskDetailPanel({
 
     // Load existing approvers when task changes
     useEffect(() => {
-        if (!selectedTask.confirmation_required) { setConfirmations([]); return; }
         supabase.from('task_confirmations')
             .select('approver_id, status')
             .eq('task_id', selectedTask.id)
-            .then(({ data }) => setConfirmations(data || []));
+            .then(({ data }) => {
+                setConfirmations(data || []);
+                setSelectedApprovers((data || []).map(c => c.approver_id));
+            });
     }, [selectedTask.id, selectedTask.confirmation_required, selectedTask.confirmation_status]);
 
-    async function submitApprovalRequest(approverIds: string[]) {
-        if (approverIds.length === 0) return;
-        const inserts = approverIds.map(id => ({ task_id: selectedTask.id, approver_id: id, status: 'pending' }));
-        await supabase.from('task_confirmations').upsert(inserts, { onConflict: 'task_id,approver_id' });
-        await supabase.from('tasks').update({
-            confirmation_required: true,
-            confirmation_status: 'pending',
-            confirmation_requested_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-        }).eq('id', selectedTask.id);
+    async function syncApprovers(approverIds: string[]) {
+        if (approverIds.length === 0) {
+            // Remove all approvers and disable approval
+            await supabase.from('task_confirmations').delete().eq('task_id', selectedTask.id);
+            await supabase.from('tasks').update({
+                confirmation_required: false,
+                confirmation_status: null,
+                confirmation_requested_at: null,
+                updated_at: new Date().toISOString(),
+            }).eq('id', selectedTask.id);
+        } else {
+            // Remove approvers no longer selected
+            const existing = confirmations.map(c => c.approver_id);
+            const toRemove = existing.filter(id => !approverIds.includes(id));
+            const toAdd = approverIds.filter(id => !existing.includes(id));
+            if (toRemove.length > 0) {
+                await supabase.from('task_confirmations').delete()
+                    .eq('task_id', selectedTask.id).in('approver_id', toRemove);
+            }
+            if (toAdd.length > 0) {
+                await supabase.from('task_confirmations').upsert(
+                    toAdd.map(id => ({ task_id: selectedTask.id, approver_id: id, status: 'pending' })),
+                    { onConflict: 'task_id,approver_id' },
+                );
+            }
+            await supabase.from('tasks').update({
+                confirmation_required: true,
+                confirmation_status: 'pending',
+                confirmation_requested_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            }).eq('id', selectedTask.id);
+        }
         setShowApproverPicker(false);
-        setSelectedApprovers([]);
         await reloadTasks();
     }
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -154,17 +177,38 @@ export function TaskDetailPanel({
         patchEdit({ trigger_actions: currentTriggers.filter(id => id !== taskId) });
     };
 
+    // Start conditions logic
+    const currentConditions = localEdits?.start_conditions ?? normalizeTriggers(selectedTask.start_conditions);
+    const candidateConditions = tasks.filter(tk =>
+        tk.id !== selectedTask.id &&
+        !currentConditions.includes(tk.id) &&
+        (selectedTask.workflow_instance_id
+            ? tk.workflow_instance_id === selectedTask.workflow_instance_id
+            : !tk.workflow_instance_id)
+    );
+    const addCondition = (taskId: string) => {
+        if (!taskId || currentConditions.includes(taskId)) return;
+        patchEdit({ start_conditions: [...currentConditions, taskId] });
+    };
+    const removeCondition = (taskId: string) => {
+        patchEdit({ start_conditions: currentConditions.filter(id => id !== taskId) });
+    };
+
     return (
-        <div style={{ flex: '0 0 42%', minWidth: '340px' }} className="fade-in">
-            <div className="card" style={{ position: 'sticky', top: '20px' }}>
-                {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+        <div className="modal-overlay fade-in" onClick={closePanel}>
+            <div className="card" onClick={e => e.stopPropagation()} style={{ width: '640px', maxWidth: '90vw', maxHeight: '90vh', margin: 'auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                {/* Sticky Header with Update button */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexShrink: 0 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <h3 style={{ fontSize: '16px', fontWeight: 600, lineHeight: 1.4 }}>{selectedTask.title}</h3>
                         {isDirty && <div style={{ fontSize: '11px', color: 'var(--accent-yellow, #f59e0b)', marginTop: '2px' }}>● {zh ? '有未儲存的變更' : 'Unsaved changes'}</div>}
                     </div>
-                    <button className="btn btn-sm btn-secondary" aria-label="關閉" onClick={closePanel} style={{ flexShrink: 0 }}>✕</button>
+                    <button className="btn btn-primary" style={{ flexShrink: 0, opacity: isDirty ? 1 : 0.45, cursor: isDirty ? 'pointer' : 'default' }}
+                        onClick={async () => { await syncApprovers(selectedApprovers); await saveTaskEdits(); }} disabled={!isDirty}>
+                        💾 {zh ? '更新' : 'Update'}
+                    </button>
                 </div>
+                <div style={{ overflowY: 'auto', flex: 1 }}>
 
                 {/* Editable Fields */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
@@ -328,105 +372,72 @@ export function TaskDetailPanel({
                     {/* Confirmation / Approval */}
                     <div style={{ gridColumn: '1 / -1' }}>
                         <label className="detail-label">🔐 {zh ? '確認審批' : 'Approval'}</label>
-                        {selectedTask.confirmation_required ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <span className={`status-badge ${selectedTask.confirmation_status === 'approved' ? 'completed' : selectedTask.confirmation_status === 'rejected' ? 'cancelled' : 'in_progress'}`}
-                                        style={{ fontSize: '11px' }}>
-                                        {selectedTask.confirmation_status === 'approved' ? (zh ? '✅ 已核准' : '✅ Approved')
-                                            : selectedTask.confirmation_status === 'rejected' ? (zh ? '❌ 已拒絕' : '❌ Rejected')
-                                            : selectedTask.confirmation_status === 'pending' ? (zh ? '⏳ 等待確認' : '⏳ Pending')
-                                            : (zh ? '— 尚未送出' : '— Not sent')}
-                                    </span>
-                                    {selectedTask.confirmation_requested_at && (
-                                        <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                                            {new Date(selectedTask.confirmation_requested_at).toLocaleString('zh-TW', { timeZone: orgSettings.timezone || 'Asia/Taipei' })}
-                                        </span>
-                                    )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {selectedTask.confirmation_notes && (
+                                <div style={{ fontSize: '11px', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '6px 8px', borderRadius: '6px' }}>
+                                    {selectedTask.confirmation_notes}
                                 </div>
-                                {/* Show current approvers */}
-                                {confirmations.length > 0 && (
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                        {confirmations.map(c => {
-                                            const u = users.find(u => u.id === c.approver_id);
-                                            return (
-                                                <span key={c.approver_id} style={{
-                                                    fontSize: '11px', padding: '2px 8px', borderRadius: '10px',
-                                                    background: c.status === 'approved' ? '#dcfce7' : c.status === 'rejected' ? '#fee2e2' : '#fef3c7',
-                                                    color: c.status === 'approved' ? '#166534' : c.status === 'rejected' ? '#991b1b' : '#92400e',
-                                                }}>
-                                                    {c.status === 'approved' ? '✅' : c.status === 'rejected' ? '❌' : '⏳'} {u?.name || c.approver_id.slice(0, 6)}
-                                                </span>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-                                {selectedTask.confirmation_notes && (
-                                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '6px 8px', borderRadius: '6px' }}>
-                                        {selectedTask.confirmation_notes}
-                                    </div>
-                                )}
-                                {selectedTask.confirmation_status !== 'approved' && selectedTask.status !== 'completed' && (
-                                    <button className="btn btn-sm btn-primary" style={{ alignSelf: 'flex-start' }}
-                                        onClick={() => {
-                                            setSelectedApprovers(confirmations.map(c => c.approver_id));
-                                            setShowApproverPicker(true);
-                                        }}>
-                                        🔐 {selectedTask.confirmation_status === 'pending' ? (zh ? '重新送出確認' : 'Resend') : (zh ? '請求確認' : 'Request Approval')}
-                                    </button>
-                                )}
-                            </div>
-                        ) : (
-                            <button className="btn btn-sm btn-secondary" style={{ fontSize: '11px' }}
-                                onClick={() => {
-                                    setSelectedApprovers([]);
-                                    setShowApproverPicker(true);
+                            )}
+                            {/* Selected approvers with status labels */}
+                            {selectedApprovers.length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                    {selectedApprovers.map(id => {
+                                        const u = users.find(u => u.id === id);
+                                        const conf = confirmations.find(c => c.approver_id === id);
+                                        const statusLabel = conf?.status === 'approved' ? (zh ? '已核准' : 'Approved')
+                                            : conf?.status === 'rejected' ? (zh ? '已拒絕' : 'Rejected')
+                                            : conf?.status === 'pending' ? (zh ? '待確認' : 'Pending') : '';
+                                        const statusIcon = conf?.status === 'approved' ? '✅' : conf?.status === 'rejected' ? '❌' : conf ? '⏳' : '';
+                                        return (
+                                            <span key={id} style={{
+                                                display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '3px 8px', borderRadius: '10px',
+                                                background: conf?.status === 'approved' ? '#dcfce7' : conf?.status === 'rejected' ? '#fee2e2' : '#dbeafe',
+                                                color: conf?.status === 'approved' ? '#166534' : conf?.status === 'rejected' ? '#991b1b' : '#1d4ed8',
+                                            }}>
+                                                {statusIcon} {u?.name || id.slice(0, 6)}
+                                                {statusLabel && <span style={{ fontSize: '10px', opacity: 0.8 }}>({statusLabel})</span>}
+                                                <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '12px', color: 'inherit', lineHeight: 1 }}
+                                                    onClick={() => {
+                                                        setSelectedApprovers(prev => prev.filter(a => a !== id));
+                                                        patchEdit({});
+                                                    }}>✕</button>
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                            {/* Add approver dropdown — always visible */}
+                            <select className="select" style={{ width: '100%', fontSize: '12px' }}
+                                value="__placeholder__"
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    if (val && val !== '__placeholder__' && !selectedApprovers.includes(val)) {
+                                        setSelectedApprovers(prev => [...prev, val]);
+                                        patchEdit({});
+                                    }
                                 }}>
-                                🔐 {zh ? '啟用審批' : 'Enable Approval'}
-                            </button>
-                        )}
-                        {/* Approver picker */}
-                        {showApproverPicker && (
-                            <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px', background: 'var(--bg-secondary)', padding: '12px', borderRadius: '8px', border: '1px solid var(--outline-variant)' }}>
-                                <div style={{ fontSize: '12px', fontWeight: 600 }}>{zh ? '選擇審批人員' : 'Select Approvers'}</div>
-                                <select className="select" style={{ width: '100%', fontSize: '12px' }}
-                                    value="__placeholder__"
-                                    onChange={e => {
-                                        const val = e.target.value;
-                                        if (val && val !== '__placeholder__' && !selectedApprovers.includes(val)) {
-                                            setSelectedApprovers(prev => [...prev, val]);
-                                        }
-                                    }}>
-                                    <option value="__placeholder__">{zh ? '— 選擇人員 —' : '— Select person —'}</option>
-                                    {users.filter(u => !selectedApprovers.includes(u.id)).map(u => (
-                                        <option key={u.id} value={u.id}>{u.name}</option>
-                                    ))}
-                                </select>
-                                {selectedApprovers.length > 0 && (
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                                        {selectedApprovers.map(id => {
-                                            const u = users.find(u => u.id === id);
-                                            return (
-                                                <span key={id} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', padding: '3px 8px', borderRadius: '10px', background: '#dbeafe', color: '#1d4ed8' }}>
-                                                    {u?.name || id.slice(0, 6)}
-                                                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '12px', color: '#1d4ed8', lineHeight: 1 }}
-                                                        onClick={() => setSelectedApprovers(prev => prev.filter(a => a !== id))}>✕</button>
-                                                </span>
-                                            );
-                                        })}
-                                    </div>
-                                )}
+                                <option value="__placeholder__">➕ {zh ? '新增審批' : 'Add Approver'}</option>
+                                {users.filter(u => !selectedApprovers.includes(u.id)).map(u => (
+                                    <option key={u.id} value={u.id}>{u.name}</option>
+                                ))}
+                            </select>
+                            {/* Submit / Cancel buttons */}
+                            {selectedApprovers.length > 0 && (
                                 <div style={{ display: 'flex', gap: '6px' }}>
-                                    <button className="btn btn-sm btn-primary" disabled={selectedApprovers.length === 0}
-                                        onClick={() => submitApprovalRequest(selectedApprovers)}>
+                                    <button className="btn btn-sm btn-primary" style={{ fontSize: '11px' }}
+                                        onClick={async () => { await syncApprovers(selectedApprovers); }}>
                                         🔐 {zh ? `送出 (${selectedApprovers.length})` : `Submit (${selectedApprovers.length})`}
                                     </button>
-                                    <button className="btn btn-sm btn-secondary" onClick={() => { setShowApproverPicker(false); setSelectedApprovers([]); }}>
+                                    <button className="btn btn-sm btn-secondary" style={{ fontSize: '11px' }}
+                                        onClick={() => {
+                                            setSelectedApprovers(confirmations.map(c => c.approver_id));
+                                            patchEdit({});
+                                        }}>
                                         {zh ? '取消' : 'Cancel'}
                                     </button>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                     {/* Notes */}
                     {(['note1', 'note2', 'note3'] as const).map((nk, ni) => (
@@ -447,12 +458,43 @@ export function TaskDetailPanel({
                     {selectedTask.completed_at && <span>✅ {new Date(selectedTask.completed_at).toLocaleDateString('zh-TW')}</span>}
                 </div>
 
-                {/* Save button */}
-                <div style={{ marginBottom: '16px' }}>
-                    <button className="btn btn-primary" style={{ width: '100%', opacity: isDirty ? 1 : 0.45, cursor: isDirty ? 'pointer' : 'default' }}
-                        onClick={saveTaskEdits} disabled={!isDirty}>
-                        💾 {zh ? '儲存變更' : 'Save Changes'}
-                    </button>
+
+                {/* Start Conditions */}
+                <div style={{ borderTop: '1px solid var(--outline-variant)', paddingTop: '12px', marginBottom: '16px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '8px' }}>
+                        🔒 {zh ? '前置條件（全部完成後才開始）' : 'Start Conditions (all must complete)'}
+                    </div>
+                    {currentConditions.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                            {currentConditions.map(taskId => {
+                                const tgt = tasks.find(tk => tk.id === taskId);
+                                const done = tgt?.status === 'completed';
+                                const label = tgt ? `${tgt.sort_order ? tgt.sort_order + '. ' : ''}${tgt.title}` : taskId.slice(0, 8);
+                                return (
+                                    <span key={taskId} style={{
+                                        background: done ? '#dcfce7' : 'var(--bg-primary)',
+                                        border: `1px solid ${done ? '#86efac' : 'var(--outline-variant)'}`,
+                                        borderRadius: '12px', padding: '3px 8px', fontSize: '11px',
+                                        color: done ? '#166534' : 'var(--text-secondary)',
+                                        display: 'flex', alignItems: 'center', gap: '4px',
+                                    }}>
+                                        {done ? '✅' : '⏳'} {label}
+                                        <button style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '11px', padding: '0 2px', lineHeight: 1 }}
+                                            onClick={() => removeCondition(taskId)}>✕</button>
+                                    </span>
+                                );
+                            })}
+                        </div>
+                    )}
+                    <select className="select" style={{ width: '100%', fontSize: '12px' }} value=""
+                        onChange={e => { addCondition(e.target.value); e.currentTarget.value = ''; }}>
+                        <option value="">➕ {zh ? '新增前置條件…' : 'Add start condition…'}</option>
+                        {candidateConditions.map(tk => (
+                            <option key={tk.id} value={tk.id}>
+                                {tk.sort_order ? `${tk.sort_order}. ` : ''}{tk.title}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 {/* Trigger Actions */}
@@ -606,6 +648,7 @@ export function TaskDetailPanel({
                         🗑️ {t('common.delete')}
                     </button>
                 </div>
+                </div>{/* end scrollable */}
             </div>
         </div>
     );

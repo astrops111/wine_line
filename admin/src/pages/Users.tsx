@@ -34,6 +34,10 @@ export function Users() {
     const [showCreate, setShowCreate] = useState(false);
     const [newUser, setNewUser] = useState({ name: '', email: '', role: '' });
     const [editingRolesFor, setEditingRolesFor] = useState<string | null>(null);
+    const [showImport, setShowImport] = useState(false);
+    const [importRole, setImportRole] = useState('');
+    const [importSelected, setImportSelected] = useState<Set<string>>(new Set());
+    const [importing, setImporting] = useState(false);
     const zh = getLocale() === 'zh-TW';
     const { orgId, currentUser } = useOrg();
 
@@ -144,6 +148,39 @@ export function Users() {
         loadData();
     }
 
+    // Employees without any role (candidates for import — not yet "users")
+    const usersWithRoles = new Set(users.filter(u => u.roles.length > 0).map(u => u.id));
+    const importCandidates = users.filter(u => !usersWithRoles.has(u.id) && u.status === 'active');
+
+    async function bulkImportRoles() {
+        if (importSelected.size === 0 || !importRole) return;
+        const role = allRoles.find(r => r.role_name === importRole);
+        if (!role) return;
+        setImporting(true);
+        try {
+            const inserts = Array.from(importSelected).map(uid => ({ user_id: uid, role_id: role.id }));
+            const { error } = await supabase.from('user_roles').insert(inserts);
+            if (error) throw error;
+            for (const uid of importSelected) {
+                const user = users.find(u => u.id === uid);
+                writeAuditLog({
+                    organization_id: orgId,
+                    user_id: currentUser?.id,
+                    user_name: currentUser?.name,
+                    action: 'create',
+                    module: 'users',
+                    table_name: 'user_roles',
+                    record_label: `${user?.name} + ${importRole}`,
+                    new_values: { user_id: uid, role_name: importRole },
+                });
+            }
+            setShowImport(false); setImportSelected(new Set()); setImportRole('');
+            loadData();
+        } catch (err: any) {
+            alert((zh ? '匯入失敗: ' : 'Import failed: ') + err.message);
+        } finally { setImporting(false); }
+    }
+
     const roleColors: Record<string, string> = {
         admin: 'var(--accent-red)',
         manager: 'var(--accent-purple)',
@@ -159,8 +196,12 @@ export function Users() {
             </div>
 
             <div className="page-body">
-                <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end' }}>
-                    <button className="btn btn-primary" onClick={() => setShowCreate(true)}>
+                <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                    <button className="btn" style={{ background: '#fff', border: '1px solid var(--outline)', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', padding: '6px 12px' }}
+                        onClick={() => { setShowImport(true); setShowCreate(false); }}>
+                        📥 {zh ? '匯入員工' : 'Import Employees'}
+                    </button>
+                    <button className="btn btn-primary" onClick={() => { setShowCreate(true); setShowImport(false); }}>
                         ➕ {zh ? '新增使用者' : 'New User'}
                     </button>
                 </div>
@@ -195,6 +236,74 @@ export function Users() {
                     </div>
                 )}
 
+                {showImport && (
+                    <div className="card" style={{ marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                            <h3 style={{ fontSize: '15px', fontWeight: 600, margin: 0 }}>
+                                📥 {zh ? '匯入員工' : 'Import Employees'} — {importSelected.size}/{importCandidates.length} {zh ? '筆已選' : 'selected'}
+                            </h3>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <button className="btn" style={{ fontSize: '12px', padding: '4px 10px' }}
+                                    onClick={() => setImportSelected(s => s.size === importCandidates.length ? new Set() : new Set(importCandidates.map(u => u.id)))}>
+                                    {importSelected.size === importCandidates.length && importCandidates.length > 0 ? (zh ? '取消全選' : 'Deselect All') : (zh ? '全選' : 'Select All')}
+                                </button>
+                                <select className="input-field" style={{ width: '120px', fontSize: '12px', padding: '4px 8px' }}
+                                    value={importRole} onChange={e => setImportRole(e.target.value)}>
+                                    <option value="">{zh ? '選擇角色' : 'Select role'}</option>
+                                    {allRoles.map(r => <option key={r.id} value={r.role_name}>{r.role_name}</option>)}
+                                </select>
+                                <button className="btn btn-primary" style={{ fontSize: '12px', padding: '4px 12px' }}
+                                    disabled={importSelected.size === 0 || !importRole || importing}
+                                    onClick={bulkImportRoles}>
+                                    {importing ? (zh ? '匯入中…' : 'Importing…') : (zh ? `匯入 ${importSelected.size} 筆` : `Import ${importSelected.size}`)}
+                                </button>
+                                <button className="btn btn-secondary" style={{ fontSize: '12px', padding: '4px 10px' }}
+                                    onClick={() => { setShowImport(false); setImportSelected(new Set()); setImportRole(''); }}>
+                                    {zh ? '取消' : 'Cancel'}
+                                </button>
+                            </div>
+                        </div>
+                        {importCandidates.length === 0 ? (
+                            <p style={{ color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>
+                                {zh ? '所有員工已有角色指派' : 'All employees already have roles assigned'}
+                            </p>
+                        ) : (
+                            <div style={{ maxHeight: '400px', overflow: 'auto', border: '1px solid var(--outline)', borderRadius: '8px' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                                    <thead>
+                                        <tr style={{ position: 'sticky', top: 0, background: 'var(--bg-secondary)', zIndex: 1 }}>
+                                            <th style={{ padding: '8px 10px', textAlign: 'center', borderBottom: '1px solid var(--outline)', width: '40px' }}>
+                                                <input type="checkbox"
+                                                    checked={importSelected.size === importCandidates.length && importCandidates.length > 0}
+                                                    onChange={() => setImportSelected(s => s.size === importCandidates.length ? new Set() : new Set(importCandidates.map(u => u.id)))}
+                                                    style={{ accentColor: 'var(--accent-primary)' }} />
+                                            </th>
+                                            <th style={{ padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid var(--outline)' }}>{zh ? '姓名' : 'Name'}</th>
+                                            <th style={{ padding: '8px 10px', textAlign: 'left', borderBottom: '1px solid var(--outline)' }}>Email</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {importCandidates.map(u => {
+                                            const checked = importSelected.has(u.id);
+                                            return (
+                                                <tr key={u.id}
+                                                    style={{ background: checked ? 'var(--accent-primary-dim, rgba(99,102,241,0.06))' : 'transparent', cursor: 'pointer' }}
+                                                    onClick={() => setImportSelected(s => { const n = new Set(s); if (n.has(u.id)) n.delete(u.id); else n.add(u.id); return n; })}>
+                                                    <td style={{ padding: '6px 10px', textAlign: 'center', borderBottom: '1px solid var(--outline-variant)' }}>
+                                                        <input type="checkbox" checked={checked} readOnly style={{ accentColor: 'var(--accent-primary)', pointerEvents: 'none' }} />
+                                                    </td>
+                                                    <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--outline-variant)', fontWeight: 500 }}>{u.name}</td>
+                                                    <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--outline-variant)', color: 'var(--text-muted)' }}>{u.email || '—'}</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 {loading ? <p className="loading-pulse">{t('common.loading')}</p> : (
                     <div className="card">
                         <table className="data-table">
@@ -208,7 +317,7 @@ export function Users() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {users.map(u => (
+                                {users.filter(u => u.roles.length > 0).map(u => (
                                     <tr key={u.id}>
                                         <td style={{ fontWeight: 500 }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

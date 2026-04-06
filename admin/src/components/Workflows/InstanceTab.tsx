@@ -414,6 +414,7 @@ export function InstanceTab({
                                             <th style={{ width: '90px' }}>{zh ? '門市' : 'Store'}</th>
                                             <th style={{ width: '100px' }}>{zh ? '計畫開始' : 'Plan Start'}</th>
                                             <th style={{ width: '100px' }}>{zh ? '截止日期' : 'Due Date'}</th>
+                                            <th style={{ width: '90px' }}>{zh ? '狀態' : 'Status'}</th>
                                             <th style={{ width: '200px' }}>{zh ? '操作' : 'Actions'}</th>
                                         </tr>
                                     </thead>
@@ -490,6 +491,22 @@ export function InstanceTab({
                                                             {extractTime(edit.due_date) && (
                                                                 <span style={{ fontSize: '9px', color: 'var(--text-muted)', display: 'block', marginTop: '1px' }}>🕐 {extractTime(edit.due_date)}</span>
                                                             )}
+                                                        </td>
+                                                        {/* Status column */}
+                                                        <td>
+                                                            <select className="select" style={{
+                                                                fontSize: '11px', padding: '2px 4px', width: '100%',
+                                                                color: edit.status === 'completed' ? '#22c55e' : edit.status === 'in_progress' ? '#3b82f6' : edit.status === 'blocked' ? '#f43f5e' : edit.status === 'cancelled' ? '#9ca3af' : '#f59e0b',
+                                                                fontWeight: 600,
+                                                            }}
+                                                                value={edit.status}
+                                                                onChange={e => setTaskEdits(p => ({ ...p, [task.id]: { ...edit, status: e.target.value } }))}>
+                                                                <option value="pending">{zh ? '待處理' : 'Pending'}</option>
+                                                                <option value="in_progress">{zh ? '進行中' : 'In Progress'}</option>
+                                                                <option value="completed">{zh ? '已完成' : 'Completed'}</option>
+                                                                <option value="blocked">{zh ? '已阻擋' : 'Blocked'}</option>
+                                                                <option value="cancelled">{zh ? '已取消' : 'Cancelled'}</option>
+                                                            </select>
                                                         </td>
                                                         {/* Unified Actions column */}
                                                         <td>
@@ -587,7 +604,7 @@ export function InstanceTab({
                                                     {/* Follow-up notes row */}
                                                     {isExpanded && (
                                                         <tr key={`${task.id}-notes`} style={{ background: 'var(--accent-primary-dim)' }}>
-                                                            <td colSpan={7} style={{ padding: '8px 12px 10px 36px', borderTop: 'none' }}>
+                                                            <td colSpan={8} style={{ padding: '8px 12px 10px 36px', borderTop: 'none' }}>
                                                                 <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '5px' }}>
                                                                     📝 {zh ? '後續動作備註' : 'Follow-up Action'}
                                                                 </div>

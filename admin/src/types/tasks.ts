@@ -18,6 +18,7 @@ export interface Task {
     workflow_instance_id: string | null;
     metadata: Record<string, unknown> | null;
     trigger_actions?: string[] | null;
+    start_conditions?: string[] | null;
     note1?: string | null;
     note2?: string | null;
     note3?: string | null;
@@ -94,5 +95,6 @@ export type LocalEdits = {
     note2: string;
     note3: string;
     trigger_actions: string[];
+    start_conditions: string[];
     reminder_at: string;
 };

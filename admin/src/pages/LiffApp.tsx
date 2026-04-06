@@ -12,7 +12,7 @@ import { ProfilePanel } from '../components/Liff/ProfilePanel';
 import { PreferencesPanel } from '../components/Liff/PreferencesPanel';
 
 export function LiffApp() {
-    const [liffId] = useState('YOUR_LIFF_ID'); // Replace later when deploying
+    const [liffId] = useState(import.meta.env.VITE_LIFF_ID || '');
     const [userProfile, setUserProfile] = useState<any>(null);
     const [employeeId, setEmployeeId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('schedule');

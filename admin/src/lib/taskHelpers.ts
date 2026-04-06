@@ -181,14 +181,26 @@ export async function triggerNextWorkflowStep(
         : `Auto-triggered after completing "Step ${currentOrder}: ${completedTask.workflow_step?.name || ''}".`;
 
     for (const stepId of triggerStepIds) {
-        // Avoid duplicates
+        // If task already exists, advance it to in_progress if still pending
         const { data: existing } = await supabase
             .from('tasks')
-            .select('id')
+            .select('id, status')
             .eq('workflow_instance_id', workflow_instance_id!)
             .eq('workflow_step_id', stepId)
             .maybeSingle();
-        if (existing) continue;
+        if (existing) {
+            if (existing.status === 'pending') {
+                await supabase.from('tasks').update({ status: 'in_progress' }).eq('id', existing.id);
+            } else if (existing.status !== 'completed' && existing.status !== 'cancelled') {
+                // Task already in progress/blocked — don't change status, just notify
+                await supabase.from('task_comments').insert({
+                    task_id: existing.id,
+                    content: notifMsg,
+                    source: 'system',
+                });
+            }
+            continue;
+        }
 
         // Get step details
         const { data: step } = await supabase
@@ -205,7 +217,7 @@ export async function triggerNextWorkflowStep(
             workflow_step_id: step.id,
             title: step.name,
             description: step.description || null,
-            status: 'pending',
+            status: 'in_progress',
             priority: 'medium',
             sort_order: step.step_order,
             store_id: instance.store_id || null,

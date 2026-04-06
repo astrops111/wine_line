@@ -6,6 +6,107 @@ import {
   flexTaskList, flexGroupTaskList, flexSuccess, flexWorkflowStatus,
 } from './flex-builders.ts';
 
+// ── Workflow Completion Check ────────────────────────────────────────────────
+
+/** Check if all tasks in a workflow are done; if so, mark workflow complete and notify owner/group. */
+export async function checkWorkflowCompletion(
+  workflowInstanceId: string, db: SupabaseClient, accessToken: string,
+) {
+  // Count remaining non-completed tasks
+  const { data: remaining } = await db.from("tasks")
+    .select("id")
+    .eq("workflow_instance_id", workflowInstanceId)
+    .not("status", "in", '("completed","cancelled")')
+    .limit(1);
+
+  if (remaining && remaining.length > 0) return; // still tasks left
+
+  // All tasks done → mark workflow instance as completed
+  const { data: instance } = await db.from("workflow_instances")
+    .select("id, name, assigned_user_id, status")
+    .eq("id", workflowInstanceId)
+    .maybeSingle();
+
+  if (!instance || instance.status === "completed") return;
+
+  await db.from("workflow_instances").update({
+    status: "completed",
+    completed_at: new Date().toISOString(),
+  }).eq("id", workflowInstanceId);
+
+  const wfName = instance.name || "工作流程";
+  const completedAt = new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei" });
+
+  const flexMsg = {
+    type: "flex",
+    altText: `🎊 工作流程「${wfName}」已全部完成`,
+    contents: {
+      type: "bubble",
+      size: "kilo",
+      header: {
+        type: "box", layout: "vertical", backgroundColor: "#7c3aed", paddingAll: "14px",
+        contents: [
+          { type: "text", text: wfName, color: "#e9d5ff", size: "xs" },
+          { type: "text", text: "🎊 工作流程完成", weight: "bold", color: "#FFFFFF", size: "md" },
+        ],
+      },
+      body: {
+        type: "box", layout: "vertical", spacing: "sm", paddingAll: "14px",
+        contents: [
+          { type: "text", text: wfName, weight: "bold", size: "lg", wrap: true },
+          { type: "text", text: `所有任務已完成`, size: "sm", color: "#666666" },
+          { type: "text", text: `完成時間：${completedAt}`, size: "xs", color: "#999999", margin: "sm" },
+        ],
+      },
+      footer: {
+        type: "box", layout: "vertical", paddingAll: "14px",
+        contents: [
+          {
+            type: "button", style: "primary", height: "sm", color: "#7c3aed",
+            action: { type: "message", label: "⚙️ 查看流程狀態", text: "/流程 狀態" },
+          },
+        ],
+      },
+    },
+  };
+
+  // Notify workflow owner via LINE
+  if (instance.assigned_user_id) {
+    let ownerLineId: string | null = null;
+    const { data: lu } = await db.from("line_users")
+      .select("line_user_id")
+      .eq("user_id", instance.assigned_user_id)
+      .eq("is_verified", true)
+      .maybeSingle();
+    ownerLineId = lu?.line_user_id ?? null;
+    if (!ownerLineId) {
+      const { data: mapping } = await db.from("line_employee_mapping")
+        .select("line_user_id")
+        .eq("user_id", instance.assigned_user_id)
+        .eq("is_verified", true)
+        .maybeSingle();
+      ownerLineId = mapping?.line_user_id ?? null;
+    }
+    if (ownerLineId) {
+      await pushAndLog(ownerLineId, [flexMsg], accessToken, db, { sourceType: "system" });
+    }
+  }
+
+  // Notify assigned LINE groups
+  const { data: groupAssignments } = await db.from("workflow_instance_line_group_assignments")
+    .select("line_group_id, line_groups!inner(line_group_id)")
+    .eq("workflow_instance_id", workflowInstanceId);
+
+  if (groupAssignments) {
+    for (const ga of groupAssignments) {
+      const lineGroupId = (ga as any).line_groups?.line_group_id;
+      if (lineGroupId) {
+        await pushAndLog(lineGroupId, [flexMsg], accessToken, db, { sourceType: "group", groupId: lineGroupId });
+      }
+    }
+  }
+}
+
 // ── Task List Command ────────────────────────────────────────────────────────
 
 export async function cmdTaskList(userId: string, db: SupabaseClient, displayName?: string, isGroup = false, lineGroupId?: string | null, liffNewTaskId = "", showAll = false) {
@@ -278,6 +379,9 @@ export async function cmdTaskDone(rawId: string, userId: string, db: SupabaseCli
     if (nextTasks && nextTasks.length > 0) {
       const nt = nextTasks[0];
       nextTask = { title: nt.title, assigneeName: nt.assignee?.name ?? "—" };
+    } else {
+      // No more tasks → check if entire workflow is complete
+      await checkWorkflowCompletion(task.workflow_instance_id, db, accessToken);
     }
   }
 
@@ -592,7 +696,7 @@ export async function cmdTaskConfirmRespond(rawId: string, action: string, userI
 
     // Notify task owner that approval passed and task is completed
     const { data: approvedTask } = await db.from("tasks")
-      .select("assigned_to")
+      .select("assigned_to, workflow_instance_id")
       .eq("id", task.id)
       .maybeSingle();
 
@@ -644,6 +748,11 @@ export async function cmdTaskConfirmRespond(rawId: string, action: string, userI
           },
         }], accessToken, db, { sourceType: "system" });
       }
+    }
+
+    // Check if entire workflow is now complete
+    if (approvedTask?.workflow_instance_id) {
+      await checkWorkflowCompletion(approvedTask.workflow_instance_id, db, accessToken);
     }
 
     return flexSuccess("✅", "已核准 — 任務完成", `「${task.title}」所有審批人已核准，任務已標記完成。`);

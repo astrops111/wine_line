@@ -4,6 +4,16 @@ import { t, setLocale, getLocale, initLocale, type Locale } from './lib/i18n';
 import { initTheme, getTheme, setTheme, type Theme } from './lib/theme';
 import { OrgProvider, useOrg } from './lib/OrgContext';
 import { canAccess, getModuleForPath } from './lib/permissions';
+import {
+  LayoutDashboard, Target, BarChart3, Clock, Palmtree, Timer,
+  Wallet, CalendarDays, CalendarOff, Scale, Award, Search, FolderOpen,
+  ClipboardList, Plane, Receipt, UserPlus, Megaphone, GraduationCap, Gavel,
+  Users as UsersIcon, RefreshCw, CheckSquare, Building2, Zap, Bell, User, Settings,
+  BookOpen, Bot, Menu, X, Globe, Moon, Sun,
+  BarChart2, Factory, Package, MessageSquare,
+} from 'lucide-react';
+
+const IC = { size: 16, strokeWidth: 1.75 } as const;
 import { Dashboard } from './pages/Dashboard';
 import { Tasks } from './pages/Tasks';
 import { Workflows } from './pages/Workflows';
@@ -111,18 +121,92 @@ function PermissionGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function Sidebar() {
+// ── Navigation data ────────────────────────────────────────────────────────
+type NavGroup = { key: string; label: string; icon: React.ReactNode; items: { path: string; icon: React.ReactNode; label: string; moduleKey: string }[] };
+
+function useNavGroups() {
+  const zh = getLocale() === 'zh-TW';
+  return {
+    groups: [
+      { key: 'dashboard', label: zh ? '總覽' : 'Dashboard', icon: <LayoutDashboard {...IC} />, items: [
+        { path: '/', icon: <LayoutDashboard {...IC} />, label: t('nav.dashboard'), moduleKey: 'dashboard' },
+        { path: '/manager-dashboard', icon: <Target {...IC} />, label: zh ? '營運看板' : 'Ops Dashboard', moduleKey: 'manager-dashboard' },
+      ]},
+      { key: 'hr', label: zh ? '人資' : 'People', icon: <UsersIcon {...IC} />, items: [
+        { path: '/hr-dashboard',      icon: <BarChart3 {...IC} />,      label: zh ? 'HR 報表'  : 'HR Dashboard', moduleKey: 'hr-dashboard' },
+        { path: '/time-tracker',      icon: <Clock {...IC} />,          label: zh ? '打卡追蹤' : 'Time Tracker',  moduleKey: 'time-tracker' },
+        { path: '/leave-management',  icon: <Palmtree {...IC} />,       label: zh ? '請假管理' : 'Leave Mgmt',    moduleKey: 'leave-management' },
+        { path: '/overtime-requests', icon: <Timer {...IC} />,          label: zh ? '加班申請' : 'Overtime',      moduleKey: 'overtime-requests' },
+        { path: '/payroll',           icon: <Wallet {...IC} />,         label: zh ? '薪資管理' : 'Payroll',       moduleKey: 'payroll' },
+        { path: '/scheduling',        icon: <CalendarDays {...IC} />,   label: zh ? '排班'     : 'Scheduling',    moduleKey: 'scheduling' },
+        { path: '/holidays',          icon: <CalendarOff {...IC} />,    label: zh ? '假日管理' : 'Holidays',      moduleKey: 'holidays' },
+        { path: '/shift-rules',       icon: <Scale {...IC} />,          label: zh ? '排班規則' : 'Shift Rules',   moduleKey: 'shift-rules' },
+        { path: '/performance',       icon: <Award {...IC} />,          label: zh ? '績效管理' : 'Performance',    moduleKey: 'performance' },
+        { path: '/recruitment',       icon: <Search {...IC} />,         label: zh ? '招募管理' : 'Recruitment',    moduleKey: 'recruitment' },
+        { path: '/documents',         icon: <FolderOpen {...IC} />,     label: zh ? '文件管理' : 'Documents',      moduleKey: 'documents' },
+        { path: '/business-trips',    icon: <Plane {...IC} />,          label: zh ? '公出差旅' : 'Business Trips', moduleKey: 'business-trips' },
+        { path: '/expense-claims',    icon: <Receipt {...IC} />,        label: zh ? '費用核銷' : 'Expense Claims', moduleKey: 'expense-claims' },
+        { path: '/onboarding',        icon: <UserPlus {...IC} />,       label: zh ? '到職離職' : 'Onboarding',     moduleKey: 'onboarding' },
+        { path: '/announcements',     icon: <Megaphone {...IC} />,      label: zh ? '公告管理' : 'Announcements',  moduleKey: 'announcements' },
+        { path: '/training',          icon: <GraduationCap {...IC} />,  label: zh ? '教育訓練' : 'Training',       moduleKey: 'training' },
+        { path: '/disciplinary',      icon: <Gavel {...IC} />,          label: zh ? '獎懲紀錄' : 'Disciplinary',   moduleKey: 'disciplinary' },
+      ]},
+      { key: 'ops', label: zh ? '營運' : 'Operations', icon: <BarChart2 {...IC} />, items: [
+        { path: '/operations-analytics', icon: <BarChart3 {...IC} />, label: zh ? '營運分析' : 'Analytics', moduleKey: 'operations-analytics' },
+        { path: '/vendors',   icon: <Factory {...IC} />,  label: zh ? '供應商' : 'Vendors',   moduleKey: 'vendors' },
+        { path: '/inventory', icon: <Package {...IC} />,  label: zh ? '庫存'   : 'Inventory', moduleKey: 'inventory' },
+      ]},
+      { key: 'workflow', label: zh ? '流程' : 'Workflows', icon: <RefreshCw {...IC} />, items: [
+        { path: '/workflow-management?tab=dashboard',  icon: <BarChart3 {...IC} />,    label: zh ? '總覽'    : 'Dashboard',  moduleKey: 'workflow-management' },
+        { path: '/workflow-management?tab=workflows',  icon: <RefreshCw {...IC} />,    label: zh ? '流程'    : 'Workflows',  moduleKey: 'workflow-management' },
+        { path: '/workflow-management?tab=tasks',      icon: <ClipboardList {...IC} />, label: zh ? '任務'    : 'Tasks',      moduleKey: 'workflow-management' },
+        { path: '/workflow-management?tab=checklists', icon: <CheckSquare {...IC} />,  label: zh ? '查核清單' : 'Checklists', moduleKey: 'workflow-management' },
+      ]},
+      { key: 'org', label: zh ? '組織' : 'Organization', icon: <Building2 {...IC} />, items: [
+        { path: '/org-management?tab=dashboard',   icon: <BarChart3 {...IC} />,      label: zh ? '總覽' : 'Dashboard',   moduleKey: 'org-management' },
+        { path: '/org-management?tab=orgs',        icon: <Building2 {...IC} />,      label: zh ? '組織' : 'Org',         moduleKey: 'org-management' },
+        { path: '/org-management?tab=companies',   icon: <Building2 {...IC} />,      label: zh ? '公司' : 'Company',     moduleKey: 'org-management' },
+        { path: '/org-management?tab=locations',   icon: <Target {...IC} />,         label: zh ? '門市' : 'Locations',   moduleKey: 'org-management' },
+        { path: '/org-management?tab=departments', icon: <FolderOpen {...IC} />,     label: zh ? '部門' : 'Departments', moduleKey: 'org-management' },
+        { path: '/org-management?tab=employees',   icon: <UsersIcon {...IC} />,      label: zh ? '員工' : 'Employees',   moduleKey: 'org-management' },
+        { path: '/org-management?tab=line',        icon: <MessageSquare {...IC} />,  label: 'LINE',                      moduleKey: 'org-management' },
+        { path: '/org-management?tab=billing',     icon: <Wallet {...IC} />,         label: zh ? '帳單' : 'Billing',     moduleKey: 'org-management' },
+      ]},
+      { key: 'system', label: zh ? '系統' : 'System', icon: <Settings {...IC} />, items: [
+        { path: '/triggers',      icon: <Zap {...IC} />,           label: t('nav.triggers'),       moduleKey: 'triggers' },
+        { path: '/notifications', icon: <Bell {...IC} />,          label: t('nav.notifications'),  moduleKey: 'notifications' },
+        { path: '/users',         icon: <User {...IC} />,          label: t('nav.users'),          moduleKey: 'users' },
+        { path: '/audit-logs',    icon: <ClipboardList {...IC} />, label: zh ? '稽核記錄' : 'Audit Logs', moduleKey: 'audit-logs' },
+        { path: '/line-logs',     icon: <BarChart3 {...IC} />,     label: zh ? 'LINE 記錄' : 'LINE Logs', moduleKey: 'line-logs' },
+        { path: '/admin',         icon: <Settings {...IC} />,      label: zh ? '系統設定' : 'Admin Settings', moduleKey: 'admin' },
+      ]},
+      { key: 'ai', label: zh ? 'AI' : 'AI', icon: <Bot {...IC} />, items: [
+        { path: '/help-center',   icon: <BookOpen {...IC} />, label: zh ? '說明中心'     : 'Help Center',    moduleKey: 'help-center' },
+        { path: '/agent-console', icon: <Bot {...IC} />,      label: zh ? 'Agent 控制台' : 'Agent Console', moduleKey: 'agent-console' },
+      ]},
+    ] as NavGroup[],
+  };
+}
+
+function getActiveGroup(groups: NavGroup[], pathname: string, search: string): string {
+  const full = pathname + search;
+  for (const g of groups) {
+    if (g.items.some(i => {
+      if (i.path.includes('?')) return full.startsWith(i.path.split('?')[0]) && full.includes(i.path.split('?')[1]);
+      return i.path === pathname;
+    })) return g.key;
+  }
+  return 'dashboard';
+}
+
+// ── Top Navigation Bar ────────────────────────────────────────────────────
+function TopNav() {
   const [locale, setCurrentLocale] = useState<Locale>(getLocale());
   const [theme, setCurrentTheme] = useState<Theme>(getTheme());
-  const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar-collapsed') === 'true');
   const location = useLocation();
   const { userRoles, modules } = useOrg();
-
-  const toggleCollapse = () => {
-    const next = !collapsed;
-    setCollapsed(next);
-    localStorage.setItem('sidebar-collapsed', String(next));
-  };
+  const { groups } = useNavGroups();
+  const zh = locale === 'zh-TW';
 
   const isAccessible = (moduleKey: string): boolean => {
     const mod = modules.find(m => m.module_key === moduleKey);
@@ -130,14 +214,8 @@ function Sidebar() {
     if (!mod.is_enabled) return false;
     return canAccess(mod.required_role, userRoles);
   };
-  const isOrgPath = location.pathname === '/org-management';
-  const isWfPath  = location.pathname === '/workflow-management';
-  const hrPaths = ['/hr-dashboard', '/time-tracker', '/leave-management', '/overtime-requests', '/payroll', '/scheduling', '/holidays', '/shift-rules'];
-  const opsPaths = ['/operations-analytics', '/vendors', '/inventory'];
-  const [opsOpen, setOpsOpen] = useState(opsPaths.includes(location.pathname));
-  const [orgOpen, setOrgOpen] = useState(isOrgPath);
-  const [wfOpen,  setWfOpen]  = useState(isWfPath);
-  const [hrOpen,  setHrOpen]  = useState(hrPaths.includes(location.pathname));
+
+  const activeGroup = getActiveGroup(groups, location.pathname, location.search);
 
   const toggleLocale = () => {
     const next = locale === 'zh-TW' ? 'en' : 'zh-TW';
@@ -152,310 +230,105 @@ function Sidebar() {
     setCurrentTheme(next);
   };
 
-  const zh = locale === 'zh-TW';
-
-  const mainNavItems = [
-    { path: '/', icon: '📊', label: t('nav.dashboard'), moduleKey: 'dashboard' },
-    { path: '/manager-dashboard', icon: '🎯', label: zh ? '營運看板' : 'Ops Dashboard', moduleKey: 'manager-dashboard' },
-  ].filter(item => isAccessible(item.moduleKey));
-
-  const hrNavItems = [
-    { path: '/hr-dashboard',      icon: '📊', label: zh ? 'HR 報表'  : 'HR Dashboard', moduleKey: 'hr-dashboard' },
-    { path: '/time-tracker',      icon: '⏱',  label: zh ? '打卡追蹤' : 'Time Tracker',  moduleKey: 'time-tracker' },
-    { path: '/leave-management',  icon: '🌴', label: zh ? '請假管理' : 'Leave Mgmt',    moduleKey: 'leave-management' },
-    { path: '/overtime-requests', icon: '⏰', label: zh ? '加班申請' : 'Overtime',      moduleKey: 'overtime-requests' },
-    { path: '/payroll',           icon: '💰', label: zh ? '薪資管理' : 'Payroll',       moduleKey: 'payroll' },
-    { path: '/scheduling',        icon: '📅', label: zh ? '排班'     : 'Scheduling',    moduleKey: 'scheduling' },
-    { path: '/holidays',          icon: '🗓', label: zh ? '假日管理' : 'Holidays',      moduleKey: 'holidays' },
-    { path: '/shift-rules',       icon: '⚖️', label: zh ? '排班規則' : 'Shift Rules',   moduleKey: 'shift-rules' },
-    { path: '/performance',       icon: '🎯', label: zh ? '績效管理' : 'Performance',    moduleKey: 'performance' },
-    { path: '/recruitment',       icon: '🔍', label: zh ? '招募管理' : 'Recruitment',    moduleKey: 'recruitment' },
-    { path: '/documents',         icon: '📁', label: zh ? '文件管理' : 'Documents',      moduleKey: 'documents' },
-    { path: '/audit-logs',        icon: '📋', label: zh ? '稽核記錄' : 'Audit Logs',     moduleKey: 'audit-logs' },
-    { path: '/business-trips',    icon: '✈️', label: zh ? '公出差旅' : 'Business Trips', moduleKey: 'business-trips' },
-    { path: '/expense-claims',    icon: '🧾', label: zh ? '費用核銷' : 'Expense Claims', moduleKey: 'expense-claims' },
-    { path: '/onboarding',        icon: '📋', label: zh ? '到職離職' : 'Onboarding',     moduleKey: 'onboarding' },
-    { path: '/announcements',     icon: '📢', label: zh ? '公告管理' : 'Announcements',  moduleKey: 'announcements' },
-    { path: '/training',          icon: '🎓', label: zh ? '教育訓練' : 'Training',       moduleKey: 'training' },
-    { path: '/disciplinary',      icon: '⚖️', label: zh ? '獎懲紀錄' : 'Disciplinary',   moduleKey: 'disciplinary' },
-  ].filter(item => isAccessible(item.moduleKey));
-
-  const wfSubItems = [
-    { tab: 'dashboard',  icon: '📊', label: zh ? '總覽'    : 'Dashboard' },
-    { tab: 'workflows',  icon: '🔄', label: zh ? '流程'    : 'Workflows' },
-    { tab: 'tasks',      icon: '📋', label: zh ? '任務'    : 'Tasks' },
-    { tab: 'checklists', icon: '✅', label: zh ? '查核清單' : 'Checklists' },
-  ];
-
-  const orgSubItems = [
-    { tab: 'dashboard',   icon: '📊', label: zh ? '總覽' : 'Dashboard' },
-    { tab: 'orgs',        icon: '🏢', label: zh ? '組織' : 'Org' },
-    { tab: 'companies',   icon: '🏛️', label: zh ? '公司' : 'Company' },
-    { tab: 'locations',   icon: '📍', label: zh ? '門市' : 'Locations' },
-    { tab: 'departments', icon: '🗂', label: zh ? '部門' : 'Departments' },
-    { tab: 'employees',   icon: '👥', label: zh ? '員工' : 'Employees' },
-    { tab: 'line',        icon: '💬', label: 'LINE' },
-    { tab: 'billing',     icon: '💳', label: zh ? '帳單' : 'Billing' },
-  ];
-
-  // Active tab is read from URL search params
-  const searchTab = new URLSearchParams(location.search).get('tab') || 'dashboard';
-
   return (
-    <aside className={`sidebar ${collapsed ? 'sidebar-collapsed' : ''}`}>
-      <div className="sidebar-header">
-        <div className="sidebar-logo">
-          <div className="sidebar-logo-icon">🤖</div>
-          {!collapsed && (
-            <div>
-              <h1>AI LINE Bot</h1>
-              <span>Operations System</span>
-            </div>
-          )}
-        </div>
-        <button className="sidebar-toggle" onClick={toggleCollapse} title={collapsed ? 'Expand' : 'Collapse'}>
-          {collapsed ? '▸' : '◂'}
-        </button>
+    <nav className="topnav">
+      <NavLink to="/" className="topnav-brand">
+        <div className="topnav-brand-icon"><Bot size={16} color="#fff" /></div>
+        <span className="topnav-brand-label">AI LINE Bot</span>
+      </NavLink>
+
+      <div className="topnav-groups">
+        {groups.filter(g => g.items.some(i => isAccessible(i.moduleKey))).map(g => {
+          // For groups with a single primary path, link directly
+          const firstItem = g.items.find(i => isAccessible(i.moduleKey));
+          if (!firstItem) return null;
+          return (
+            <NavLink
+              key={g.key}
+              to={firstItem.path}
+              className={`topnav-group-btn ${activeGroup === g.key ? 'active' : ''}`}
+            >
+              <span className="icon">{g.icon}</span>
+              {g.label}
+            </NavLink>
+          );
+        })}
       </div>
 
-      <nav className="sidebar-nav">
-        {/* Main Menu */}
+      <div className="topnav-right">
+        <button className="locale-btn" onClick={toggleLocale}>
+          <Globe size={12} /> {zh ? 'EN' : '中'}
+        </button>
+        <button className="theme-btn" onClick={toggleTheme} aria-label={zh ? '切換主題' : 'Toggle theme'}>
+          {theme === 'light' ? <Moon size={13} /> : <Sun size={13} />}
+        </button>
+      </div>
+    </nav>
+  );
+}
+
+// ── Sidebar — contextual sub-items for the active group ───────────────────
+function Sidebar({ mobileOpen }: { mobileOpen?: boolean }) {
+  const location = useLocation();
+  const { userRoles, modules } = useOrg();
+  const { groups } = useNavGroups();
+
+  const isAccessible = (moduleKey: string): boolean => {
+    const mod = modules.find(m => m.module_key === moduleKey);
+    if (!mod) return true;
+    if (!mod.is_enabled) return false;
+    return canAccess(mod.required_role, userRoles);
+  };
+
+  const activeGroup = getActiveGroup(groups, location.pathname, location.search);
+  const group = groups.find(g => g.key === activeGroup);
+  const items = group?.items.filter(i => isAccessible(i.moduleKey)) || [];
+
+  const isActive = (itemPath: string) => {
+    if (itemPath.includes('?')) {
+      const [base, qs] = itemPath.split('?');
+      return location.pathname === base && location.search.includes(qs);
+    }
+    return location.pathname === itemPath;
+  };
+
+  return (
+    <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
+      <nav className="sidebar-nav" style={{ paddingTop: '12px' }}>
         <div className="nav-section">
-          {!collapsed && <div className="nav-section-title">{zh ? '主選單' : 'MAIN MENU'}</div>}
-          {mainNavItems.map(item => (
+          <div className="nav-section-title">{group?.label || ''}</div>
+          {items.map(item => (
             <NavLink
               key={item.path}
               to={item.path}
-              className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
-              title={collapsed ? item.label : undefined}
+              className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
             >
               <span className="icon">{item.icon}</span>
-              {!collapsed && item.label}
+              {item.label}
             </NavLink>
           ))}
         </div>
-
-        {/* HR Management collapsible group */}
-        {hrNavItems.length > 0 && <div className="nav-section">
-          {!collapsed && <div className="nav-section-title">{zh ? '人資管理' : 'HR MANAGEMENT'}</div>}
-          <button
-            className={`nav-item ${hrNavItems.some(i => i.path === location.pathname) ? 'active' : ''}`}
-            style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', justifyContent: 'space-between' }}
-            onClick={() => setHrOpen(o => !o)}
-            title={collapsed ? (zh ? '人資管理' : 'HR Management') : undefined}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-              <span className="icon">👥</span>
-              {!collapsed && (zh ? '人資管理' : 'HR Management')}
-            </span>
-            {!collapsed && <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '4px' }}>{hrOpen ? '▾' : '▸'}</span>}
-          </button>
-          {hrOpen && !collapsed && (
-            <div style={{ paddingLeft: '10px', marginTop: '2px' }}>
-              {hrNavItems.map(item => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
-                  style={{ fontSize: '12.5px', paddingLeft: '10px' }}
-                >
-                  <span className="icon" style={{ fontSize: '13px' }}>{item.icon}</span>
-                  {item.label}
-                </NavLink>
-              ))}
-            </div>
-          )}
-        </div>}
-
-        {/* Operations Management collapsible group */}
-        {(isAccessible('operations-analytics') || isAccessible('vendors') || isAccessible('inventory')) && <div className="nav-section">
-          {!collapsed && <div className="nav-section-title">{zh ? '營運管理' : 'OPERATIONS'}</div>}
-          <button
-            className={`nav-item ${opsPaths.includes(location.pathname) ? 'active' : ''}`}
-            style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', justifyContent: 'space-between' }}
-            onClick={() => setOpsOpen(o => !o)}
-            title={collapsed ? (zh ? '營運管理' : 'Operations') : undefined}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-              <span className="icon">📈</span>
-              {!collapsed && (zh ? '營運管理' : 'Operations')}
-            </span>
-            {!collapsed && <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '4px' }}>{opsOpen ? '▾' : '▸'}</span>}
-          </button>
-          {opsOpen && !collapsed && (
-            <div style={{ paddingLeft: '10px', marginTop: '2px' }}>
-              {isAccessible('operations-analytics') && (
-                <NavLink to="/operations-analytics" className={`nav-item ${location.pathname === '/operations-analytics' ? 'active' : ''}`} style={{ fontSize: '12.5px', paddingLeft: '10px' }}>
-                  <span className="icon" style={{ fontSize: '13px' }}>📊</span>{zh ? '營運分析' : 'Analytics'}
-                </NavLink>
-              )}
-              {isAccessible('vendors') && (
-                <NavLink to="/vendors" className={`nav-item ${location.pathname === '/vendors' ? 'active' : ''}`} style={{ fontSize: '12.5px', paddingLeft: '10px' }}>
-                  <span className="icon" style={{ fontSize: '13px' }}>🏭</span>{zh ? '供應商' : 'Vendors'}
-                </NavLink>
-              )}
-              {isAccessible('inventory') && (
-                <NavLink to="/inventory" className={`nav-item ${location.pathname === '/inventory' ? 'active' : ''}`} style={{ fontSize: '12.5px', paddingLeft: '10px' }}>
-                  <span className="icon" style={{ fontSize: '13px' }}>📦</span>{zh ? '庫存' : 'Inventory'}
-                </NavLink>
-              )}
-            </div>
-          )}
-        </div>}
-
-        {/* Workflow Management collapsible group */}
-        {isAccessible('workflow-management') && <div className="nav-section">
-          {!collapsed && <div className="nav-section-title">{zh ? '流程管理' : 'WORKFLOWS'}</div>}
-
-          <button
-            className={`nav-item ${isWfPath ? 'active' : ''}`}
-            style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', justifyContent: 'space-between' }}
-            onClick={() => setWfOpen(o => !o)}
-            title={collapsed ? (zh ? '流程管理' : 'Workflow Mgmt') : undefined}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-              <span className="icon">🔄</span>
-              {!collapsed && (zh ? '流程管理' : 'Workflow Mgmt')}
-            </span>
-            {!collapsed && <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '4px' }}>{wfOpen ? '▾' : '▸'}</span>}
-          </button>
-
-          {wfOpen && !collapsed && (
-            <div style={{ paddingLeft: '10px', marginTop: '2px' }}>
-              {wfSubItems.map(item => {
-                const isActive = isWfPath && searchTab === item.tab;
-                return (
-                  <NavLink
-                    key={item.tab}
-                    to={`/workflow-management?tab=${item.tab}`}
-                    className={`nav-item ${isActive ? 'active' : ''}`}
-                    style={{ fontSize: '12.5px', paddingLeft: '10px' }}
-                  >
-                    <span className="icon" style={{ fontSize: '13px' }}>{item.icon}</span>
-                    {item.label}
-                  </NavLink>
-                );
-              })}
-            </div>
-          )}
-        </div>}
-
-        {/* Org Management collapsible group */}
-        {isAccessible('org-management') && <div className="nav-section">
-          {!collapsed && <div className="nav-section-title">{zh ? '組織管理' : 'ORG MANAGEMENT'}</div>}
-
-          <button
-            className={`nav-item ${isOrgPath ? 'active' : ''}`}
-            style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', justifyContent: 'space-between' }}
-            onClick={() => setOrgOpen(o => !o)}
-            title={collapsed ? (zh ? '組織管理' : 'Org Management') : undefined}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-              <span className="icon">🏢</span>
-              {!collapsed && (zh ? '組織管理' : 'Org Management')}
-            </span>
-            {!collapsed && <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '4px' }}>{orgOpen ? '▾' : '▸'}</span>}
-          </button>
-
-          {orgOpen && !collapsed && (
-            <div style={{ paddingLeft: '10px', marginTop: '2px' }}>
-              {orgSubItems.map(item => {
-                const isActive = isOrgPath && searchTab === item.tab;
-                return (
-                  <NavLink
-                    key={item.tab}
-                    to={`/org-management?tab=${item.tab}`}
-                    className={`nav-item ${isActive ? 'active' : ''}`}
-                    style={{ fontSize: '12.5px', paddingLeft: '10px' }}
-                  >
-                    <span className="icon" style={{ fontSize: '13px' }}>{item.icon}</span>
-                    {item.label}
-                  </NavLink>
-                );
-              })}
-            </div>
-          )}
-        </div>}
-
-        {/* System */}
-        <div className="nav-section">
-          {!collapsed && <div className="nav-section-title">{zh ? '系統' : 'SYSTEM'}</div>}
-          {isAccessible('triggers') && (
-            <NavLink to="/triggers" className={`nav-item ${location.pathname === '/triggers' ? 'active' : ''}`} title={collapsed ? t('nav.triggers') : undefined}>
-              <span className="icon">⚡</span>{!collapsed && t('nav.triggers')}
-            </NavLink>
-          )}
-          {isAccessible('notifications') && (
-            <NavLink to="/notifications" className={`nav-item ${location.pathname === '/notifications' ? 'active' : ''}`} title={collapsed ? t('nav.notifications') : undefined}>
-              <span className="icon">🔔</span>{!collapsed && t('nav.notifications')}
-            </NavLink>
-          )}
-          {isAccessible('users') && (
-            <NavLink to="/users" className={`nav-item ${location.pathname === '/users' ? 'active' : ''}`} title={collapsed ? t('nav.users') : undefined}>
-              <span className="icon">👤</span>{!collapsed && t('nav.users')}
-            </NavLink>
-          )}
-          {isAccessible('line-logs') && (
-            <NavLink to="/line-logs" className={`nav-item ${location.pathname === '/line-logs' ? 'active' : ''}`} title={collapsed ? (zh ? 'LINE 記錄' : 'LINE Logs') : undefined}>
-              <span className="icon">📊</span>{!collapsed && (zh ? 'LINE 記錄' : 'LINE Logs')}
-            </NavLink>
-          )}
-          {isAccessible('admin') && (
-            <NavLink to="/admin" className={`nav-item ${location.pathname === '/admin' ? 'active' : ''}`} title={collapsed ? (zh ? '系統設定' : 'Admin Settings') : undefined}>
-              <span className="icon">⚙️</span>{!collapsed && (zh ? '系統設定' : 'Admin Settings')}
-            </NavLink>
-          )}
-        </div>
-
-        {/* AI Tools */}
-        <div className="nav-section">
-          {!collapsed && <div className="nav-section-title">{zh ? 'AI 工具' : 'AI TOOLS'}</div>}
-          {isAccessible('help-center') && (
-            <NavLink to="/help-center" className={`nav-item ${location.pathname === '/help-center' ? 'active' : ''}`} title={collapsed ? (zh ? '說明中心' : 'Help Center') : undefined}>
-              <span className="icon">📚</span>{!collapsed && (zh ? '說明中心' : 'Help Center')}
-            </NavLink>
-          )}
-          {isAccessible('agent-console') && (
-            <NavLink to="/agent-console" className={`nav-item ${location.pathname === '/agent-console' ? 'active' : ''}`} title={collapsed ? (zh ? 'Agent 控制台' : 'Agent Console') : undefined}>
-              <span className="icon">🤖</span>{!collapsed && (zh ? 'Agent 控制台' : 'Agent Console')}
-            </NavLink>
-          )}
-        </div>
       </nav>
-
-      <div className="sidebar-footer-btns">
-        {collapsed ? (
-          <button className="theme-btn" onClick={toggleLocale} title={zh ? 'English' : '中文'}>🌐</button>
-        ) : (
-          <button className="locale-btn" onClick={toggleLocale}>
-            🌐 {zh ? 'English' : '中文'}
-          </button>
-        )}
-        <button className="theme-btn" aria-label={zh ? '切換主題' : 'Toggle theme'} onClick={toggleTheme}>
-          {theme === 'light' ? '🌙' : '☀️'}
-        </button>
-      </div>
     </aside>
   );
 }
 
 function AppContent() {
-  const sidebarCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
-  const [collapsed, setCollapsed] = useState(sidebarCollapsed);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Listen for sidebar toggle via storage events
-  useEffect(() => {
-    const handler = () => setCollapsed(localStorage.getItem('sidebar-collapsed') === 'true');
-    window.addEventListener('storage', handler);
-    // Also poll for same-tab changes
-    const interval = setInterval(handler, 200);
-    return () => { window.removeEventListener('storage', handler); clearInterval(interval); };
-  }, []);
+  // Close mobile sidebar on route change
+  const location = useLocation();
+  useEffect(() => { setMobileOpen(false); }, [location.pathname]);
 
   return (
     <div className="app-layout">
-      <Sidebar />
-      <main className="main-content" style={{ marginLeft: collapsed ? '64px' : undefined }}>
+      <TopNav />
+      <button className="mobile-menu-btn" onClick={() => setMobileOpen(o => !o)} aria-label="Toggle menu">
+        {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+      <div className={`mobile-overlay ${mobileOpen ? 'active' : ''}`} onClick={() => setMobileOpen(false)} />
+      <Sidebar mobileOpen={mobileOpen} />
+      <main className="main-content">
         <PermissionGuard>
           <Routes>
             <Route path="/" element={<Dashboard />} />

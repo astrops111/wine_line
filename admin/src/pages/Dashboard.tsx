@@ -209,10 +209,19 @@ export function Dashboard() {
         return (
             <div className="fade-in">
                 <div className="page-header">
-                    <h1>📊 {t('dashboard.title')}</h1>
+                    <h1>{t('dashboard.title')}</h1>
+                    <p>{zh ? '所有門市營運概覽' : 'Overview of all store operations'}</p>
                 </div>
                 <div className="page-body">
-                    <p className="loading-pulse">{t('common.loading')}</p>
+                    <div className="skeleton-stat-grid">
+                        {[...Array(4)].map((_, i) => <div key={i} className="skeleton-card" />)}
+                    </div>
+                    <div className="skeleton-stat-grid">
+                        {[...Array(5)].map((_, i) => <div key={i} className="skeleton-card" />)}
+                    </div>
+                    <div style={{ marginTop: 16 }}>
+                        {[...Array(3)].map((_, i) => <div key={i} className="skeleton-row" />)}
+                    </div>
                 </div>
             </div>
         );
@@ -220,31 +229,56 @@ export function Dashboard() {
 
     const progress = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
     const activeWorkflowCount = workflows.filter(w => w.status === 'running').length;
+    const complianceMet = compliance.disabledCount >= compliance.disabledRequired;
 
     return (
         <div className="fade-in">
             <div className="page-header">
-                <h1>📊 {t('dashboard.title')}</h1>
+                <h1>{t('dashboard.title')}</h1>
                 <p>{zh ? '所有門市營運概覽' : 'Overview of all store operations'}</p>
             </div>
 
             <div className="page-body">
-                {/* OE-7: Announcements */}
+                {/* ── Hero KPI Strip ── */}
+                <div className="dashboard-hero-grid">
+                    <div className="dashboard-hero-card emerald">
+                        <div className="dashboard-hero-label">{zh ? '在職人數' : 'Active Staff'}</div>
+                        <div className="dashboard-hero-value">{headcount.active}</div>
+                        <div className="dashboard-hero-sub">{zh ? `共 ${headcount.total} 人` : `${headcount.total} total`}</div>
+                    </div>
+                    <div className="dashboard-hero-card orange">
+                        <div className="dashboard-hero-label">{zh ? '待審項目' : 'Pending Reviews'}</div>
+                        <div className="dashboard-hero-value">{pendingLeave + pendingOT + pendingCorrections}</div>
+                        <div className="dashboard-hero-sub">{zh ? `假${pendingLeave} · 加班${pendingOT} · 補打${pendingCorrections}` : `Leave ${pendingLeave} · OT ${pendingOT} · Corr ${pendingCorrections}`}</div>
+                    </div>
+                    <div className="dashboard-hero-card blue">
+                        <div className="dashboard-hero-label">{zh ? '進行中任務' : 'Tasks Active'}</div>
+                        <div className="dashboard-hero-value">{stats.in_progress}</div>
+                        <div className="dashboard-hero-sub">{zh ? `共 ${stats.total} 項` : `${stats.total} total`}</div>
+                    </div>
+                    <div className="dashboard-hero-card purple">
+                        <div className="dashboard-hero-label">{zh ? '年離職率' : 'Annual Turnover'}</div>
+                        <div className="dashboard-hero-value">{turnover.rate}%</div>
+                        <div className="dashboard-hero-sub">{zh ? `本年 ${turnover.thisYear} 人` : `${turnover.thisYear} this year`}</div>
+                    </div>
+                </div>
+
+                {/* ── Announcements (full width) ── */}
                 {announcements.length > 0 && (
-                    <div className="card" style={{ marginBottom: '20px' }}>
+                    <div className="card" style={{ marginBottom: 20 }}>
                         <div className="card-header">
-                            <span className="card-title">📢 {zh ? '公司公告' : 'Announcements'}</span>
+                            <span className="card-title">{zh ? '公司公告' : 'Announcements'}</span>
                         </div>
                         {announcements.map(ann => {
-                            const badge = ann.priority === 'urgent' ? { icon: '🔴', color: '#f43f5e' } : ann.priority === 'important' ? { icon: '🟡', color: '#f59e0b' } : { icon: '', color: 'var(--text-muted)' };
+                            const badge = ann.priority === 'urgent' ? { icon: '●', color: 'var(--accent-red)' } : ann.priority === 'important' ? { icon: '●', color: 'var(--accent-yellow)' } : { icon: '', color: '' };
                             return (
-                                <div key={ann.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--outline-variant)', display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                                    {ann.is_pinned && <span style={{ fontSize: '12px' }}>📌</span>}
-                                    {badge.icon && <span style={{ fontSize: '12px' }}>{badge.icon}</span>}
+                                <div key={ann.id} style={{ padding: '10px 0', borderBottom: '1px solid var(--outline-variant)', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                                    {ann.is_pinned && <span style={{ fontSize: 11, color: 'var(--accent-orange)' }}>●</span>}
+                                    {badge.icon && <span style={{ fontSize: 8, color: badge.color, marginTop: 4 }}>{badge.icon}</span>}
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: '13px', fontWeight: 600 }}>{ann.title}</div>
-                                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.4 }}>{ann.content.length > 120 ? ann.content.slice(0, 120) + '…' : ann.content}</div>
-                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>
+                                        <div style={{ fontSize: 13, fontWeight: 600 }}>{ann.title}</div>
+                                        <div style={{ fontSize: 12, color: 'var(--on-surface-muted)', marginTop: 2, lineHeight: 1.4 }}>{ann.content.length > 120 ? ann.content.slice(0, 120) + '…' : ann.content}</div>
+                                        <div style={{ fontSize: 11, color: 'var(--on-surface-muted)', marginTop: 4 }}>
                                             {ann.author_name && <span>{ann.author_name} · </span>}
                                             {new Date(ann.published_at).toLocaleDateString()}
                                         </div>
@@ -255,156 +289,112 @@ export function Dashboard() {
                     </div>
                 )}
 
-                {/* Employee Headcount */}
-                <div style={{ marginBottom: '8px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
-                        👥 {zh ? '員工人數' : 'Employee Headcount'}
+                {/* ── Two-Column: Headcount + Turnover ── */}
+                <div className="dashboard-two-col">
+                    <div>
+                        <div className="section-label">{zh ? '員工人數' : 'Employee Headcount'}</div>
+                        <div className="stats-grid">
+                            <div className="stat-card emerald"><div className="stat-label">{zh ? '在職' : 'ACTIVE'}</div><div className="stat-value">{headcount.active}</div></div>
+                            <div className="stat-card blue"><div className="stat-label">{zh ? '全職' : 'FULL-TIME'}</div><div className="stat-value">{headcount.fullTime}</div></div>
+                            <div className="stat-card orange"><div className="stat-label">{zh ? '兼職' : 'PART-TIME'}</div><div className="stat-value">{headcount.partTime}</div></div>
+                            <div className="stat-card purple"><div className="stat-label">{zh ? '約聘' : 'CONTRACT'}</div><div className="stat-value">{headcount.contract}</div></div>
+                            <div className="stat-card red"><div className="stat-label">{zh ? '離職' : 'INACTIVE'}</div><div className="stat-value">{headcount.inactive}</div></div>
+                        </div>
                     </div>
-                    <div className="stats-grid">
-                        <div className="stat-card emerald">
-                            <div className="stat-label">{zh ? '在職人數' : 'ACTIVE'}</div>
-                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{headcount.active}</div>
-                        </div>
-                        <div className="stat-card blue">
-                            <div className="stat-label">{zh ? '全職' : 'FULL-TIME'}</div>
-                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{headcount.fullTime}</div>
-                        </div>
-                        <div className="stat-card orange">
-                            <div className="stat-label">{zh ? '兼職' : 'PART-TIME'}</div>
-                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{headcount.partTime}</div>
-                        </div>
-                        <div className="stat-card purple">
-                            <div className="stat-label">{zh ? '約聘' : 'CONTRACT'}</div>
-                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{headcount.contract}</div>
-                        </div>
-                        <div className="stat-card red">
-                            <div className="stat-label">{zh ? '離職' : 'INACTIVE'}</div>
-                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{headcount.inactive}</div>
+                    <div>
+                        <div className="section-label">{zh ? '離職率分析' : 'Turnover Analytics'}</div>
+                        <div className="stats-grid">
+                            <div className="stat-card orange"><div className="stat-label">{zh ? '本月' : 'THIS MONTH'}</div><div className="stat-value">{turnover.thisMonth}</div></div>
+                            <div className="stat-card purple"><div className="stat-label">{zh ? '本季' : 'THIS QTR'}</div><div className="stat-value">{turnover.thisQuarter}</div></div>
+                            <div className="stat-card red"><div className="stat-label">{zh ? '本年' : 'THIS YEAR'}</div><div className="stat-value">{turnover.thisYear}</div></div>
+                            <div className="stat-card blue"><div className="stat-label">{zh ? '年離職率' : 'ANNUAL RATE'}</div><div className="stat-value">{turnover.rate}%</div></div>
                         </div>
                     </div>
                 </div>
 
-                {/* Turnover Analytics */}
-                <div style={{ marginBottom: '16px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
-                        📈 {zh ? '離職率分析' : 'Turnover Analytics'}
-                    </div>
-                    <div className="stats-grid">
-                        <div className="stat-card orange">
-                            <div className="stat-label">{zh ? '本月離職' : 'THIS MONTH'}</div>
-                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{turnover.thisMonth}</div>
-                        </div>
-                        <div className="stat-card purple">
-                            <div className="stat-label">{zh ? '本季離職' : 'THIS QUARTER'}</div>
-                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{turnover.thisQuarter}</div>
-                        </div>
-                        <div className="stat-card red">
-                            <div className="stat-label">{zh ? '本年離職' : 'THIS YEAR'}</div>
-                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{turnover.thisYear}</div>
-                        </div>
-                        <div className="stat-card blue">
-                            <div className="stat-label">{zh ? '年離職率' : 'ANNUAL RATE'}</div>
-                            <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{turnover.rate}%</div>
-                        </div>
-                    </div>
-                </div>
+                {/* ── Two-Column: Alerts ── */}
+                {(permitAlerts.length > 0 || probationAlerts.length > 0) && (
+                    <div className="dashboard-two-col">
+                        {/* Work Permit Expiry */}
+                        {permitAlerts.length > 0 && (
+                            <div className="card alert-card--critical">
+                                <div className="card-header">
+                                    <span className="card-title">{zh ? '工作證即將到期' : 'Work Permit Expiry'}</span>
+                                    <span className="count-badge count-badge--red">{permitAlerts.length} {zh ? '人' : ''}</span>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    {permitAlerts.map(emp => {
+                                        const days = Math.ceil((new Date(emp.work_permit_expiry).getTime() - Date.now()) / 86400000);
+                                        const color = days < 0 ? 'var(--accent-red)' : days <= 7 ? 'var(--accent-yellow)' : 'var(--accent-blue)';
+                                        return (
+                                            <div key={emp.id} className="alert-row">
+                                                <span className="alert-row-name">{emp.name}</span>
+                                                <div className="alert-row-meta">
+                                                    <span className="alert-row-date">{emp.work_permit_expiry}</span>
+                                                    <span className="alert-row-badge" style={{ color, background: `color-mix(in srgb, ${color} 12%, transparent)` }}>
+                                                        {days < 0 ? (zh ? `已逾期 ${Math.abs(days)} 天` : `${Math.abs(days)}d expired`) : (zh ? `剩 ${days} 天` : `${days}d left`)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
 
-                {/* Work Permit Expiry Alerts */}
-                {permitAlerts.length > 0 && (
-                    <div className="card" style={{ marginBottom: '20px', borderLeft: '3px solid #ef4444' }}>
-                        <div className="card-header">
-                            <span className="card-title">🛂 {zh ? '工作證即將到期' : 'Work Permit Expiry'}</span>
-                            <span style={{ fontSize: '12px', fontWeight: 600, padding: '2px 10px', borderRadius: '8px', background: '#ef444422', color: '#ef4444' }}>
-                                {permitAlerts.length} {zh ? '人' : 'people'}
-                            </span>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            {permitAlerts.map(emp => {
-                                const days = Math.ceil((new Date(emp.work_permit_expiry).getTime() - Date.now()) / 86400000);
-                                const color = days < 0 ? '#f43f5e' : days <= 7 ? '#f59e0b' : '#3b82f6';
-                                return (
-                                    <div key={emp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-                                        <span style={{ fontSize: '13px', fontWeight: 500 }}>{emp.name}</span>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{emp.work_permit_expiry}</span>
-                                            <span style={{ fontSize: '12px', fontWeight: 600, color, padding: '1px 8px', borderRadius: '4px', background: color + '22' }}>
-                                                {days < 0 ? (zh ? `已逾期 ${Math.abs(days)} 天` : `${Math.abs(days)}d expired`) : (zh ? `剩 ${days} 天` : `${days}d left`)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                        {/* Probation Alerts */}
+                        {probationAlerts.length > 0 && (
+                            <div className="card alert-card">
+                                <div className="card-header">
+                                    <span className="card-title">{zh ? '試用期到期提醒' : 'Probation Alerts'}</span>
+                                    <span className="count-badge count-badge--yellow">{probationAlerts.length} {zh ? '人' : ''}</span>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    {probationAlerts.map(emp => {
+                                        const days = Math.ceil((new Date(emp.probation_end_date).getTime() - Date.now()) / 86400000);
+                                        const color = days < 0 ? 'var(--accent-red)' : days <= 7 ? 'var(--accent-yellow)' : 'var(--accent-emerald)';
+                                        return (
+                                            <div key={emp.id} className="alert-row">
+                                                <span className="alert-row-name">{emp.name}</span>
+                                                <div className="alert-row-meta">
+                                                    <span className="alert-row-date">{emp.probation_end_date}</span>
+                                                    <span className="alert-row-badge" style={{ color, background: `color-mix(in srgb, ${color} 12%, transparent)` }}>
+                                                        {days < 0 ? (zh ? `已逾期 ${Math.abs(days)} 天` : `${Math.abs(days)}d overdue`) : (zh ? `剩 ${days} 天` : `${days}d left`)}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
-                {/* OE-8: Probation Alerts */}
-                {probationAlerts.length > 0 && (
-                    <div className="card" style={{ marginBottom: '20px', borderLeft: '3px solid #f59e0b' }}>
-                        <div className="card-header">
-                            <span className="card-title">⏰ {zh ? '試用期到期提醒' : 'Probation Alerts'}</span>
-                            <span style={{ fontSize: '12px', fontWeight: 600, padding: '2px 10px', borderRadius: '8px', background: '#f59e0b22', color: '#f59e0b' }}>
-                                {probationAlerts.length} {zh ? '人' : 'people'}
-                            </span>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            {probationAlerts.map(emp => {
-                                const days = Math.ceil((new Date(emp.probation_end_date).getTime() - Date.now()) / 86400000);
-                                const color = days < 0 ? '#f43f5e' : days <= 7 ? '#f59e0b' : '#22c55e';
-                                return (
-                                    <div key={emp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-                                        <span style={{ fontSize: '13px', fontWeight: 500 }}>{emp.name}</span>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{emp.probation_end_date}</span>
-                                            <span style={{ fontSize: '12px', fontWeight: 600, color, padding: '1px 8px', borderRadius: '4px', background: color + '22' }}>
-                                                {days < 0 ? (zh ? `已逾期 ${Math.abs(days)} 天` : `${Math.abs(days)}d overdue`) : (zh ? `剩 ${days} 天` : `${days}d left`)}
-                                            </span>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-
-                {/* Regulatory Compliance — Disability Quota */}
+                {/* ── Compliance ── */}
                 {compliance.totalActive >= 67 && (
-                    <div className="card" style={{ marginBottom: '20px', borderLeft: `3px solid ${compliance.disabledCount >= compliance.disabledRequired ? '#22c55e' : '#f43f5e'}` }}>
+                    <div className={`card ${complianceMet ? 'alert-card--success' : 'alert-card--critical'}`} style={{ marginBottom: 20 }}>
                         <div className="card-header">
-                            <span className="card-title">⚖️ {zh ? '法遵 — 身障僱用比例' : 'Regulatory — Disability Quota'}</span>
-                            <span style={{
-                                fontSize: '12px', fontWeight: 600, padding: '2px 10px', borderRadius: '8px',
-                                background: compliance.disabledCount >= compliance.disabledRequired ? '#22c55e22' : '#f43f5e22',
-                                color: compliance.disabledCount >= compliance.disabledRequired ? '#22c55e' : '#f43f5e',
-                            }}>
-                                {compliance.disabledCount >= compliance.disabledRequired
-                                    ? (zh ? '✓ 符合規定' : '✓ Compliant')
-                                    : (zh ? '✗ 未達標準' : '✗ Non-compliant')}
+                            <span className="card-title">{zh ? '法遵 — 身障僱用比例' : 'Regulatory — Disability Quota'}</span>
+                            <span className={`count-badge ${complianceMet ? 'count-badge--green' : 'count-badge--red'}`}>
+                                {complianceMet ? (zh ? '✓ 符合規定' : '✓ Compliant') : (zh ? '✗ 未達標準' : '✗ Non-compliant')}
                             </span>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '12px' }}>
-                            <div style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
-                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '4px' }}>
-                                    {zh ? '在職總人數' : 'Total Active'}
-                                </div>
-                                <div style={{ fontSize: '20px', fontWeight: 600 }}>{compliance.totalActive}</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 12 }}>
+                            <div className="compliance-stat">
+                                <div className="compliance-stat-label">{zh ? '在職總人數' : 'Total Active'}</div>
+                                <div className="compliance-stat-value">{compliance.totalActive}</div>
                             </div>
-                            <div style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
-                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '4px' }}>
-                                    {zh ? '身障員工數' : 'Disabled Hired'}
-                                </div>
-                                <div style={{ fontSize: '20px', fontWeight: 600, color: compliance.disabledCount >= compliance.disabledRequired ? '#22c55e' : '#f43f5e' }}>
-                                    {compliance.disabledCount}
-                                </div>
+                            <div className="compliance-stat">
+                                <div className="compliance-stat-label">{zh ? '身障員工數' : 'Disabled Hired'}</div>
+                                <div className="compliance-stat-value" style={{ color: complianceMet ? 'var(--accent-emerald)' : 'var(--accent-red)' }}>{compliance.disabledCount}</div>
                             </div>
-                            <div style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '8px', textAlign: 'center' }}>
-                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '4px' }}>
-                                    {zh ? '法定最低需求' : 'Required Min.'}
-                                </div>
-                                <div style={{ fontSize: '20px', fontWeight: 600 }}>{compliance.disabledRequired}</div>
+                            <div className="compliance-stat">
+                                <div className="compliance-stat-label">{zh ? '法定最低需求' : 'Required Min.'}</div>
+                                <div className="compliance-stat-value">{compliance.disabledRequired}</div>
                             </div>
                         </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                        <div style={{ fontSize: 11, color: 'var(--on-surface-muted)', lineHeight: 1.6 }}>
                             {zh
                                 ? '依《身心障礙者權益保障法》第38條：私立機構員工67人以上，應進用不得少於員工總人數1%之身心障礙者。'
                                 : 'Per Taiwan PRPD Act §38: Private companies with 67+ employees must employ at least 1% persons with disabilities.'}
@@ -414,20 +404,17 @@ export function Dashboard() {
 
                 {/* Special Identity Breakdown */}
                 {compliance.specialBreakdown.length > 0 && (
-                    <div className="card" style={{ marginBottom: '20px' }}>
+                    <div className="card" style={{ marginBottom: 20 }}>
                         <div className="card-header">
-                            <span className="card-title">🏷️ {zh ? '特殊身分員工統計' : 'Special Identity Breakdown'}</span>
+                            <span className="card-title">{zh ? '特殊身分員工統計' : 'Special Identity Breakdown'}</span>
                         </div>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                             {compliance.specialBreakdown.map(item => {
                                 const lbl = SPECIAL_IDENTITY_LABELS[item.label];
                                 return (
-                                    <div key={item.label} style={{
-                                        padding: '8px 14px', background: 'var(--bg-secondary)',
-                                        borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px',
-                                    }}>
-                                        <span style={{ fontSize: '13px' }}>{lbl ? (zh ? lbl.zh : lbl.en) : item.label}</span>
-                                        <span style={{ fontWeight: 600, fontSize: '14px', color: 'var(--accent-primary)' }}>{item.count}</span>
+                                    <div key={item.label} className="identity-chip">
+                                        <span>{lbl ? (zh ? lbl.zh : lbl.en) : item.label}</span>
+                                        <span className="identity-chip-count">{item.count}</span>
                                     </div>
                                 );
                             })}
@@ -435,59 +422,28 @@ export function Dashboard() {
                     </div>
                 )}
 
-                {/* Stats Cards */}
+                {/* ── Task & Workflow Stats ── */}
+                <div className="section-label">{zh ? '任務與流程' : 'Tasks & Workflows'}</div>
                 <div className="stats-grid">
-                    <div className="stat-card emerald">
-                        <div className="stat-label">{t('dashboard.active_workflows')}</div>
-                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{activeWorkflowCount}</div>
-                    </div>
-                    <div className="stat-card emerald">
-                        <div className="stat-label">{t('dashboard.total_tasks')}</div>
-                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{stats.total}</div>
-                    </div>
-                    <div className="stat-card orange">
-                        <div className="stat-label">{t('dashboard.pending')}</div>
-                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{stats.pending}</div>
-                    </div>
-                    <div className="stat-card blue">
-                        <div className="stat-label">{t('dashboard.in_progress')}</div>
-                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{stats.in_progress}</div>
-                    </div>
-                    <div className="stat-card purple">
-                        <div className="stat-label">{t('dashboard.completed')}</div>
-                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{stats.completed}</div>
-                    </div>
-                    <div className="stat-card red">
-                        <div className="stat-label">{t('dashboard.blocked')}</div>
-                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{stats.blocked}</div>
-                    </div>
-                    <div className="stat-card orange">
-                        <div className="stat-label">{zh ? '待審假單' : 'Pending Leave'}</div>
-                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{pendingLeave}</div>
-                    </div>
-                    <div className="stat-card orange">
-                        <div className="stat-label">{zh ? '待審加班' : 'Pending OT'}</div>
-                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{pendingOT}</div>
-                    </div>
-                    <div className="stat-card red">
-                        <div className="stat-label">{zh ? '待審補打' : 'Corrections'}</div>
-                        <div className="stat-value" style={{ fontVariantNumeric: 'tabular-nums' }}>{pendingCorrections}</div>
-                    </div>
+                    <div className="stat-card emerald"><div className="stat-label">{t('dashboard.active_workflows')}</div><div className="stat-value">{activeWorkflowCount}</div></div>
+                    <div className="stat-card emerald"><div className="stat-label">{t('dashboard.total_tasks')}</div><div className="stat-value">{stats.total}</div></div>
+                    <div className="stat-card orange"><div className="stat-label">{t('dashboard.pending')}</div><div className="stat-value">{stats.pending}</div></div>
+                    <div className="stat-card blue"><div className="stat-label">{t('dashboard.in_progress')}</div><div className="stat-value">{stats.in_progress}</div></div>
+                    <div className="stat-card purple"><div className="stat-label">{t('dashboard.completed')}</div><div className="stat-value">{stats.completed}</div></div>
+                    <div className="stat-card red"><div className="stat-label">{t('dashboard.blocked')}</div><div className="stat-value">{stats.blocked}</div></div>
                 </div>
 
                 {/* Workflow Progress */}
                 {workflows.length > 0 && (
-                    <div className="card" style={{ marginBottom: '24px' }}>
+                    <div className="card" style={{ marginBottom: 24 }}>
                         <div className="card-header">
-                            <span className="card-title">🔄 {t('dashboard.active_workflows')}</span>
-                            <span style={{ fontSize: '13px', color: 'var(--accent-primary)', fontWeight: 600 }}>
-                                {progress}%
-                            </span>
+                            <span className="card-title">{t('dashboard.active_workflows')}</span>
+                            <span style={{ fontSize: 13, color: 'var(--primary)', fontWeight: 600 }}>{progress}%</span>
                         </div>
-                        <div className="progress-bar" style={{ marginBottom: '12px' }}>
+                        <div className="progress-bar" style={{ marginBottom: 12 }}>
                             <div className="progress-bar-fill" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} style={{ width: `${progress}%` }} />
                         </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        <div style={{ fontSize: 12, color: 'var(--on-surface-muted)' }}>
                             {workflows.map(w => w.name).join(' · ')}
                         </div>
                     </div>
@@ -496,7 +452,7 @@ export function Dashboard() {
                 {/* Recent Tasks */}
                 <div className="card">
                     <div className="card-header">
-                        <span className="card-title">📋 {t('dashboard.recent_tasks')}</span>
+                        <span className="card-title">{t('dashboard.recent_tasks')}</span>
                     </div>
                     <table className="data-table">
                         <thead>
@@ -509,18 +465,18 @@ export function Dashboard() {
                         </thead>
                         <tbody>
                             {recentTasks.length === 0 && (
-                                <tr><td colSpan={4} style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>{zh ? '尚無任務' : 'No tasks yet'}</td></tr>
+                                <tr><td colSpan={4} className="empty-state" style={{ padding: 24 }}>{zh ? '尚無任務' : 'No tasks yet'}</td></tr>
                             )}
                             {recentTasks.map(task => (
                                 <tr key={task.id}>
-                                    <td style={{ color: 'var(--text-muted)', width: '40px' }}>{task.sort_order}</td>
+                                    <td style={{ color: 'var(--on-surface-muted)', width: 40 }}>{task.sort_order}</td>
                                     <td>{task.title}</td>
                                     <td>
                                         <span className={`status-badge ${task.status}`}>
                                             {statusLabel[task.status] || task.status}
                                         </span>
                                     </td>
-                                    <td style={{ color: 'var(--text-secondary)' }}>
+                                    <td style={{ color: 'var(--on-surface-variant)' }}>
                                         {task.assigned_user?.name || (zh ? '未指派' : 'Unassigned')}
                                     </td>
                                 </tr>

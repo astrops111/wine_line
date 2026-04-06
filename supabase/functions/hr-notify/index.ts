@@ -536,6 +536,33 @@ serve(async (req) => {
       message = buildCorrectionNotification("approved", details);
     } else if (type === "correction_rejected") {
       message = buildCorrectionNotification("rejected", details);
+    } else if (type === "task_auto_started") {
+      const { task_title, completed_tasks, workflow_name } = details || {};
+      message = {
+        type: "flex",
+        altText: `🚀 任務「${task_title}」已自動開始`,
+        contents: {
+          type: "bubble",
+          size: "kilo",
+          header: {
+            type: "box", layout: "vertical", backgroundColor: "#3B82F6", paddingAll: "14px",
+            contents: [
+              ...(workflow_name ? [{ type: "text", text: workflow_name, size: "xs", color: "#DBEAFE" }] : []),
+              { type: "text", text: "🚀 任務自動開始", weight: "bold", color: "#FFFFFF", size: "md" },
+            ],
+          },
+          body: {
+            type: "box", layout: "vertical", spacing: "sm", paddingAll: "14px",
+            contents: [
+              { type: "text", text: task_title || "未命名任務", weight: "bold", size: "md", wrap: true },
+              { type: "text", text: "所有前置條件已完成，任務已自動設為「進行中」。", size: "sm", color: "#666666", wrap: true },
+              ...(Array.isArray(completed_tasks) && completed_tasks.length > 0
+                ? [{ type: "text", text: `前置任務：${completed_tasks.join("、")}`, size: "xs", color: "#888888", wrap: true, margin: "sm" }]
+                : []),
+            ],
+          },
+        },
+      };
     } else {
       return new Response(JSON.stringify({ error: `Unknown type: ${type}` }), {
         status: 400,

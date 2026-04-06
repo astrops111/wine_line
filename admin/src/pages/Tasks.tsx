@@ -152,6 +152,9 @@ export function Tasks() {
                 trigger_actions: Array.isArray(t.metadata?.trigger_actions)
                     ? t.metadata.trigger_actions.filter(Boolean)
                     : null,
+                start_conditions: Array.isArray(t.metadata?.start_conditions)
+                    ? t.metadata.start_conditions.filter(Boolean)
+                    : null,
                 planned_start: t.planned_start ?? t.metadata?.plan_start ?? null,
                 note1: t.metadata?.note1 ?? null,
                 note2: t.metadata?.note2 ?? null,
@@ -265,6 +268,7 @@ export function Tasks() {
             note2: task.note2 || '',
             note3: task.note3 || '',
             trigger_actions: normalizeTriggers(task.trigger_actions),
+            start_conditions: normalizeTriggers(task.start_conditions),
             reminder_at: task.reminder_at || '',
         });
         setLoadingComments(true);
@@ -328,6 +332,7 @@ export function Tasks() {
             note2: localEdits.note2 || null,
             note3: localEdits.note3 || null,
             trigger_actions: localEdits.trigger_actions,
+            start_conditions: localEdits.start_conditions,
         };
         await supabase.from('tasks').update(updates).eq('id', selectedTask.id);
         if (localEdits.status !== selectedTask.status) {
@@ -348,6 +353,55 @@ export function Tasks() {
             const taskForTrigger = { ...selectedTask, status: 'completed' };
             if (taskForTrigger.workflow_instance_id && taskForTrigger.workflow_step) {
                 await triggerNextWorkflowStep(taskForTrigger, zh);
+            }
+            // Check start_conditions on other tasks that depend on this completed task
+            const dependentTasks = tasks.filter(t =>
+                t.id !== selectedTask.id &&
+                Array.isArray(t.start_conditions) &&
+                t.start_conditions.includes(selectedTask.id) &&
+                t.status === 'pending'
+            );
+            for (const dep of dependentTasks) {
+                const allMet = (dep.start_conditions || []).every(condId => {
+                    if (condId === selectedTask.id) return true; // just completed
+                    const condTask = tasks.find(t => t.id === condId);
+                    return condTask?.status === 'completed';
+                });
+                if (allMet) {
+                    await supabase.from('tasks').update({
+                        status: 'in_progress',
+                        updated_at: new Date().toISOString(),
+                    }).eq('id', dep.id);
+                    // System comment
+                    const ownerName = dep.assigned_user?.name || (zh ? '未指定' : 'Unassigned');
+                    const conditionTitles = (dep.start_conditions || []).map(cid => {
+                        const ct = tasks.find(t => t.id === cid);
+                        return ct?.title || cid.slice(0, 8);
+                    });
+                    await supabase.from('task_comments').insert({
+                        task_id: dep.id,
+                        content: zh
+                            ? `所有前置條件已完成，任務自動設為「進行中」。（通知：${ownerName}）`
+                            : `All start conditions met — task auto-set to "In Progress". (Notify: ${ownerName})`,
+                        source: 'system',
+                    });
+                    // Send LINE notification to task owner
+                    if (dep.assigned_user?.id) {
+                        try {
+                            await supabase.functions.invoke('hr-notify', {
+                                body: {
+                                    user_id: dep.assigned_user.id,
+                                    type: 'task_auto_started',
+                                    details: {
+                                        task_title: dep.title,
+                                        completed_tasks: conditionTitles,
+                                        workflow_name: dep.workflow_instance?.name || null,
+                                    },
+                                },
+                            });
+                        } catch (e) { console.warn('Task start notification failed (non-critical):', e); }
+                    }
+                }
             }
         }
         setIsDirty(false);
@@ -477,7 +531,7 @@ export function Tasks() {
 
             <div className="page-body" style={{ display: 'flex', gap: '20px' }}>
                 {/* Left: Content Area */}
-                <div style={{ flex: (selectedTask || showAI) ? '0 0 55%' : '1' }}>
+                <div style={{ flex: showAI ? '0 0 55%' : '1' }}>
                     {activeTab === 'tasks' && (
                         <>
                             {/* Buckets */}
@@ -679,43 +733,44 @@ export function Tasks() {
                     </div>
                 )}
 
-                {/* Right Panel: Task Detail */}
-                {selectedTask && !showAI && (
-                    <TaskDetailPanel
-                        selectedTask={selectedTask}
-                        localEdits={localEdits}
-                        isDirty={isDirty}
-                        patchEdit={patchEdit}
-                        users={users}
-                        stores={stores}
-                        workflowInstances={workflowInstances}
-                        displayBuckets={displayBuckets}
-                        tasks={tasks}
-                        comments={comments}
-                        loadingComments={loadingComments}
-                        newComment={newComment}
-                        setNewComment={setNewComment}
-                        addComment={addComment}
-                        linkedChecklists={linkedChecklists}
-                        allChecklists={allChecklists}
-                        showLinkChecklist={showLinkChecklist}
-                        setShowLinkChecklist={setShowLinkChecklist}
-                        linkChecklist={linkChecklist}
-                        unlinkChecklist={unlinkChecklist}
-                        attachments={attachments}
-                        loadAttachments={loadAttachments}
-                        orgId={orgId}
-                        currentUserId={currentUser?.id ?? null}
-                        statusLabel={statusLabel}
-                        priorityLabel={priorityLabel}
-                        closePanel={closePanel}
-                        saveTaskEdits={saveTaskEdits}
-                        reloadTasks={loadTasks}
-                        deleteTask={deleteTask}
-                        withConfirm={withConfirm}
-                    />
-                )}
             </div>
+
+            {/* Task Detail Overlay */}
+            {selectedTask && !showAI && (
+                <TaskDetailPanel
+                    selectedTask={selectedTask}
+                    localEdits={localEdits}
+                    isDirty={isDirty}
+                    patchEdit={patchEdit}
+                    users={users}
+                    stores={stores}
+                    workflowInstances={workflowInstances}
+                    displayBuckets={displayBuckets}
+                    tasks={tasks}
+                    comments={comments}
+                    loadingComments={loadingComments}
+                    newComment={newComment}
+                    setNewComment={setNewComment}
+                    addComment={addComment}
+                    linkedChecklists={linkedChecklists}
+                    allChecklists={allChecklists}
+                    showLinkChecklist={showLinkChecklist}
+                    setShowLinkChecklist={setShowLinkChecklist}
+                    linkChecklist={linkChecklist}
+                    unlinkChecklist={unlinkChecklist}
+                    attachments={attachments}
+                    loadAttachments={loadAttachments}
+                    orgId={orgId}
+                    currentUserId={currentUser?.id ?? null}
+                    statusLabel={statusLabel}
+                    priorityLabel={priorityLabel}
+                    closePanel={closePanel}
+                    saveTaskEdits={saveTaskEdits}
+                    reloadTasks={loadTasks}
+                    deleteTask={deleteTask}
+                    withConfirm={withConfirm}
+                />
+            )}
 
             {/* Import Modal */}
             {importModal && (
