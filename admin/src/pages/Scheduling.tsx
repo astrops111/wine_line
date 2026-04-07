@@ -691,6 +691,7 @@ export function Scheduling() {
           zh={zh} stores={stores} selectedStore={selectedStore}
           shiftTemplates={shiftTemplates} dayNames={dayNames}
           onSetStores={setStores} onSetShiftTemplates={setShiftTemplates}
+          allSkills={employeeSkills}
         />
       ) : tab === 'preferences' ? (
         <PreferencesTab

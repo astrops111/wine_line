@@ -30,6 +30,8 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
     const [selected, setSelected] = useState<Employee | null>(null);
     const [showCreate, setShowCreate] = useState(false);
     const [filter, setFilter] = useState<'all' | 'full_time' | 'part_time'>('all');
+    const [storeFilter, setStoreFilter] = useState<string[]>([]);  // empty = all
+    const [showStoreDropdown, setShowStoreDropdown] = useState(false);
 
     // Detail panel data
     const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
@@ -407,8 +409,20 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
         }
     }, [selected?.id]);
 
+    // Close overlay on Escape
+    useEffect(() => {
+        if (!selected) return;
+        const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setSelected(null); };
+        window.addEventListener('keydown', handler);
+        return () => window.removeEventListener('keydown', handler);
+    }, [selected]);
+
     // ── Derived data ──
-    const filteredEmployees = filter === 'all' ? employees : employees.filter(e => e.employee_type === filter);
+    const filteredEmployees = employees.filter(e => {
+        if (filter !== 'all' && e.employee_type !== filter) return false;
+        if (storeFilter.length > 0 && !e.store_ids.some(sid => storeFilter.includes(sid))) return false;
+        return true;
+    });
 
     // ── Render ──
     return (
@@ -445,15 +459,93 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                 </div>
             </div>
 
-            {/* Employee type filter (only in employees tab) */}
+            {/* Employee filters (only in employees tab) */}
             {mainTab === 'employees' && (
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '16px' }}>
-                {(['all', 'full_time', 'part_time'] as const).map(f => (
-                    <button key={f} className={`tab-item ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}
-                        style={{ fontSize: '12px', padding: '4px 12px' }}>
-                        {f === 'all' ? (zh ? '全部' : 'All') : typeLabel[f]} ({f === 'all' ? employees.length : employees.filter(e => e.employee_type === f).length})
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* Type filter */}
+                <div style={{ display: 'flex', gap: '6px' }}>
+                    {(['all', 'full_time', 'part_time'] as const).map(f => (
+                        <button key={f} className={`tab-item ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}
+                            style={{ fontSize: '12px', padding: '4px 12px' }}>
+                            {f === 'all' ? (zh ? '全部' : 'All') : typeLabel[f]} ({f === 'all' ? employees.length : employees.filter(e => e.employee_type === f).length})
+                        </button>
+                    ))}
+                </div>
+
+                {/* Store multi-select filter */}
+                <div style={{ position: 'relative' }}>
+                    <button className="btn btn-sm" onClick={() => setShowStoreDropdown(!showStoreDropdown)}
+                        style={{
+                            fontSize: '12px', padding: '4px 12px',
+                            background: storeFilter.length > 0 ? 'var(--accent-primary)' : 'var(--bg-secondary)',
+                            color: storeFilter.length > 0 ? '#fff' : 'var(--text-primary)',
+                            border: '1px solid var(--outline-variant)',
+                        }}>
+                        🏪 {zh ? '門市' : 'Store'}
+                        {storeFilter.length > 0 && ` (${storeFilter.length})`}
+                        <span style={{ marginLeft: '4px', fontSize: '10px' }}>▼</span>
                     </button>
-                ))}
+                    {showStoreDropdown && (
+                        <>
+                            <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setShowStoreDropdown(false)} />
+                            <div style={{
+                                position: 'absolute', top: '100%', left: 0, marginTop: '4px', zIndex: 100,
+                                background: 'var(--bg-primary)', border: '1px solid var(--outline-variant)',
+                                borderRadius: 'var(--radius-md)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                                minWidth: '200px', maxHeight: '280px', overflowY: 'auto', padding: '6px 0',
+                            }}>
+                                {/* Select all / clear */}
+                                <button style={{
+                                    display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+                                    padding: '6px 14px', border: 'none', background: 'none', cursor: 'pointer',
+                                    fontSize: '12px', fontWeight: 600, color: 'var(--accent-primary)',
+                                    borderBottom: '1px solid var(--outline-variant)',
+                                }} onClick={() => {
+                                    if (storeFilter.length === stores.length) setStoreFilter([]);
+                                    else setStoreFilter(stores.map(s => s.id));
+                                }}>
+                                    <input type="checkbox" readOnly
+                                        checked={storeFilter.length === stores.length && stores.length > 0}
+                                        ref={el => { if (el) el.indeterminate = storeFilter.length > 0 && storeFilter.length < stores.length; }}
+                                        style={{ accentColor: 'var(--accent-primary)', pointerEvents: 'none' }} />
+                                    {storeFilter.length === stores.length ? (zh ? '取消全選' : 'Deselect All') : (zh ? '全選' : 'Select All')}
+                                </button>
+                                {stores.map(s => {
+                                    const checked = storeFilter.includes(s.id);
+                                    return (
+                                        <button key={s.id} style={{
+                                            display: 'flex', alignItems: 'center', gap: '8px', width: '100%',
+                                            padding: '6px 14px', border: 'none', background: checked ? 'var(--accent-primary-dim)' : 'none',
+                                            cursor: 'pointer', fontSize: '12px', color: 'var(--text-primary)', textAlign: 'left',
+                                        }} onClick={() => {
+                                            setStoreFilter(prev => checked ? prev.filter(id => id !== s.id) : [...prev, s.id]);
+                                        }}>
+                                            <input type="checkbox" readOnly checked={checked}
+                                                style={{ accentColor: 'var(--accent-primary)', pointerEvents: 'none' }} />
+                                            {s.name}
+                                        </button>
+                                    );
+                                })}
+                                {storeFilter.length > 0 && (
+                                    <button style={{
+                                        width: '100%', padding: '6px 14px', border: 'none', background: 'none',
+                                        cursor: 'pointer', fontSize: '11px', color: 'var(--text-muted)',
+                                        borderTop: '1px solid var(--outline-variant)', marginTop: '2px',
+                                    }} onClick={() => { setStoreFilter([]); setShowStoreDropdown(false); }}>
+                                        ✕ {zh ? '清除篩選' : 'Clear filter'}
+                                    </button>
+                                )}
+                            </div>
+                        </>
+                    )}
+                </div>
+
+                {/* Active filter count */}
+                {storeFilter.length > 0 && (
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                        {zh ? `顯示 ${filteredEmployees.length} 筆` : `Showing ${filteredEmployees.length}`}
+                    </span>
+                )}
             </div>
             )}
 
@@ -470,15 +562,34 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
             )}
 
             {loading ? <p className="loading-pulse">{t('common.loading')}</p> : (
-                <div style={{ display: 'flex', gap: '20px' }}>
-                    <EmployeeListGrid
-                        employees={filteredEmployees}
-                        allEmployees={employees}
-                        selected={selected}
-                        onSelect={setSelected}
-                    />
+                <EmployeeListGrid
+                    employees={filteredEmployees}
+                    allEmployees={employees}
+                    selected={selected}
+                    onSelect={setSelected}
+                />
+            )}
 
-                    {selected && (
+            {/* Employee detail overlay */}
+            {selected && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 200,
+                    display: 'flex', justifyContent: 'center', alignItems: 'flex-start',
+                }}>
+                    {/* Backdrop */}
+                    <div style={{
+                        position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)',
+                        backdropFilter: 'blur(2px)',
+                    }} onClick={() => setSelected(null)} />
+                    {/* Panel */}
+                    <div className="fade-in" style={{
+                        position: 'relative', zIndex: 1,
+                        width: '90%', maxWidth: '720px', maxHeight: '90vh',
+                        overflowY: 'auto', marginTop: '3vh',
+                        background: 'var(--bg-primary)', borderRadius: 'var(--radius-lg)',
+                        boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
+                        padding: '0',
+                    }}>
                         <EmployeeDetailPanel
                             selected={selected}
                             employees={employees}
@@ -512,7 +623,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
                             generateCertificate={generateCertificate}
                             doTransfer={doTransfer}
                         />
-                    )}
+                    </div>
                 </div>
             )}
             </>)}

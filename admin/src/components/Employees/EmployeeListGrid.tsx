@@ -14,8 +14,8 @@ export function EmployeeListGrid({ employees, allEmployees, selected, onSelect }
     const typeLabel = getTypeLabel(zh);
 
     return (
-        <div style={{ flex: selected ? '0 0 50%' : '1' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
+        <div style={{ flex: '1' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
                 {employees.map(emp => (
                     <div key={emp.id} className="card" role="button" tabIndex={0} style={{
                         cursor: 'pointer', padding: '16px',

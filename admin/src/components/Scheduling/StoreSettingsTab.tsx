@@ -10,10 +10,14 @@ export interface StoreSettingsTabProps {
   dayNames: string[];
   onSetStores: (updater: (prev: Store[]) => Store[]) => void;
   onSetShiftTemplates: (templates: ShiftTemplate[]) => void;
+  allSkills?: Record<string, string[]>;
 }
 
 export function StoreSettingsTab(props: StoreSettingsTabProps) {
-  const { zh, stores, selectedStore, shiftTemplates, dayNames, onSetStores, onSetShiftTemplates } = props;
+  const { zh, stores, selectedStore, shiftTemplates, dayNames, onSetStores, onSetShiftTemplates, allSkills } = props;
+
+  // Derive unique skill names from all employees
+  const uniqueSkills = [...new Set(Object.values(allSkills || {}).flat())].sort();
 
   const [newShift, setNewShift] = useState({ name: '', start_time: '09:00', end_time: '17:00', break_minutes: '60', color: '#6366f1' });
   const [newNeed, setNewNeed] = useState<Record<string, { skill: string; count: string }>>({});
@@ -112,20 +116,14 @@ export function StoreSettingsTab(props: StoreSettingsTabProps) {
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <input className="input-field" style={{ flex: 1, fontSize: '12px', maxWidth: '140px' }}
+                  <select className="input-field" style={{ flex: 1, fontSize: '12px', maxWidth: '160px' }}
                     value={needForm.skill}
-                    onChange={e => setNewNeed({ ...newNeed, [s.id]: { ...needForm, skill: e.target.value } })}
-                    placeholder={zh ? '技能/角色 (如: 廚房)' : 'Skill/role (e.g. kitchen)'}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        const skill = needForm.skill.trim();
-                        const count = parseInt(needForm.count) || 1;
-                        if (!skill) return;
-                        const updated = [...needs, { skill, count }];
-                        updateStaffingNeeds(s.id, updated);
-                        setNewNeed({ ...newNeed, [s.id]: { skill: '', count: '1' } });
-                      }
-                    }} />
+                    onChange={e => setNewNeed({ ...newNeed, [s.id]: { ...needForm, skill: e.target.value } })}>
+                    <option value="">{zh ? '— 選擇技能 —' : '— Select skill —'}</option>
+                    {uniqueSkills.filter(sk => !needs.some(n => n.skill === sk)).map(sk => (
+                      <option key={sk} value={sk}>{sk}</option>
+                    ))}
+                  </select>
                   <input className="input-field" type="number" min="1" style={{ width: '55px', fontSize: '12px', textAlign: 'center' }}
                     value={needForm.count}
                     onChange={e => setNewNeed({ ...newNeed, [s.id]: { ...needForm, count: e.target.value } })} />
