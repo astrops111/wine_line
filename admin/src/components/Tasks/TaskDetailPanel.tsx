@@ -211,7 +211,7 @@ export function TaskDetailPanel({
                 <div style={{ overflowY: 'auto', flex: 1 }}>
 
                 {/* Editable Fields */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                <div className="grid-2col" style={{ marginBottom: '16px' }}>
                     <div>
                         <label className="detail-label">{t('task.status')}</label>
                         <select className="select" style={{ width: '100%' }} value={localEdits?.status ?? selectedTask.status}
@@ -226,20 +226,12 @@ export function TaskDetailPanel({
                             {Object.entries(priorityLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                         </select>
                     </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
+                    <div>
                         <label className="detail-label">{t('task.assigned_to')}</label>
                         <select className="select" style={{ width: '100%' }} value={localEdits?.assigned_to ?? selectedTask.assigned_user?.id ?? ''}
                             onChange={e => patchEdit({ assigned_to: e.target.value })}>
                             <option value="">{zh ? '未指定' : 'Unassigned'}</option>
                             {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                        </select>
-                    </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                        <label className="detail-label">{zh ? '分類' : 'Bucket'}</label>
-                        <select className="select" style={{ width: '100%' }}
-                            value={localEdits?.bucket ?? getBucket(selectedTask)}
-                            onChange={e => patchEdit({ bucket: e.target.value })}>
-                            {displayBuckets.map(b => <option key={b} value={b}>{b}</option>)}
                         </select>
                     </div>
                     <div>
@@ -256,6 +248,14 @@ export function TaskDetailPanel({
                             onChange={e => patchEdit({ workflow_instance_id: e.target.value })}>
                             <option value="">{zh ? '無' : 'None'}</option>
                             {workflowInstances.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="detail-label">{zh ? '分類' : 'Bucket'}</label>
+                        <select className="select" style={{ width: '100%' }}
+                            value={localEdits?.bucket ?? getBucket(selectedTask)}
+                            onChange={e => patchEdit({ bucket: e.target.value })}>
+                            {displayBuckets.map(b => <option key={b} value={b}>{b}</option>)}
                         </select>
                     </div>
                     <div>
