@@ -139,7 +139,7 @@ export function Scheduling() {
 
     Promise.all([
       supabase.from('shift_templates').select('*').eq('store_id', selectedStore).order('start_time'),
-      supabase.from('users').select('id, name, position, employee_type, max_hours_per_week, store_id').eq('store_id', selectedStore).eq('status', 'active'),
+      supabase.from('users').select('id, name, position, employee_type, max_hours_per_week, store_id, can_open, can_close').eq('store_id', selectedStore).eq('status', 'active'),
       supabase.from('schedules').select('*').eq('store_id', selectedStore).eq('week_start', weekStart).single(),
       supabase.from('employee_availability').select('*').eq('store_id', selectedStore),
       supabase.from('leave_requests').select('*').eq('status', 'approved').lte('start_date', weekEndStr).gte('end_date', weekStart)
@@ -151,7 +151,7 @@ export function Scheduling() {
       const crossIds = (crossLinks || []).map(l => l.user_id).filter(id => !primaryIds.has(id));
       let allEmps = primaryEmps;
       if (crossIds.length > 0) {
-        const { data: crossEmps } = await supabase.from('users').select('id, name, position, employee_type, max_hours_per_week, store_id')
+        const { data: crossEmps } = await supabase.from('users').select('id, name, position, employee_type, max_hours_per_week, store_id, can_open, can_close')
           .in('id', crossIds).eq('status', 'active');
         allEmps = [...primaryEmps, ...(crossEmps || [])];
       }

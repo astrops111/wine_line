@@ -19,6 +19,7 @@ export interface ShiftTemplate {
   break_minutes: number;
   color: string;
   required_skills?: string[];
+  staffing_needs?: { skill: string; count: number }[];
 }
 
 export interface Employee {
@@ -28,6 +29,8 @@ export interface Employee {
   employee_type: string;
   max_hours_per_week: number;
   store_id: string | null;
+  can_open?: boolean;
+  can_close?: boolean;
 }
 
 export interface ShiftAssignment {

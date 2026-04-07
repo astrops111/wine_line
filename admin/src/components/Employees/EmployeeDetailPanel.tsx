@@ -214,6 +214,34 @@ export function EmployeeDetailPanel({
                 </div>
             </div>
 
+            {/* Open / Close availability */}
+            <div className="card" style={{ marginTop: '14px' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '10px' }}>
+                    🔑 {zh ? '開 / 關店' : 'Open / Close Store'}
+                </h4>
+                <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={!!selected.can_open}
+                            style={{ accentColor: 'var(--accent-primary)' }}
+                            onChange={async (e) => {
+                                await updateField(selected.id, 'can_open', e.target.checked);
+                            }} />
+                        {zh ? '可開店' : 'Can Open'}
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                        <input type="checkbox" checked={!!selected.can_close}
+                            style={{ accentColor: 'var(--accent-primary)' }}
+                            onChange={async (e) => {
+                                await updateField(selected.id, 'can_close', e.target.checked);
+                            }} />
+                        {zh ? '可關店' : 'Can Close'}
+                    </label>
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '6px' }}>
+                    {zh ? 'AI 排班會優先安排有開/關店能力的員工於營業起始或結束時段' : 'AI scheduler will prefer assigning open/close-capable employees to opening/closing shifts'}
+                </div>
+            </div>
+
             {/* OE-2/3: Onboarding/Offboarding Checklists */}
             {onboardingTasks.length > 0 && (() => {
                 const onTasks = onboardingTasks.filter(t => t.type === 'onboarding');

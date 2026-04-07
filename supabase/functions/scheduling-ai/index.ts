@@ -12,10 +12,12 @@ const corsHeaders = {
 interface Employee {
   id: string; name: string; position: string | null;
   employee_type: string; max_hours_per_week: number;
+  can_open?: boolean; can_close?: boolean;
 }
 interface ShiftTemplate {
   id: string; name: string; start_time: string; end_time: string;
   break_minutes: number; color: string; required_skills?: string[];
+  staffing_needs?: { skill: string; count: number }[];
 }
 interface Availability { user_id: string; day_of_week: number; availability: string; }
 interface LeaveRequest { user_id: string; start_date: string; end_date: string; }
@@ -360,12 +362,13 @@ function buildSystemPrompt(
     demandForecasts?: DemandForecast[];
     laborBudget?: number;
     hourlyRate?: number;
+    openCloseCapabilities?: Record<string, { can_open: boolean; can_close: boolean }>;
   }
 ): string {
   const {
     userInstructions, historicalPatterns, workingHourType = 'standard',
     dailyNormalCap = 8, employeeSkills, otContext, demandForecasts,
-    laborBudget, hourlyRate = 196,
+    laborBudget, hourlyRate = 196, openCloseCapabilities,
   } = promptOptions;
 
   // Format leave info
@@ -391,11 +394,14 @@ function buildSystemPrompt(
     return `${e.name} (${e.employee_type}, max ${e.max_hours_per_week}h): Mon${prefs}`;
   }).join('\n');
 
-  // Format templates (include required skills)
+  // Format templates (include required skills and staffing needs)
   const tmplInfo = templates.map(t => {
     const work = calcWorkHours(t.start_time, t.end_time, t.break_minutes);
     const skills = t.required_skills?.length ? ` [requires: ${t.required_skills.join(', ')}]` : '';
-    return `${t.name} (id:${t.id}): ${t.start_time}-${t.end_time} (break ${t.break_minutes}min, work ${work.toFixed(1)}h)${skills}`;
+    const needs = t.staffing_needs?.length
+      ? ` [staffing: ${t.staffing_needs.map(n => `${n.skill}×${n.count}`).join(', ')}]`
+      : '';
+    return `${t.name} (id:${t.id}): ${t.start_time}-${t.end_time} (break ${t.break_minutes}min, work ${work.toFixed(1)}h)${skills}${needs}`;
   }).join('\n');
 
   // Format previous week
@@ -413,6 +419,22 @@ function buildSystemPrompt(
         return `${emp?.name || uid}: ${skills.join(', ')}`;
       }).join('\n')
     : 'No skill data available.';
+
+  // Format open/close capabilities
+  const openCloseInfo = openCloseCapabilities && Object.keys(openCloseCapabilities).length > 0
+    ? (() => {
+        const canOpen = Object.entries(openCloseCapabilities).filter(([, c]) => c.can_open).map(([uid]) => employees.find(e => e.id === uid)?.name || uid);
+        const canClose = Object.entries(openCloseCapabilities).filter(([, c]) => c.can_close).map(([uid]) => employees.find(e => e.id === uid)?.name || uid);
+        return `Can OPEN store: ${canOpen.length > 0 ? canOpen.join(', ') : 'None designated'}\nCan CLOSE store: ${canClose.length > 0 ? canClose.join(', ') : 'None designated'}`;
+      })()
+    : 'No open/close designations set.';
+
+  // Format staffing needs summary
+  const staffingNeedsInfo = templates.some(t => t.staffing_needs?.length)
+    ? templates.filter(t => t.staffing_needs?.length).map(t =>
+        `${t.name}: ${t.staffing_needs!.map(n => `${n.skill} ×${n.count}`).join(', ')}`
+      ).join('\n')
+    : 'No specific staffing requirements set.';
 
   // Format monthly OT context
   const otInfo = otCtx
@@ -481,6 +503,15 @@ H13. SKILL/CERTIFICATION MATCH:
     - If a shift template has required_skills, only assign employees who have ALL required skills
     - If no employees have the required skill, assign anyway with a note (coverage > skill match)
 
+H14. STAFFING NEEDS: Each shift template may specify staffing_needs (skill × count).
+    - For each shift on each day, assign at least the specified number of employees with each skill.
+    - Example: if morning shift needs kitchen ×2 and cashier ×1, schedule at least 2 kitchen-skilled and 1 cashier-skilled employee.
+    - If not enough skilled employees are available, assign best available and add a note.
+
+H15. OPEN/CLOSE COVERAGE: The earliest shift each day MUST include at least 1 employee who can_open.
+    The latest shift each day MUST include at least 1 employee who can_close.
+    If no designated employees are available, assign anyway with a warning note.
+
 === HOURS CALCULATION ===
 WORK HOURS = (end_time − start_time) − break_minutes
 Example: 09:00–18:00 with 60 min break = 9h − 1h = 8h WORK hours.
@@ -519,6 +550,12 @@ ${JSON.stringify(operatingHours)}
 
 === EMPLOYEE SKILLS ===
 ${skillsInfo}
+
+=== OPEN / CLOSE CAPABILITIES ===
+${openCloseInfo}
+
+=== STAFFING NEEDS PER SHIFT ===
+${staffingNeedsInfo}
 
 === MONTHLY OVERTIME CONTEXT ===
 ${otInfo}
@@ -696,6 +733,22 @@ serve(async (req) => {
       }
     }
 
+    // 1b. Open/close capabilities
+    const openCloseCapabilities: Record<string, { can_open: boolean; can_close: boolean }> = {};
+    if (store_id) {
+      const empIds = employees.map((e: Employee) => e.id);
+      const { data: userRows } = await supabase
+        .from('users')
+        .select('id, can_open, can_close')
+        .in('id', empIds)
+        .or('can_open.eq.true,can_close.eq.true');
+      if (userRows) {
+        for (const row of userRows) {
+          openCloseCapabilities[row.id] = { can_open: !!row.can_open, can_close: !!row.can_close };
+        }
+      }
+    }
+
     // 2. Monthly OT context — fetch overtime hours from earlier this month
     const otContext: { monthly: Record<string, number>; threeMonth: Record<string, number> } = {
       monthly: {}, threeMonth: {},
@@ -823,6 +876,7 @@ serve(async (req) => {
         demandForecasts: demandForecasts.length > 0 ? demandForecasts : undefined,
         laborBudget,
         hourlyRate,
+        openCloseCapabilities: Object.keys(openCloseCapabilities).length > 0 ? openCloseCapabilities : undefined,
       }
     );
 

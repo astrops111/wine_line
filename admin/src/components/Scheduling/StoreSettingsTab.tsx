@@ -16,6 +16,7 @@ export function StoreSettingsTab(props: StoreSettingsTabProps) {
   const { zh, stores, selectedStore, shiftTemplates, dayNames, onSetStores, onSetShiftTemplates } = props;
 
   const [newShift, setNewShift] = useState({ name: '', start_time: '09:00', end_time: '17:00', break_minutes: '60', color: '#6366f1' });
+  const [newNeed, setNewNeed] = useState<Record<string, { skill: string; count: string }>>({});
 
   const addShiftTemplate = async () => {
     if (!newShift.name) return;
@@ -28,6 +29,11 @@ export function StoreSettingsTab(props: StoreSettingsTabProps) {
     onSetShiftTemplates(data || []);
   };
 
+  const updateStaffingNeeds = async (templateId: string, needs: { skill: string; count: number }[]) => {
+    await supabase.from('shift_templates').update({ staffing_needs: needs }).eq('id', templateId);
+    onSetShiftTemplates(shiftTemplates.map(t => t.id === templateId ? { ...t, staffing_needs: needs } : t));
+  };
+
   return (
     <div style={{ display: 'grid', gap: '20px' }}>
       {/* Shift templates */}
@@ -35,43 +41,108 @@ export function StoreSettingsTab(props: StoreSettingsTabProps) {
         <h3 style={{ fontSize: '15px', fontWeight: 600, marginBottom: '14px' }}>
           🕐 {zh ? '班別設定' : 'Shift Templates'}
         </h3>
-        {shiftTemplates.map(s => (
-          <div key={s.id} style={{
-            display: 'flex', alignItems: 'center', gap: '12px', padding: '8px 12px',
-            background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', marginBottom: '6px', flexWrap: 'wrap',
-          }}>
-            <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: s.color, flexShrink: 0 }} />
-            <span style={{ fontWeight: 600, minWidth: '60px' }}>{s.name}</span>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{s.start_time?.slice(0, 5)} – {s.end_time?.slice(0, 5)}</span>
-            <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{zh ? '休息' : 'Break'}: {s.break_minutes}{zh ? '分' : 'min'}</span>
-            {/* GAP-12: Required skills tags */}
-            {(s.required_skills || []).map(sk => (
-              <span key={sk} style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '8px', background: '#6366f1', color: '#fff', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
-                {sk}
-                <button style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 0, fontSize: '10px' }}
-                  onClick={async () => {
-                    const updated = (s.required_skills || []).filter(x => x !== sk);
-                    await supabase.from('shift_templates').update({ required_skills: updated }).eq('id', s.id);
-                    onSetShiftTemplates(shiftTemplates.map(t => t.id === s.id ? { ...t, required_skills: updated } : t));
-                  }}>✕</button>
-              </span>
-            ))}
-            <input className="input-field" style={{ width: '90px', fontSize: '10px', padding: '2px 6px' }}
-              placeholder={zh ? '+技能' : '+skill'}
-              onKeyDown={async (e) => {
-                if (e.key === 'Enter') {
-                  const val = (e.target as HTMLInputElement).value.trim();
-                  if (!val) return;
-                  const updated = [...(s.required_skills || []), val];
-                  await supabase.from('shift_templates').update({ required_skills: updated }).eq('id', s.id);
-                  onSetShiftTemplates(shiftTemplates.map(t => t.id === s.id ? { ...t, required_skills: updated } : t));
-                  (e.target as HTMLInputElement).value = '';
-                }
-              }} />
-            <button className="btn btn-sm" style={{ marginLeft: 'auto', padding: '2px 6px', color: 'var(--accent-red)' }}
-              onClick={async () => { await supabase.from('shift_templates').delete().eq('id', s.id); const { data } = await supabase.from('shift_templates').select('*').eq('store_id', selectedStore).order('start_time'); onSetShiftTemplates(data || []); }}>✕</button>
-          </div>
-        ))}
+        {shiftTemplates.map(s => {
+          const needs = s.staffing_needs || [];
+          const needForm = newNeed[s.id] || { skill: '', count: '1' };
+          return (
+            <div key={s.id} style={{
+              padding: '10px 12px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)',
+              marginBottom: '8px', border: '1px solid var(--outline-variant)',
+            }}>
+              {/* Row 1: basic shift info */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: s.color, flexShrink: 0 }} />
+                <span style={{ fontWeight: 600, minWidth: '60px' }}>{s.name}</span>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>{s.start_time?.slice(0, 5)} – {s.end_time?.slice(0, 5)}</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>{zh ? '休息' : 'Break'}: {s.break_minutes}{zh ? '分' : 'min'}</span>
+                {/* Required skills tags */}
+                {(s.required_skills || []).map(sk => (
+                  <span key={sk} style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '8px', background: '#6366f1', color: '#fff', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                    {sk}
+                    <button style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 0, fontSize: '10px' }}
+                      onClick={async () => {
+                        const updated = (s.required_skills || []).filter(x => x !== sk);
+                        await supabase.from('shift_templates').update({ required_skills: updated }).eq('id', s.id);
+                        onSetShiftTemplates(shiftTemplates.map(t => t.id === s.id ? { ...t, required_skills: updated } : t));
+                      }}>✕</button>
+                  </span>
+                ))}
+                <input className="input-field" style={{ width: '90px', fontSize: '10px', padding: '2px 6px' }}
+                  placeholder={zh ? '+技能' : '+skill'}
+                  onKeyDown={async (e) => {
+                    if (e.key === 'Enter') {
+                      const val = (e.target as HTMLInputElement).value.trim();
+                      if (!val) return;
+                      const updated = [...(s.required_skills || []), val];
+                      await supabase.from('shift_templates').update({ required_skills: updated }).eq('id', s.id);
+                      onSetShiftTemplates(shiftTemplates.map(t => t.id === s.id ? { ...t, required_skills: updated } : t));
+                      (e.target as HTMLInputElement).value = '';
+                    }
+                  }} />
+                <button className="btn btn-sm" style={{ marginLeft: 'auto', padding: '2px 6px', color: 'var(--accent-red)' }}
+                  onClick={async () => { await supabase.from('shift_templates').delete().eq('id', s.id); const { data } = await supabase.from('shift_templates').select('*').eq('store_id', selectedStore).order('start_time'); onSetShiftTemplates(data || []); }}>✕</button>
+              </div>
+
+              {/* Row 2: Staffing needs (skill + count) */}
+              <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed var(--outline-variant)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                    👥 {zh ? '人力需求' : 'Staffing Needs'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '6px' }}>
+                  {needs.map((n, i) => (
+                    <span key={i} style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '4px',
+                      background: '#3b82f6', color: '#fff', padding: '3px 10px',
+                      borderRadius: '12px', fontSize: '12px', fontWeight: 500,
+                    }}>
+                      {n.skill} ×{n.count}
+                      <button style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 0, fontSize: '12px' }}
+                        onClick={() => {
+                          const updated = needs.filter((_, idx) => idx !== i);
+                          updateStaffingNeeds(s.id, updated);
+                        }}>✕</button>
+                    </span>
+                  ))}
+                  {needs.length === 0 && (
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      {zh ? '尚未設定（例如：廚房 ×2, 外場 ×1）' : 'Not set (e.g. kitchen ×2, waiter ×1)'}
+                    </span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <input className="input-field" style={{ flex: 1, fontSize: '12px', maxWidth: '140px' }}
+                    value={needForm.skill}
+                    onChange={e => setNewNeed({ ...newNeed, [s.id]: { ...needForm, skill: e.target.value } })}
+                    placeholder={zh ? '技能/角色 (如: 廚房)' : 'Skill/role (e.g. kitchen)'}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        const skill = needForm.skill.trim();
+                        const count = parseInt(needForm.count) || 1;
+                        if (!skill) return;
+                        const updated = [...needs, { skill, count }];
+                        updateStaffingNeeds(s.id, updated);
+                        setNewNeed({ ...newNeed, [s.id]: { skill: '', count: '1' } });
+                      }
+                    }} />
+                  <input className="input-field" type="number" min="1" style={{ width: '55px', fontSize: '12px', textAlign: 'center' }}
+                    value={needForm.count}
+                    onChange={e => setNewNeed({ ...newNeed, [s.id]: { ...needForm, count: e.target.value } })} />
+                  <button className="btn btn-sm btn-primary" style={{ fontSize: '11px', padding: '3px 8px' }}
+                    onClick={() => {
+                      const skill = needForm.skill.trim();
+                      const count = parseInt(needForm.count) || 1;
+                      if (!skill) return;
+                      const updated = [...needs, { skill, count }];
+                      updateStaffingNeeds(s.id, updated);
+                      setNewNeed({ ...newNeed, [s.id]: { skill: '', count: '1' } });
+                    }}>+</button>
+                </div>
+              </div>
+            </div>
+          );
+        })}
         <div style={{ display: 'flex', gap: '8px', marginTop: '12px', flexWrap: 'wrap' }}>
           <input className="input-field" value={newShift.name} onChange={e => setNewShift({ ...newShift, name: e.target.value })} placeholder={zh ? '班別名稱' : 'Shift name'} style={{ width: '100px' }} />
           <input className="input-field" type="time" value={newShift.start_time} onChange={e => setNewShift({ ...newShift, start_time: e.target.value })} style={{ width: '100px' }} />

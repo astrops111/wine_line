@@ -36,6 +36,9 @@ export interface Employee {
     labor_pension_enrolled: boolean; labor_pension_rate: number | null;
     // 特殊身分 Special Employment Identity
     special_identities: string[];
+    // Shift capabilities
+    can_open: boolean;
+    can_close: boolean;
 }
 
 export interface EmployeeDependent {
