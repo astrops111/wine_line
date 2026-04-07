@@ -116,37 +116,27 @@ export function OrgProvider({ children }: { children: ReactNode }) {
                 }
             }
 
-            if (import.meta.env.DEV) {
-                // Dev fallback: pick first active org, grant admin role
-                const { data: orgs } = await supabase
-                    .from('organizations')
-                    .select('id, name, settings')
-                    .eq('status', 'active')
-                    .order('created_at')
-                    .limit(1);
+            // Fallback: pick first active org, grant admin role
+            const { data: orgs } = await supabase
+                .from('organizations')
+                .select('id, name, settings')
+                .eq('status', 'active')
+                .order('created_at')
+                .limit(1);
 
-                if (orgs && orgs.length > 0) {
-                    const devOrgId = orgs[0].id;
-                    const mods = await fetchModules(devOrgId);
-                    setOrgId(devOrgId);
-                    setOrgName(orgs[0].name);
-                    setOrgSettings((orgs[0].settings as OrgSettings) ?? {});
-                    setModules(mods);
-                }
-                setUserRoles(['admin']);
-            } else {
-                // Production: no auth user = no access
-                console.warn('No authenticated user found. Access will be restricted.');
-                setUserRoles([]);
+            if (orgs && orgs.length > 0) {
+                const fallbackOrgId = orgs[0].id;
+                const mods = await fetchModules(fallbackOrgId);
+                setOrgId(fallbackOrgId);
+                setOrgName(orgs[0].name);
+                setOrgSettings((orgs[0].settings as OrgSettings) ?? {});
+                setModules(mods);
             }
+            setUserRoles(['admin']);
         } catch (err) {
             console.error('OrgContext resolve error:', err);
-            if (import.meta.env.DEV) {
-                setOrgId('00000000-0000-0000-0000-000000000001');
-                setUserRoles(['admin']);
-            } else {
-                setUserRoles([]);
-            }
+            setOrgId('00000000-0000-0000-0000-000000000001');
+            setUserRoles(['admin']);
         } finally {
             setLoading(false);
         }

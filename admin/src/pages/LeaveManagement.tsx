@@ -70,7 +70,7 @@ export function LeaveManagement() {
                 supabase.from('stores').select('id, name').order('name'),
                 supabase
                     .from('users')
-                    .select('id, name, email, status, store_id, hire_date, employee_type, store:stores(name)')
+                    .select('id, name, email, status, store_id, hire_date, employee_type, store:stores!store_id(name)')
                     .eq('organization_id', orgId)
                     .order('name'),
             ])
@@ -100,7 +100,7 @@ export function LeaveManagement() {
         setLoadingPending(true)
         const { data } = await supabase
             .from('leave_requests')
-            .select('*, user:users(name, store_id, store:stores(name))')
+            .select('*, user:users(name, store_id, store:stores!store_id(name))')
             .eq('organization_id', orgId)
             .eq('status', 'pending')
             .order('created_at')
@@ -202,7 +202,7 @@ export function LeaveManagement() {
         setLoadingAll(true)
         const { data } = await supabase
             .from('leave_requests')
-            .select('*, user:users(name, store:stores(name))')
+            .select('*, user:users(name, store:stores!store_id(name))')
             .eq('organization_id', orgId)
             .order('created_at', { ascending: false })
         setAllRequests(data || [])
@@ -215,7 +215,7 @@ export function LeaveManagement() {
         setLoadingBalances(true)
         let q = supabase
             .from('users')
-            .select('id, name, email, status, store_id, hire_date, employee_type, store:stores(name)')
+            .select('id, name, email, status, store_id, hire_date, employee_type, store:stores!store_id(name)')
             .eq('organization_id', orgId)
             .eq('status', 'active')
             .order('name')

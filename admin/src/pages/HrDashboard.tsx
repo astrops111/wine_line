@@ -76,7 +76,7 @@ export function HrDashboard() {
             .from('time_records')
             .select(`
                 user_id, total_hours, is_late,
-                user:users!inner(name, employee_type, max_hours_per_week, store:stores(name))
+                user:users!inner(name, employee_type, max_hours_per_week, store:stores!store_id(name))
             `)
             .gte('clock_in', `${startDate}T00:00:00+08:00`)
             .lte('clock_in', `${endDate}T23:59:59+08:00`)

@@ -84,7 +84,7 @@ export function OrgManagement() {
             supabase.from('org_payments').select('*').eq('organization_id', oid).order('created_at', { ascending: false }),
             supabase.from('stores').select('*, company:companies(name)').eq('organization_id', oid).order('name'),
             supabase.from('companies').select('*').eq('organization_id', oid).order('name'),
-            supabase.from('users').select('*, store:stores(name), company:companies(name)').eq('organization_id', oid).order('name'),
+            supabase.from('users').select('*, store:stores!store_id(name), company:companies!company_id(name)').eq('organization_id', oid).order('name'),
         ]);
         setSubscriptions(subRes.data || []);
         setPayments(payRes.data || []);

@@ -75,7 +75,7 @@ export function OvertimeRequests() {
     setPendingLoading(true)
     const { data } = await supabase
       .from('overtime_requests')
-      .select('*, user:users(name, store:stores(name))')
+      .select('*, user:users(name, store:stores!store_id(name))')
       .eq('organization_id', orgId)
       .eq('status', 'pending')
       .order('created_at')
@@ -123,7 +123,7 @@ export function OvertimeRequests() {
     setAllLoading(true)
     const { data } = await supabase
       .from('overtime_requests')
-      .select('*, user:users(name, store:stores(name))')
+      .select('*, user:users(name, store:stores!store_id(name))')
       .eq('organization_id', orgId)
       .order('request_date', { ascending: false })
     setAllRequests((data as OvertimeRequest[]) || [])
