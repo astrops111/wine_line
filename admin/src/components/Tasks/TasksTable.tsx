@@ -55,9 +55,7 @@ export function TasksTable({
                                 <th style={{ width: '90px' }}>{zh ? '計畫完成日' : 'Plan End'}</th>
                                 <th style={{ width: '90px' }}>{zh ? '實際完成日' : 'Completed'}</th>
                                 <th style={{ width: '88px' }}>{zh ? '狀態' : 'Status'}</th>
-                                <th style={{ width: '100px' }}>{zh ? '備註1' : 'Note 1'}</th>
-                                <th style={{ width: '100px' }}>{zh ? '備註2' : 'Note 2'}</th>
-                                <th style={{ width: '100px' }}>{zh ? '備註3' : 'Note 3'}</th>
+                                <th style={{ width: '160px' }}>{zh ? '備註' : 'Notes'}</th>
                                 <th style={{ width: '90px' }}>{zh ? '更新時間' : 'Updated'}</th>
                                 <th style={{ width: '120px' }}>Trigger</th>
                             </tr>
@@ -137,9 +135,7 @@ export function TasksTable({
                                             {statusLabel[task.status]}
                                         </span>
                                     </td>
-                                    <NoteCell value={task.note1} />
-                                    <NoteCell value={task.note2} />
-                                    <NoteCell value={task.note3} />
+                                    <NoteCell value={task.notes} />
                                     <td style={{ color: 'var(--text-muted)', fontSize: '10px' }}>
                                         {task.updated_at ? new Date(task.updated_at).toLocaleDateString('zh-TW') : <span style={{ opacity: 0.4 }}>—</span>}
                                     </td>

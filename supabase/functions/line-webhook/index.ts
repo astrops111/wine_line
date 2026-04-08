@@ -158,7 +158,7 @@ serve(async (req) => {
         if (task) {
           const timestamp = new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei", hour12: false });
           const newNotes = `${task.notes ? task.notes + "\n" : ""}[${timestamp}] ${rawText}`;
-          const { error: noteErr } = await db.from("tasks").update({ notes: newNotes }).eq("id", task.id);
+          const { error: noteErr } = await db.from("tasks").update({ notes: newNotes, updated_at: new Date().toISOString() }).eq("id", task.id);
           const responseMsg = noteErr
             ? text(`❌ 備註儲存失敗：${noteErr.message}`)
             : flexSuccess("📝", "備註已儲存", `「${task.title}」\n${rawText}`);

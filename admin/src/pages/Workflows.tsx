@@ -37,6 +37,12 @@ export function Workflows() {
     const [instanceTasksLoading, setInstanceTasksLoading] = useState(false);
     const [taskEdits, setTaskEdits] = useState<Record<string, TaskEdit>>({});
     const [instanceSearch, setInstanceSearch] = useState('');
+    // Global filters
+    const [dateRange, setDateRange] = useState<'all' | 'today' | '7d' | '30d' | 'month' | 'custom'>('all');
+    const [customFrom, setCustomFrom] = useState('');
+    const [customTo, setCustomTo] = useState('');
+    const [filterStoreId, setFilterStoreId] = useState('');
+    const [filterEmployeeId, setFilterEmployeeId] = useState('');
     // Confirmation flow
     const [taskConfirmations, setTaskConfirmations] = useState<Record<string, TaskConfirmation[]>>({});
     // Archive detail state — kept for future archive detail view
@@ -326,20 +332,53 @@ export function Workflows() {
         setTab('active');
     }
 
+    // --- Date range helper ---
+    function getDateRangeBounds(): { from: Date | null; to: Date | null } {
+        const now = new Date();
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        switch (dateRange) {
+            case 'today': return { from: startOfDay, to: null };
+            case '7d': return { from: new Date(startOfDay.getTime() - 6 * 86400000), to: null };
+            case '30d': return { from: new Date(startOfDay.getTime() - 29 * 86400000), to: null };
+            case 'month': return { from: new Date(now.getFullYear(), now.getMonth(), 1), to: null };
+            case 'custom': return {
+                from: customFrom ? new Date(customFrom) : null,
+                to: customTo ? new Date(customTo + 'T23:59:59') : null,
+            };
+            default: return { from: null, to: null };
+        }
+    }
+
+    // --- Global filter ---
+    function applyGlobalFilters(list: WorkflowInstance[]): WorkflowInstance[] {
+        const { from, to } = getDateRangeBounds();
+        return list.filter(inst => {
+            // Date filter on started_at
+            if (from && new Date(inst.started_at) < from) return false;
+            if (to && new Date(inst.started_at) > to) return false;
+            // Store filter
+            if (filterStoreId && inst.store_id !== filterStoreId) return false;
+            // Employee filter
+            if (filterEmployeeId && inst.assigned_user_id !== filterEmployeeId) return false;
+            return true;
+        });
+    }
+
     // --- Computed values ---
     const activeInstances = instances.filter(i => i.status === 'running' || i.status === 'paused');
     const archivedInstances = instances.filter(i => ['completed', 'cancelled', 'archived'].includes(i.status));
 
-    const filteredActive = activeInstances.filter(inst => {
+    const filteredActive = applyGlobalFilters(activeInstances).filter(inst => {
         if (!instanceSearch.trim()) return true;
         const q = instanceSearch.toLowerCase();
         return inst.name.toLowerCase().includes(q) || (inst.workflow?.name || '').toLowerCase().includes(q);
     });
-    const filteredArchived = archivedInstances.filter(inst => {
+    const filteredArchived = applyGlobalFilters(archivedInstances).filter(inst => {
         if (!instanceSearch.trim()) return true;
         const q = instanceSearch.toLowerCase();
         return inst.name.toLowerCase().includes(q) || (inst.workflow?.name || '').toLowerCase().includes(q);
     });
+    const hasActiveFilters = dateRange !== 'all' || !!filterStoreId || !!filterEmployeeId;
 
     return (
         <div className="fade-in">
@@ -349,6 +388,80 @@ export function Workflows() {
             </div>
 
             <div className="page-body">
+                {/* Global Filters */}
+                <div className="card" style={{ marginBottom: '16px', padding: '12px 16px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-end' }}>
+                        {/* Date Range */}
+                        <div style={{ minWidth: '140px' }}>
+                            <label className="detail-label" style={{ marginBottom: '4px', display: 'block' }}>
+                                📅 {zh ? '日期範圍' : 'Date Range'}
+                            </label>
+                            <select className="select" style={{ width: '100%', fontSize: '13px' }}
+                                value={dateRange} onChange={e => setDateRange(e.target.value as any)}>
+                                <option value="all">{zh ? '全部' : 'All'}</option>
+                                <option value="today">{zh ? '今日' : 'Today'}</option>
+                                <option value="7d">{zh ? '近 7 天' : 'Past 7 days'}</option>
+                                <option value="30d">{zh ? '近 30 天' : 'Past 30 days'}</option>
+                                <option value="month">{zh ? '本月' : 'This month'}</option>
+                                <option value="custom">{zh ? '自訂範圍' : 'Custom range'}</option>
+                            </select>
+                        </div>
+                        {dateRange === 'custom' && (
+                            <>
+                                <div>
+                                    <label className="detail-label" style={{ marginBottom: '4px', display: 'block' }}>
+                                        {zh ? '起始' : 'From'}
+                                    </label>
+                                    <input type="date" className="input-field" style={{ fontSize: '13px', width: '150px' }}
+                                        value={customFrom} onChange={e => setCustomFrom(e.target.value)} />
+                                </div>
+                                <div>
+                                    <label className="detail-label" style={{ marginBottom: '4px', display: 'block' }}>
+                                        {zh ? '結束' : 'To'}
+                                    </label>
+                                    <input type="date" className="input-field" style={{ fontSize: '13px', width: '150px' }}
+                                        value={customTo} onChange={e => setCustomTo(e.target.value)} />
+                                </div>
+                            </>
+                        )}
+                        {/* Store Filter */}
+                        <div style={{ minWidth: '150px' }}>
+                            <label className="detail-label" style={{ marginBottom: '4px', display: 'block' }}>
+                                🏪 {zh ? '門市' : 'Store'}
+                            </label>
+                            <select className="select" style={{ width: '100%', fontSize: '13px' }}
+                                value={filterStoreId} onChange={e => setFilterStoreId(e.target.value)}>
+                                <option value="">{zh ? '全部門市' : 'All stores'}</option>
+                                {stores.map(s => (
+                                    <option key={s.id} value={s.id}>
+                                        {s.name}{s.store_code ? ` (${s.store_code})` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                        {/* Employee Filter */}
+                        <div style={{ minWidth: '150px' }}>
+                            <label className="detail-label" style={{ marginBottom: '4px', display: 'block' }}>
+                                👤 {zh ? '負責人' : 'Personnel'}
+                            </label>
+                            <select className="select" style={{ width: '100%', fontSize: '13px' }}
+                                value={filterEmployeeId} onChange={e => setFilterEmployeeId(e.target.value)}>
+                                <option value="">{zh ? '全部人員' : 'All personnel'}</option>
+                                {employees.map(emp => (
+                                    <option key={emp.id} value={emp.id}>{emp.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        {/* Clear filters */}
+                        {hasActiveFilters && (
+                            <button className="btn btn-sm btn-secondary" style={{ fontSize: '12px', alignSelf: 'flex-end' }}
+                                onClick={() => { setDateRange('all'); setCustomFrom(''); setCustomTo(''); setFilterStoreId(''); setFilterEmployeeId(''); }}>
+                                ✕ {zh ? '清除篩選' : 'Clear filters'}
+                            </button>
+                        )}
+                    </div>
+                </div>
+
                 {/* Tabs */}
                 <div className="tab-bar" style={{ marginBottom: '20px' }}>
                     <button className={`tab-item ${tab === 'active' ? 'active' : ''}`} onClick={() => setTab('active')}>

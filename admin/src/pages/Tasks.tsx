@@ -28,6 +28,7 @@ export function Tasks() {
     const [activeTab, setActiveTab] = useState<'tasks' | 'workflows' | 'templates' | 'mgmt'>('tasks');
 
     // Filters
+    const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [filterStore, setFilterStore] = useState('all');
     const [filterWorkflowTemplate, setFilterWorkflowTemplate] = useState('all');
@@ -130,7 +131,7 @@ export function Tasks() {
         setLoading(true);
         const { data, error } = await supabase.from('tasks')
             .select(`
-                id, title, description, status, priority, sort_order, due_date, planned_start, completed_at, updated_at, created_at, metadata,
+                id, title, description, status, priority, sort_order, due_date, planned_start, completed_at, updated_at, created_at, metadata, notes,
                 store_id, workflow_instance_id, reminder_at, reminder_sent,
                 confirmation_required, confirmation_status, confirmation_requested_at, confirmation_responded_at, confirmation_notes,
                 users!tasks_assigned_to_fkey(id, name),
@@ -156,9 +157,7 @@ export function Tasks() {
                     ? t.metadata.start_conditions.filter(Boolean)
                     : null,
                 planned_start: t.planned_start ?? t.metadata?.plan_start ?? null,
-                note1: t.metadata?.note1 ?? null,
-                note2: t.metadata?.note2 ?? null,
-                note3: t.metadata?.note3 ?? null,
+                notes: t.notes ?? t.metadata?.note1 ?? null,
                 reminder_at: t.reminder_at ?? null,
             }));
             setTasks(mapped);
@@ -264,9 +263,7 @@ export function Tasks() {
             planned_start: task.planned_start || '',
             due_date: task.due_date || '',
             bucket: getBucket(task),
-            note1: task.note1 || '',
-            note2: task.note2 || '',
-            note3: task.note3 || '',
+            notes: task.notes || '',
             trigger_actions: normalizeTriggers(task.trigger_actions),
             start_conditions: normalizeTriggers(task.start_conditions),
             reminder_at: task.reminder_at || '',
@@ -310,6 +307,7 @@ export function Tasks() {
     async function saveTaskEdits() {
         if (!selectedTask || !localEdits) return;
         const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+        if (localEdits.title && localEdits.title !== selectedTask.title) updates.title = localEdits.title;
         updates.status = localEdits.status;
         updates.priority = localEdits.priority;
         updates.assigned_to = localEdits.assigned_to || null;
@@ -325,12 +323,10 @@ export function Tasks() {
         } else if (localEdits.status !== 'completed') {
             updates.completed_at = null;
         }
+        updates.notes = localEdits.notes || null;
         updates.metadata = {
             ...(selectedTask.metadata || {}),
             bucket: localEdits.bucket,
-            note1: localEdits.note1 || null,
-            note2: localEdits.note2 || null,
-            note3: localEdits.note3 || null,
             trigger_actions: localEdits.trigger_actions,
             start_conditions: localEdits.start_conditions,
         };
@@ -481,6 +477,14 @@ export function Tasks() {
     const displayBuckets = getDisplayBuckets(buckets, tasks);
 
     const filtered = tasks.filter(t => {
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            const match = t.title.toLowerCase().includes(q)
+                || (t.assigned_user?.name || '').toLowerCase().includes(q)
+                || (t.notes || '').toLowerCase().includes(q)
+                || t.id.toLowerCase().startsWith(q);
+            if (!match) return false;
+        }
         if (filterStatus !== 'all' && t.status !== filterStatus) return false;
         if (filterStore !== 'all' && t.store_id !== filterStore) return false;
         if (filterWorkflow !== 'all' && t.workflow_instance_id !== filterWorkflow) return false;
@@ -552,6 +556,14 @@ export function Tasks() {
 
                             {/* Toolbar */}
                             <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                <input
+                                    type="text"
+                                    className="input"
+                                    placeholder={zh ? '🔍 搜尋任務名稱、負責人、備註...' : '🔍 Search tasks...'}
+                                    value={searchQuery}
+                                    onChange={e => setSearchQuery(e.target.value)}
+                                    style={{ minWidth: '200px', maxWidth: '300px' }}
+                                />
                                 <select className="select" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
                                     <option value="all">{zh ? '狀態: 全部' : 'Status: All'}</option>
                                     {Object.entries(statusLabel).map(([k, v]) => <option key={k} value={k}>{v}</option>)}

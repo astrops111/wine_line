@@ -2,7 +2,7 @@
 // permissions.ts — Role-based access control helpers
 // ============================================================
 
-export type AppRole = 'admin' | 'manager' | 'staff' | 'operations';
+export type AppRole = 'super_admin' | 'admin' | 'manager' | 'staff' | 'operations';
 export type AccessLevel = 'full' | 'read';
 
 export interface ModuleAccess {
@@ -21,18 +21,20 @@ export interface ModuleAccess {
  * ROLE_ACCESS[requiredRole] = set of roles that satisfy this requirement.
  *
  * Hierarchy (not strictly linear — manager and operations are peer roles):
- *   'all'        → everyone (all 4 roles)
- *   'staff'      → all 4 roles (staff is the lowest gate)
- *   'manager'    → admin, manager, operations
- *   'operations' → admin, operations
- *   'admin'      → admin only
+ *   'all'         → everyone (all 5 roles)
+ *   'staff'       → all 5 roles (staff is the lowest gate)
+ *   'manager'     → super_admin, admin, manager, operations
+ *   'operations'  → super_admin, admin, operations
+ *   'admin'       → super_admin, admin
+ *   'super_admin' → super_admin only
  */
 export const ROLE_ACCESS: Record<string, AppRole[]> = {
-    all:        ['admin', 'manager', 'staff', 'operations'],
-    staff:      ['admin', 'manager', 'staff', 'operations'],
-    manager:    ['admin', 'manager', 'operations'],
-    operations: ['admin', 'operations'],
-    admin:      ['admin'],
+    all:         ['super_admin', 'admin', 'manager', 'staff', 'operations'],
+    staff:       ['super_admin', 'admin', 'manager', 'staff', 'operations'],
+    manager:     ['super_admin', 'admin', 'manager', 'operations'],
+    operations:  ['super_admin', 'admin', 'operations'],
+    admin:       ['super_admin', 'admin'],
+    super_admin: ['super_admin'],
 };
 
 /**

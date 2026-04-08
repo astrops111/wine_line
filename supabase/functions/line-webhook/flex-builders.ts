@@ -147,12 +147,15 @@ export function flexTaskList(tasks: any[], ownerName?: string, liffNewTaskId = "
     );
   }
 
+  const now = new Date();
   const bubbles = tasks.slice(0, 10).map((t: any, i: number) => {
     const shortId = t.id.slice(0, 6);
     const due = t.due_date ? t.due_date.slice(0, 10) : "無截止日";
     const pColor = PRIORITY_COLOR[t.priority] ?? "#95A5A6";
     const sColor = STATUS_COLOR[t.status] ?? "#95A5A6";
-    const headerBg = t.status === "pending" ? "#4A4A4A" : pColor;
+    const isOverdue = t.due_date && t.status !== "completed" && t.status !== "cancelled" && new Date(t.due_date) < now;
+    const daysOverdue = isOverdue ? Math.ceil((now.getTime() - new Date(t.due_date).getTime()) / 86400000) : 0;
+    const headerBg = isOverdue ? "#dc2626" : t.status === "pending" ? "#4A4A4A" : pColor;
     const wfName = t.workflow_instance?.name ?? null;
     const noteLines = t.notes ? t.notes.split("\n").filter(Boolean) : [];
 
@@ -168,7 +171,7 @@ export function flexTaskList(tasks: any[], ownerName?: string, liffNewTaskId = "
           ...(wfName ? [{ type: "text", text: wfName, color: "#FFFFFFAA", size: "xxs" }] : []),
           {
             type: "text",
-            text: `${i + 1}. ${t.title}`,
+            text: isOverdue ? `${i + 1}. ${t.title}  🔴逾期${daysOverdue}天` : `${i + 1}. ${t.title}`,
             color: "#FFFFFF",
             weight: "bold",
             size: "sm",
@@ -278,12 +281,15 @@ export function flexGroupTaskList(tasks: any[]) {
     );
   }
 
+  const now = new Date();
   const bubbles: any[] = tasks.slice(0, 10).map((t: any, i: number) => {
     const shortId = t.id.slice(0, 6);
     const due = t.due_date ? t.due_date.slice(0, 10) : "無截止日";
     const pColor = PRIORITY_COLOR[t.priority] ?? "#95A5A6";
     const sColor = STATUS_COLOR[t.status] ?? "#95A5A6";
-    const headerBg = t.status === "pending" ? "#4A4A4A" : pColor;
+    const isOverdue = t.due_date && t.status !== "completed" && t.status !== "cancelled" && new Date(t.due_date) < now;
+    const daysOverdue = isOverdue ? Math.ceil((now.getTime() - new Date(t.due_date).getTime()) / 86400000) : 0;
+    const headerBg = isOverdue ? "#dc2626" : t.status === "pending" ? "#4A4A4A" : pColor;
     const assigneeName = t.assignee?.name ?? "—";
     const wfName = t.workflow_instance?.name ?? null;
     const noteLines = t.notes ? t.notes.split("\n").filter(Boolean) : [];
@@ -298,7 +304,7 @@ export function flexGroupTaskList(tasks: any[]) {
         backgroundColor: headerBg,
         contents: [
           ...(wfName ? [{ type: "text", text: wfName, color: "#FFFFFFAA", size: "xxs" }] : []),
-          { type: "text", text: `${i + 1}. ${t.title}`, color: "#FFFFFF", weight: "bold", size: "sm", wrap: true, maxLines: 2 },
+          { type: "text", text: isOverdue ? `${i + 1}. ${t.title}  🔴逾期${daysOverdue}天` : `${i + 1}. ${t.title}`, color: "#FFFFFF", weight: "bold", size: "sm", wrap: true, maxLines: 2 },
         ],
       },
       body: {

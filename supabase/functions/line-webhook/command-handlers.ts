@@ -457,7 +457,7 @@ export async function cmdTaskUpdate(rawId: string, note: string, db: SupabaseCli
   const timestamp = new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei", hour12: false });
   const existing = task.notes ? `${task.notes}\n` : "";
   const newNotes = `${existing}[${timestamp}] ${note}`;
-  const { error: updateErr } = await db.from("tasks").update({ notes: newNotes }).eq("id", task.id);
+  const { error: updateErr } = await db.from("tasks").update({ notes: newNotes, updated_at: new Date().toISOString() }).eq("id", task.id);
   if (updateErr) return text(`❌ 備註更新失敗：${updateErr.message}`);
   return flexSuccess("📝", "備註已更新", `「${task.title}」\n${note}`);
 }

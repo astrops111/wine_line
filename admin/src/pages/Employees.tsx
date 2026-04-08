@@ -32,6 +32,7 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
     const [filter, setFilter] = useState<'all' | 'full_time' | 'part_time'>('all');
     const [storeFilter, setStoreFilter] = useState<string[]>([]);  // empty = all
     const [showStoreDropdown, setShowStoreDropdown] = useState(false);
+    const [search, setSearch] = useState('');
 
     // Detail panel data
     const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
@@ -421,6 +422,11 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
     const filteredEmployees = employees.filter(e => {
         if (filter !== 'all' && e.employee_type !== filter) return false;
         if (storeFilter.length > 0 && !e.store_ids.some(sid => storeFilter.includes(sid))) return false;
+        if (search.trim()) {
+            const q = search.trim().toLowerCase();
+            const haystack = [e.name, e.english_name, e.employee_number, e.phone, e.email, e.position, e.department, ...e.store_names].filter(Boolean).join(' ').toLowerCase();
+            if (!haystack.includes(q)) return false;
+        }
         return true;
     });
 
@@ -462,6 +468,13 @@ export function Employees({ initialMainTab = 'employees' }: { initialMainTab?: '
             {/* Employee filters (only in employees tab) */}
             {mainTab === 'employees' && (
             <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* Search */}
+                <div style={{ position: 'relative' }}>
+                    <input className="input-field" value={search} onChange={e => setSearch(e.target.value)}
+                        placeholder={zh ? '搜尋姓名、電話、職位...' : 'Search name, phone, position...'}
+                        style={{ fontSize: '12px', padding: '5px 12px 5px 30px', width: '200px' }} />
+                    <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: 'var(--text-muted)', pointerEvents: 'none' }}>🔍</span>
+                </div>
                 {/* Type filter */}
                 <div style={{ display: 'flex', gap: '6px' }}>
                     {(['all', 'full_time', 'part_time'] as const).map(f => (

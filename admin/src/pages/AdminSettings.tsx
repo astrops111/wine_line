@@ -184,6 +184,7 @@ export function AdminSettings() {
                                         value={mod.required_role}
                                         onChange={e => updateRole(mod.id, e.target.value)}
                                     >
+                                        <option value="super_admin">{zh ? '超級管理員' : 'Super Admin'}</option>
                                         <option value="admin">{zh ? '管理員' : 'Admin'}</option>
                                         <option value="manager">{zh ? '經理' : 'Manager'}</option>
                                         <option value="operations">{zh ? '營運' : 'Operations'}</option>

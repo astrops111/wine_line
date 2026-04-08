@@ -98,6 +98,8 @@ export function TaskDetailPanel({
     const defaultStartTime = orgSettings.default_work_start || '09:00';
     const defaultEndTime = orgSettings.default_work_end || '18:00';
     const [uploading, setUploading] = useState(false);
+    const [editingTitle, setEditingTitle] = useState(false);
+    const [editTitleValue, setEditTitleValue] = useState(selectedTask.title);
     const [showApproverPicker, setShowApproverPicker] = useState(false);
     const [selectedApprovers, setSelectedApprovers] = useState<string[]>([]);
     const [confirmations, setConfirmations] = useState<{ approver_id: string; status: string }[]>([]);
@@ -197,16 +199,37 @@ export function TaskDetailPanel({
     return (
         <div className="modal-overlay fade-in" onClick={closePanel}>
             <div className="card" onClick={e => e.stopPropagation()} style={{ width: '640px', maxWidth: '90vw', maxHeight: '90vh', margin: 'auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                {/* Sticky Header with Update button */}
+                {/* Sticky Header with Update + Delete buttons */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexShrink: 0 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                        <h3 style={{ fontSize: '16px', fontWeight: 600, lineHeight: 1.4 }}>{selectedTask.title}</h3>
-                        {isDirty && <div style={{ fontSize: '11px', color: 'var(--accent-yellow, #f59e0b)', marginTop: '2px' }}>● {zh ? '有未儲存的變更' : 'Unsaved changes'}</div>}
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {editingTitle ? (
+                            <input className="input-field" autoFocus style={{ fontSize: '16px', fontWeight: 600, flex: 1 }}
+                                value={editTitleValue}
+                                onChange={e => setEditTitleValue(e.target.value)}
+                                onBlur={() => { if (editTitleValue.trim() && editTitleValue !== selectedTask.title) { patchEdit({ title: editTitleValue.trim() } as any); } setEditingTitle(false); }}
+                                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); if (e.key === 'Escape') { setEditTitleValue(selectedTask.title); setEditingTitle(false); } }}
+                            />
+                        ) : (
+                            <>
+                                <h3 style={{ fontSize: '16px', fontWeight: 600, lineHeight: 1.4, margin: 0 }}>{localEdits?.title ?? selectedTask.title}</h3>
+                                <button style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', fontSize: '14px', opacity: 0.5 }}
+                                    title={zh ? '編輯標題' : 'Edit title'}
+                                    onClick={() => { setEditTitleValue(localEdits?.title ?? selectedTask.title); setEditingTitle(true); }}>✏️</button>
+                            </>
+                        )}
                     </div>
-                    <button className="btn btn-primary" style={{ flexShrink: 0, opacity: isDirty ? 1 : 0.45, cursor: isDirty ? 'pointer' : 'default' }}
-                        onClick={async () => { await syncApprovers(selectedApprovers); await saveTaskEdits(); }} disabled={!isDirty}>
-                        💾 {zh ? '更新' : 'Update'}
-                    </button>
+                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                        {isDirty && <div style={{ fontSize: '11px', color: 'var(--accent-yellow, #f59e0b)', alignSelf: 'center', marginRight: '4px' }}>●</div>}
+                        <button className="btn btn-primary" style={{ opacity: isDirty ? 1 : 0.45, cursor: isDirty ? 'pointer' : 'default' }}
+                            onClick={async () => { await syncApprovers(selectedApprovers); await saveTaskEdits(); }} disabled={!isDirty}>
+                            💾 {zh ? '更新' : 'Update'}
+                        </button>
+                        <button className="btn btn-sm" style={{ color: 'var(--accent-red)', background: 'var(--accent-red-dim)', padding: '6px 8px' }}
+                            title={zh ? '刪除任務' : 'Delete task'}
+                            onClick={() => deleteTask(selectedTask.id)}>
+                            🗑️
+                        </button>
+                    </div>
                 </div>
                 <div style={{ overflowY: 'auto', flex: 1 }}>
 
@@ -440,15 +463,13 @@ export function TaskDetailPanel({
                         </div>
                     </div>
                     {/* Notes */}
-                    {(['note1', 'note2', 'note3'] as const).map((nk, ni) => (
-                        <div key={nk} style={{ gridColumn: '1 / -1' }}>
-                            <label className="detail-label">{zh ? `備註${ni + 1}` : `Note ${ni + 1}`}</label>
-                            <input className="input-field" style={{ width: '100%' }}
-                                value={localEdits?.[nk] ?? selectedTask[nk] ?? ''}
-                                placeholder={zh ? `備註${ni + 1}.…` : `Note ${ni + 1}.…`}
-                                onChange={e => patchEdit({ [nk]: e.target.value })} />
-                        </div>
-                    ))}
+                    <div style={{ gridColumn: '1 / -1' }}>
+                        <label className="detail-label">{zh ? '備註' : 'Notes'}</label>
+                        <textarea className="input-field" style={{ width: '100%', minHeight: '80px', resize: 'vertical' }}
+                            value={localEdits?.notes ?? selectedTask.notes ?? ''}
+                            placeholder={zh ? '備註…' : 'Notes…'}
+                            onChange={e => patchEdit({ notes: e.target.value })} />
+                    </div>
                 </div>
 
                 {/* Info row */}
@@ -641,13 +662,6 @@ export function TaskDetailPanel({
                     </div>
                 </div>
 
-                {/* Delete */}
-                <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--outline-variant)', textAlign: 'right' }}>
-                    <button className="btn btn-sm" style={{ color: 'var(--accent-red)', background: 'var(--accent-red-dim)' }}
-                        onClick={() => deleteTask(selectedTask.id)}>
-                        🗑️ {t('common.delete')}
-                    </button>
-                </div>
                 </div>{/* end scrollable */}
             </div>
         </div>

@@ -339,6 +339,86 @@ h1, h2, h3, h4, .page-header h1, .page-header h2, .card-title, .stat-label {
   stroke-width: 1.75;
 }
 
+/* ── Dropdown menu ── */
+.topnav-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 200px;
+  padding: 6px 0;
+  margin-top: 4px;
+  background: var(--bg-primary);
+  border: 1px solid var(--outline-variant);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 100;
+  animation: dropdown-in 0.15s ease-out;
+}
+@keyframes dropdown-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+[data-theme="dark"] .topnav-dropdown {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.topnav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: background 0.1s;
+}
+.topnav-dropdown-item:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+.topnav-dropdown-item.active {
+  color: var(--accent-primary);
+  background: var(--accent-primary-dim);
+  font-weight: 600;
+}
+.topnav-dropdown-item .icon {
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.6;
+}
+.topnav-dropdown-item.active .icon {
+  opacity: 1;
+}
+.topnav-dropdown-item .icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ── Multi-column dropdown ── */
+.topnav-dropdown-multi {
+  display: flex;
+  gap: 0;
+  padding: 8px 0;
+  min-width: auto;
+  width: max-content;
+}
+.topnav-dropdown-col {
+  min-width: 160px;
+  padding: 0 4px;
+}
+.topnav-dropdown-col:not(:last-child) {
+  border-right: 1px solid var(--outline-variant);
+}
+.topnav-dropdown-heading {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  padding: 6px 14px 4px;
+  user-select: none;
+}
+
 .topnav-right {
   display: flex;
   align-items: center;

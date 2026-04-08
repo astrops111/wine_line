@@ -19,9 +19,7 @@ export interface Task {
     metadata: Record<string, unknown> | null;
     trigger_actions?: string[] | null;
     start_conditions?: string[] | null;
-    note1?: string | null;
-    note2?: string | null;
-    note3?: string | null;
+    notes?: string | null;
     reminder_at: string | null;
     confirmation_required: boolean;
     confirmation_status: string | null;
@@ -83,6 +81,7 @@ export interface LinkedChecklist {
 }
 
 export type LocalEdits = {
+    title?: string;
     status: string;
     priority: string;
     assigned_to: string;
@@ -91,9 +90,7 @@ export type LocalEdits = {
     planned_start: string;
     due_date: string;
     bucket: string;
-    note1: string;
-    note2: string;
-    note3: string;
+    notes: string;
     trigger_actions: string[];
     start_conditions: string[];
     reminder_at: string;

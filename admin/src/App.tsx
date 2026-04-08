@@ -122,7 +122,9 @@ function PermissionGuard({ children }: { children: React.ReactNode }) {
 }
 
 // ── Navigation data ────────────────────────────────────────────────────────
-type NavGroup = { key: string; label: string; icon: React.ReactNode; items: { path: string; icon: React.ReactNode; label: string; moduleKey: string }[] };
+type NavItem = { path: string; icon: React.ReactNode; label: string; moduleKey: string };
+type NavSubgroup = { title: string; items: NavItem[] };
+type NavGroup = { key: string; label: string; icon: React.ReactNode; items: NavItem[]; subgroups?: NavSubgroup[] };
 
 function useNavGroups() {
   const zh = getLocale() === 'zh-TW';
@@ -132,24 +134,32 @@ function useNavGroups() {
         { path: '/', icon: <LayoutDashboard {...IC} />, label: t('nav.dashboard'), moduleKey: 'dashboard' },
         { path: '/manager-dashboard', icon: <Target {...IC} />, label: zh ? '營運看板' : 'Ops Dashboard', moduleKey: 'manager-dashboard' },
       ]},
-      { key: 'hr', label: zh ? '人資' : 'People', icon: <UsersIcon {...IC} />, items: [
-        { path: '/hr-dashboard',      icon: <BarChart3 {...IC} />,      label: zh ? 'HR 報表'  : 'HR Dashboard', moduleKey: 'hr-dashboard' },
-        { path: '/time-tracker',      icon: <Clock {...IC} />,          label: zh ? '打卡追蹤' : 'Time Tracker',  moduleKey: 'time-tracker' },
-        { path: '/leave-management',  icon: <Palmtree {...IC} />,       label: zh ? '請假管理' : 'Leave Mgmt',    moduleKey: 'leave-management' },
-        { path: '/overtime-requests', icon: <Timer {...IC} />,          label: zh ? '加班申請' : 'Overtime',      moduleKey: 'overtime-requests' },
-        { path: '/payroll',           icon: <Wallet {...IC} />,         label: zh ? '薪資管理' : 'Payroll',       moduleKey: 'payroll' },
-        { path: '/scheduling',        icon: <CalendarDays {...IC} />,   label: zh ? '排班'     : 'Scheduling',    moduleKey: 'scheduling' },
-        { path: '/holidays',          icon: <CalendarOff {...IC} />,    label: zh ? '假日管理' : 'Holidays',      moduleKey: 'holidays' },
-        { path: '/shift-rules',       icon: <Scale {...IC} />,          label: zh ? '排班規則' : 'Shift Rules',   moduleKey: 'shift-rules' },
-        { path: '/performance',       icon: <Award {...IC} />,          label: zh ? '績效管理' : 'Performance',    moduleKey: 'performance' },
-        { path: '/recruitment',       icon: <Search {...IC} />,         label: zh ? '招募管理' : 'Recruitment',    moduleKey: 'recruitment' },
-        { path: '/documents',         icon: <FolderOpen {...IC} />,     label: zh ? '文件管理' : 'Documents',      moduleKey: 'documents' },
-        { path: '/business-trips',    icon: <Plane {...IC} />,          label: zh ? '公出差旅' : 'Business Trips', moduleKey: 'business-trips' },
-        { path: '/expense-claims',    icon: <Receipt {...IC} />,        label: zh ? '費用核銷' : 'Expense Claims', moduleKey: 'expense-claims' },
-        { path: '/onboarding',        icon: <UserPlus {...IC} />,       label: zh ? '到職離職' : 'Onboarding',     moduleKey: 'onboarding' },
-        { path: '/announcements',     icon: <Megaphone {...IC} />,      label: zh ? '公告管理' : 'Announcements',  moduleKey: 'announcements' },
-        { path: '/training',          icon: <GraduationCap {...IC} />,  label: zh ? '教育訓練' : 'Training',       moduleKey: 'training' },
-        { path: '/disciplinary',      icon: <Gavel {...IC} />,          label: zh ? '獎懲紀錄' : 'Disciplinary',   moduleKey: 'disciplinary' },
+      { key: 'hr', label: zh ? '人資' : 'People', icon: <UsersIcon {...IC} />, items: [], subgroups: [
+        { title: zh ? '考勤薪資' : 'Attendance & Pay', items: [
+          { path: '/hr-dashboard',      icon: <BarChart3 {...IC} />,    label: zh ? 'HR 報表'  : 'HR Dashboard', moduleKey: 'hr-dashboard' },
+          { path: '/time-tracker',      icon: <Clock {...IC} />,        label: zh ? '打卡追蹤' : 'Time Tracker',  moduleKey: 'time-tracker' },
+          { path: '/leave-management',  icon: <Palmtree {...IC} />,     label: zh ? '請假管理' : 'Leave Mgmt',    moduleKey: 'leave-management' },
+          { path: '/overtime-requests', icon: <Timer {...IC} />,        label: zh ? '加班申請' : 'Overtime',      moduleKey: 'overtime-requests' },
+          { path: '/payroll',           icon: <Wallet {...IC} />,       label: zh ? '薪資管理' : 'Payroll',       moduleKey: 'payroll' },
+        ]},
+        { title: zh ? '排班管理' : 'Scheduling', items: [
+          { path: '/scheduling',  icon: <CalendarDays {...IC} />, label: zh ? '排班'     : 'Scheduling',  moduleKey: 'scheduling' },
+          { path: '/holidays',    icon: <CalendarOff {...IC} />,  label: zh ? '假日管理' : 'Holidays',    moduleKey: 'holidays' },
+          { path: '/shift-rules', icon: <Scale {...IC} />,        label: zh ? '排班規則' : 'Shift Rules', moduleKey: 'shift-rules' },
+        ]},
+        { title: zh ? '人才發展' : 'Talent', items: [
+          { path: '/performance',  icon: <Award {...IC} />,          label: zh ? '績效管理' : 'Performance',  moduleKey: 'performance' },
+          { path: '/recruitment',  icon: <Search {...IC} />,         label: zh ? '招募管理' : 'Recruitment',  moduleKey: 'recruitment' },
+          { path: '/onboarding',   icon: <UserPlus {...IC} />,       label: zh ? '到職離職' : 'Onboarding',   moduleKey: 'onboarding' },
+          { path: '/training',     icon: <GraduationCap {...IC} />,  label: zh ? '教育訓練' : 'Training',     moduleKey: 'training' },
+          { path: '/disciplinary', icon: <Gavel {...IC} />,          label: zh ? '獎懲紀錄' : 'Disciplinary', moduleKey: 'disciplinary' },
+        ]},
+        { title: zh ? '行政庶務' : 'Admin', items: [
+          { path: '/documents',      icon: <FolderOpen {...IC} />, label: zh ? '文件管理' : 'Documents',      moduleKey: 'documents' },
+          { path: '/business-trips', icon: <Plane {...IC} />,      label: zh ? '公出差旅' : 'Business Trips', moduleKey: 'business-trips' },
+          { path: '/expense-claims', icon: <Receipt {...IC} />,    label: zh ? '費用核銷' : 'Expense Claims', moduleKey: 'expense-claims' },
+          { path: '/announcements',  icon: <Megaphone {...IC} />,  label: zh ? '公告管理' : 'Announcements',  moduleKey: 'announcements' },
+        ]},
       ]},
       { key: 'ops', label: zh ? '營運' : 'Operations', icon: <BarChart2 {...IC} />, items: [
         { path: '/operations-analytics', icon: <BarChart3 {...IC} />, label: zh ? '營運分析' : 'Analytics', moduleKey: 'operations-analytics' },
@@ -180,7 +190,7 @@ function useNavGroups() {
         { path: '/line-logs',     icon: <BarChart3 {...IC} />,     label: zh ? 'LINE 記錄' : 'LINE Logs', moduleKey: 'line-logs' },
         { path: '/admin',         icon: <Settings {...IC} />,      label: zh ? '系統設定' : 'Admin Settings', moduleKey: 'admin' },
       ]},
-      { key: 'ai', label: zh ? 'AI' : 'AI', icon: <Bot {...IC} />, items: [
+      { key: 'ai', label: zh ? '說明中心' : 'Help', icon: <BookOpen {...IC} />, items: [
         { path: '/help-center',   icon: <BookOpen {...IC} />, label: zh ? '說明中心'     : 'Help Center',    moduleKey: 'help-center' },
         { path: '/agent-console', icon: <Bot {...IC} />,      label: zh ? 'Agent 控制台' : 'Agent Console', moduleKey: 'agent-console' },
       ]},
@@ -188,10 +198,16 @@ function useNavGroups() {
   };
 }
 
+function getAllItems(g: NavGroup): NavItem[] {
+  const items = [...g.items];
+  if (g.subgroups) for (const sg of g.subgroups) items.push(...sg.items);
+  return items;
+}
+
 function getActiveGroup(groups: NavGroup[], pathname: string, search: string): string {
   const full = pathname + search;
   for (const g of groups) {
-    if (g.items.some(i => {
+    if (getAllItems(g).some(i => {
       if (i.path.includes('?')) return full.startsWith(i.path.split('?')[0]) && full.includes(i.path.split('?')[1]);
       return i.path === pathname;
     })) return g.key;
@@ -203,10 +219,14 @@ function getActiveGroup(groups: NavGroup[], pathname: string, search: string): s
 function TopNav() {
   const [locale, setCurrentLocale] = useState<Locale>(getLocale());
   const [theme, setCurrentTheme] = useState<Theme>(getTheme());
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
   const location = useLocation();
   const { userRoles, modules } = useOrg();
   const { groups } = useNavGroups();
   const zh = locale === 'zh-TW';
+
+  // Close menu on navigation
+  useEffect(() => { setOpenMenu(null); }, [location.pathname, location.search]);
 
   const isAccessible = (moduleKey: string): boolean => {
     const mod = modules.find(m => m.module_key === moduleKey);
@@ -238,19 +258,56 @@ function TopNav() {
       </NavLink>
 
       <div className="topnav-groups">
-        {groups.filter(g => g.items.some(i => isAccessible(i.moduleKey))).map(g => {
-          // For groups with a single primary path, link directly
-          const firstItem = g.items.find(i => isAccessible(i.moduleKey));
-          if (!firstItem) return null;
+        {groups.filter(g => getAllItems(g).some(i => isAccessible(i.moduleKey))).map(g => {
+          const allItems = getAllItems(g);
+          const accessibleItems = allItems.filter(i => isAccessible(i.moduleKey));
+          if (accessibleItems.length === 0) return null;
+          const isOpen = openMenu === g.key;
+          const hasSubgroups = g.subgroups && g.subgroups.length > 0;
           return (
-            <NavLink
-              key={g.key}
-              to={firstItem.path}
-              className={`topnav-group-btn ${activeGroup === g.key ? 'active' : ''}`}
-            >
-              <span className="icon">{g.icon}</span>
-              {g.label}
-            </NavLink>
+            <div key={g.key} style={{ position: 'relative' }}>
+              <button
+                className={`topnav-group-btn ${activeGroup === g.key ? 'active' : ''}`}
+                onClick={() => setOpenMenu(isOpen ? null : g.key)}
+              >
+                <span className="icon">{g.icon}</span>
+                {g.label}
+              </button>
+              {isOpen && (
+                hasSubgroups ? (
+                  <div className="topnav-dropdown topnav-dropdown-multi">
+                    {g.subgroups!.map(sg => {
+                      const sgItems = sg.items.filter(i => isAccessible(i.moduleKey));
+                      if (sgItems.length === 0) return null;
+                      return (
+                        <div key={sg.title} className="topnav-dropdown-col">
+                          <div className="topnav-dropdown-heading">{sg.title}</div>
+                          {sgItems.map(item => (
+                            <NavLink key={item.path} to={item.path}
+                              className={({ isActive }) => `topnav-dropdown-item ${isActive ? 'active' : ''}`}
+                              onClick={() => setOpenMenu(null)}>
+                              <span className="icon">{item.icon}</span>
+                              {item.label}
+                            </NavLink>
+                          ))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="topnav-dropdown">
+                    {accessibleItems.map(item => (
+                      <NavLink key={item.path} to={item.path}
+                        className={({ isActive }) => `topnav-dropdown-item ${isActive ? 'active' : ''}`}
+                        onClick={() => setOpenMenu(null)}>
+                        <span className="icon">{item.icon}</span>
+                        {item.label}
+                      </NavLink>
+                    ))}
+                  </div>
+                )
+              )}
+            </div>
           );
         })}
       </div>
