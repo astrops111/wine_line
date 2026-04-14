@@ -1,6 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import type { Store, ShiftTemplate } from '../../types/scheduling';
+
+interface ShiftAllowance {
+  id: string;
+  store_id: string;
+  name_zh: string;
+  name_en: string;
+  allowance_type: string;
+  amount: number;
+  condition_description: string;
+  is_active: boolean;
+}
 
 export interface StoreSettingsTabProps {
   zh: boolean;
@@ -21,6 +32,65 @@ export function StoreSettingsTab(props: StoreSettingsTabProps) {
 
   const [newShift, setNewShift] = useState({ name: '', start_time: '09:00', end_time: '17:00', break_minutes: '60', color: '#6366f1' });
   const [newNeed, setNewNeed] = useState<Record<string, { skill: string; count: string }>>({});
+
+  // Shift Allowance state
+  const [allowances, setAllowances] = useState<ShiftAllowance[]>([]);
+  const [showAllowanceForm, setShowAllowanceForm] = useState(false);
+  const [editAllowanceId, setEditAllowanceId] = useState<string | null>(null);
+  const [allowanceForm, setAllowanceForm] = useState({
+    name_zh: '', name_en: '', allowance_type: 'shift', amount: '', condition_description: '', is_active: true,
+  });
+
+  useEffect(() => {
+    if (selectedStore) loadAllowances();
+  }, [selectedStore]);
+
+  const loadAllowances = async () => {
+    const { data } = await supabase.from('shift_allowances')
+      .select('*').eq('store_id', selectedStore).order('name_zh');
+    setAllowances(data || []);
+  };
+
+  const saveAllowance = async () => {
+    if (!allowanceForm.name_zh || !allowanceForm.amount) return;
+    const payload = {
+      store_id: selectedStore, name_zh: allowanceForm.name_zh, name_en: allowanceForm.name_en || null,
+      allowance_type: allowanceForm.allowance_type, amount: Number(allowanceForm.amount),
+      condition_description: allowanceForm.condition_description || null, is_active: allowanceForm.is_active,
+    };
+    if (editAllowanceId) {
+      await supabase.from('shift_allowances').update(payload).eq('id', editAllowanceId);
+    } else {
+      await supabase.from('shift_allowances').insert(payload);
+    }
+    setAllowanceForm({ name_zh: '', name_en: '', allowance_type: 'shift', amount: '', condition_description: '', is_active: true });
+    setShowAllowanceForm(false); setEditAllowanceId(null);
+    await loadAllowances();
+  };
+
+  const deleteAllowance = async (id: string) => {
+    if (!confirm(zh ? '確定刪除此津貼？' : 'Delete this allowance?')) return;
+    await supabase.from('shift_allowances').delete().eq('id', id);
+    await loadAllowances();
+  };
+
+  const startEditAllowance = (a: ShiftAllowance) => {
+    setEditAllowanceId(a.id);
+    setAllowanceForm({
+      name_zh: a.name_zh, name_en: a.name_en || '', allowance_type: a.allowance_type,
+      amount: String(a.amount), condition_description: a.condition_description || '', is_active: a.is_active,
+    });
+    setShowAllowanceForm(true);
+  };
+
+  const allowanceTypeLabels: Record<string, string> = {
+    shift: zh ? '班別津貼' : 'Shift Allowance',
+    night: zh ? '夜班津貼' : 'Night Shift',
+    holiday: zh ? '假日津貼' : 'Holiday',
+    hazard: zh ? '危險津貼' : 'Hazard',
+    leader: zh ? '幹部津貼' : 'Leader',
+    other: zh ? '其他' : 'Other',
+  };
 
   const addShiftTemplate = async () => {
     if (!newShift.name) return;
@@ -257,6 +327,86 @@ export function StoreSettingsTab(props: StoreSettingsTabProps) {
             </div>
           );
         })()}
+      </div>
+
+      {/* Shift Allowances */}
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <h3 style={{ fontSize: '15px', fontWeight: 600, margin: 0 }}>🎁 {zh ? '排班津貼設定' : 'Shift Allowances'}</h3>
+          <button className="btn btn-primary btn-sm" onClick={() => {
+            setShowAllowanceForm(true); setEditAllowanceId(null);
+            setAllowanceForm({ name_zh: '', name_en: '', allowance_type: 'shift', amount: '', condition_description: '', is_active: true });
+          }}>➕ {zh ? '新增津貼' : 'Add Allowance'}</button>
+        </div>
+
+        {showAllowanceForm && (
+          <div style={{ padding: '14px', background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', marginBottom: '14px', border: '1px solid var(--outline-variant)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }}>
+              <div>
+                <label className="detail-label">{zh ? '中文名稱' : 'Name (ZH)'} *</label>
+                <input className="input-field" value={allowanceForm.name_zh} onChange={e => setAllowanceForm({ ...allowanceForm, name_zh: e.target.value })} placeholder={zh ? '夜班津貼' : 'Night shift'} />
+              </div>
+              <div>
+                <label className="detail-label">{zh ? '英文名稱' : 'Name (EN)'}</label>
+                <input className="input-field" value={allowanceForm.name_en} onChange={e => setAllowanceForm({ ...allowanceForm, name_en: e.target.value })} placeholder="Night Shift Allowance" />
+              </div>
+              <div>
+                <label className="detail-label">{zh ? '津貼類型' : 'Type'}</label>
+                <select className="input-field" value={allowanceForm.allowance_type} onChange={e => setAllowanceForm({ ...allowanceForm, allowance_type: e.target.value })}>
+                  {Object.entries(allowanceTypeLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="detail-label">{zh ? '金額 (NT$)' : 'Amount (NT$)'} *</label>
+                <input className="input-field" type="number" value={allowanceForm.amount} onChange={e => setAllowanceForm({ ...allowanceForm, amount: e.target.value })} placeholder="500" />
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label className="detail-label">{zh ? '適用條件' : 'Conditions'}</label>
+                <input className="input-field" value={allowanceForm.condition_description} onChange={e => setAllowanceForm({ ...allowanceForm, condition_description: e.target.value })} placeholder={zh ? '例如: 22:00 後上班適用' : 'e.g. Applies after 22:00'} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <input type="checkbox" checked={allowanceForm.is_active} onChange={e => setAllowanceForm({ ...allowanceForm, is_active: e.target.checked })} />
+                <span style={{ fontSize: '13px' }}>{zh ? '啟用' : 'Active'}</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+              <button className="btn btn-primary btn-sm" onClick={saveAllowance}>{zh ? '儲存' : 'Save'}</button>
+              <button className="btn btn-sm" onClick={() => { setShowAllowanceForm(false); setEditAllowanceId(null); }}>{zh ? '取消' : 'Cancel'}</button>
+            </div>
+          </div>
+        )}
+
+        {allowances.length === 0 && !showAllowanceForm ? (
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontStyle: 'italic', padding: '12px 0' }}>
+            {zh ? '尚未設定排班津貼。可新增夜班津貼、假日津貼等。' : 'No shift allowances configured. Add night shift, holiday allowances, etc.'}
+          </div>
+        ) : (
+          allowances.map(a => (
+            <div key={a.id} style={{
+              display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 12px',
+              background: 'var(--bg-primary)', borderRadius: 'var(--radius-sm)', marginBottom: '6px',
+              border: '1px solid var(--outline-variant)', opacity: a.is_active ? 1 : 0.5,
+            }}>
+              <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '8px', background: 'var(--accent-primary-dim)', color: 'var(--accent-primary)' }}>
+                {allowanceTypeLabels[a.allowance_type] || a.allowance_type}
+              </span>
+              <span style={{ fontWeight: 600, fontSize: '13px', flex: 1 }}>{zh ? a.name_zh : (a.name_en || a.name_zh)}</span>
+              <span style={{ fontWeight: 600, color: 'var(--accent-green)', fontSize: '13px' }}>NT${a.amount.toLocaleString()}</span>
+              {a.condition_description && (
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {a.condition_description}
+                </span>
+              )}
+              {!a.is_active && <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>({zh ? '停用' : 'Inactive'})</span>}
+              <button className="btn btn-sm" style={{ padding: '2px 6px', fontSize: '11px' }} onClick={() => startEditAllowance(a)}>✏️</button>
+              <button className="btn btn-sm" style={{ padding: '2px 6px', fontSize: '11px', color: 'var(--accent-red)' }} onClick={() => deleteAllowance(a.id)}>✕</button>
+            </div>
+          ))
+        )}
+
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '10px', lineHeight: 1.5 }}>
+          {zh ? '排班津貼會自動加入薪資計算。可依班別類型（夜班、假日等）設定不同金額。' : 'Shift allowances are auto-included in payroll. Set different amounts per shift type (night, holiday, etc.).'}
+        </div>
       </div>
     </div>
   );

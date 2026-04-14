@@ -11,6 +11,7 @@ import {
   Users as UsersIcon, RefreshCw, CheckSquare, Building2, Zap, Bell, User, Settings,
   BookOpen, Bot, Menu, X, Globe, Moon, Sun,
   BarChart2, Factory, Package, MessageSquare,
+  UserCog, MapPin, FileText, Shield, Briefcase, Heart,
 } from 'lucide-react';
 
 const IC = { size: 16, strokeWidth: 1.75 } as const;
@@ -54,6 +55,13 @@ import { JobsManagement } from './pages/JobsManagement';
 import { OperationsAnalytics } from './pages/OperationsAnalytics';
 import { VendorManagement } from './pages/VendorManagement';
 import { InventoryManagement } from './pages/InventoryManagement';
+import { EmployeeSettings } from './pages/EmployeeSettings';
+import { AttendanceSettings } from './pages/AttendanceSettings';
+import { LeaveSettings } from './pages/LeaveSettings';
+import { OvertimeSettings } from './pages/OvertimeSettings';
+import { PayrollSettings } from './pages/PayrollSettings';
+import { InsuranceManagement } from './pages/InsuranceManagement';
+import { ComplianceManagement } from './pages/ComplianceManagement';
 import './index.css';
 
 initLocale();
@@ -136,16 +144,25 @@ function useNavGroups() {
       ]},
       { key: 'hr', label: zh ? '人資' : 'People', icon: <UsersIcon {...IC} />, items: [], subgroups: [
         { title: zh ? '考勤薪資' : 'Attendance & Pay', items: [
-          { path: '/hr-dashboard',      icon: <BarChart3 {...IC} />,    label: zh ? 'HR 報表'  : 'HR Dashboard', moduleKey: 'hr-dashboard' },
-          { path: '/time-tracker',      icon: <Clock {...IC} />,        label: zh ? '打卡追蹤' : 'Time Tracker',  moduleKey: 'time-tracker' },
-          { path: '/leave-management',  icon: <Palmtree {...IC} />,     label: zh ? '請假管理' : 'Leave Mgmt',    moduleKey: 'leave-management' },
-          { path: '/overtime-requests', icon: <Timer {...IC} />,        label: zh ? '加班申請' : 'Overtime',      moduleKey: 'overtime-requests' },
-          { path: '/payroll',           icon: <Wallet {...IC} />,       label: zh ? '薪資管理' : 'Payroll',       moduleKey: 'payroll' },
+          { path: '/hr-dashboard',         icon: <BarChart3 {...IC} />,    label: zh ? 'HR 報表'    : 'HR Dashboard',     moduleKey: 'hr-dashboard' },
+          { path: '/time-tracker',         icon: <Clock {...IC} />,        label: zh ? '打卡追蹤'   : 'Time Tracker',     moduleKey: 'time-tracker' },
+          { path: '/attendance-settings',  icon: <MapPin {...IC} />,       label: zh ? '考勤設定'   : 'Attendance Setup', moduleKey: 'attendance-settings' },
+          { path: '/leave-management',     icon: <Palmtree {...IC} />,     label: zh ? '請假管理'   : 'Leave Mgmt',      moduleKey: 'leave-management' },
+          { path: '/leave-settings',       icon: <FileText {...IC} />,     label: zh ? '假期設定'   : 'Leave Setup',     moduleKey: 'leave-settings' },
+          { path: '/overtime-requests',    icon: <Timer {...IC} />,        label: zh ? '加班申請'   : 'Overtime',        moduleKey: 'overtime-requests' },
+          { path: '/overtime-settings',    icon: <Settings {...IC} />,     label: zh ? '加班設定'   : 'OT Setup',        moduleKey: 'overtime-settings' },
+          { path: '/payroll',              icon: <Wallet {...IC} />,       label: zh ? '薪資管理'   : 'Payroll',         moduleKey: 'payroll' },
+          { path: '/payroll-settings',     icon: <Briefcase {...IC} />,    label: zh ? '薪資設定'   : 'Payroll Setup',   moduleKey: 'payroll-settings' },
+          { path: '/insurance',            icon: <Heart {...IC} />,        label: zh ? '勞健保管理' : 'Insurance',       moduleKey: 'insurance' },
         ]},
         { title: zh ? '排班管理' : 'Scheduling', items: [
           { path: '/scheduling',  icon: <CalendarDays {...IC} />, label: zh ? '排班'     : 'Scheduling',  moduleKey: 'scheduling' },
           { path: '/holidays',    icon: <CalendarOff {...IC} />,  label: zh ? '假日管理' : 'Holidays',    moduleKey: 'holidays' },
           { path: '/shift-rules', icon: <Scale {...IC} />,        label: zh ? '排班規則' : 'Shift Rules', moduleKey: 'shift-rules' },
+        ]},
+        { title: zh ? '員工與組織' : 'Employee & Org', items: [
+          { path: '/employee-settings', icon: <UserCog {...IC} />,      label: zh ? '員工設定'   : 'Employee Setup', moduleKey: 'employee-settings' },
+          { path: '/compliance',        icon: <Shield {...IC} />,       label: zh ? '法遵管理'   : 'Compliance',     moduleKey: 'compliance' },
         ]},
         { title: zh ? '人才發展' : 'Talent', items: [
           { path: '/performance',  icon: <Award {...IC} />,          label: zh ? '績效管理' : 'Performance',  moduleKey: 'performance' },
@@ -426,6 +443,13 @@ function AppContent() {
             <Route path="/operations-analytics" element={<OperationsAnalytics />} />
             <Route path="/vendors" element={<VendorManagement />} />
             <Route path="/inventory" element={<InventoryManagement />} />
+            <Route path="/employee-settings" element={<EmployeeSettings />} />
+            <Route path="/attendance-settings" element={<AttendanceSettings />} />
+            <Route path="/leave-settings" element={<LeaveSettings />} />
+            <Route path="/overtime-settings" element={<OvertimeSettings />} />
+            <Route path="/payroll-settings" element={<PayrollSettings />} />
+            <Route path="/insurance" element={<InsuranceManagement />} />
+            <Route path="/compliance" element={<ComplianceManagement />} />
           </Routes>
         </PermissionGuard>
       </main>

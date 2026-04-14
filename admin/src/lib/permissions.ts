@@ -95,6 +95,13 @@ export const MODULE_ROUTE_MAP: Record<string, string> = {
     'operations-analytics': '/operations-analytics',
     'vendors':             '/vendors',
     'inventory':           '/inventory',
+    'employee-settings':   '/employee-settings',
+    'attendance-settings': '/attendance-settings',
+    'leave-settings':      '/leave-settings',
+    'overtime-settings':   '/overtime-settings',
+    'payroll-settings':    '/payroll-settings',
+    'insurance':           '/insurance',
+    'compliance':          '/compliance',
 };
 
 /**
