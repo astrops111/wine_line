@@ -87,7 +87,6 @@ export function flexMenu(isGroup = false, isManager = false, liffNewTaskId = "")
               },
             ]),
           newTaskBtn,
-          mkBtn("🏗️ 專案進度", "/專案 列表", "secondary"),
           mkBtn("⚙️ 工作流程狀態", "/流程 狀態", "secondary"),
           ...(isGroup ? [] : [mkBtn("📝 備註查詢", "/備註", "secondary")]),
           { type: "button", action: { type: "uri", label: "📊 儀表板", uri: "https://liff.line.me/2009567492-aJcgaxOz" }, style: "secondary", height: "sm", margin: "xs" },

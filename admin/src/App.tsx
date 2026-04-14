@@ -35,6 +35,7 @@ import { ManagerDashboard } from './pages/ManagerDashboard';
 import { LiffManagerDashboard } from './pages/LiffManagerDashboard';
 import { OrgManagement } from './pages/OrgManagement';
 import { WorkflowManagement } from './pages/WorkflowManagement';
+import { Projects } from './pages/Projects';
 import { LeaveManagement } from './pages/LeaveManagement';
 import { OvertimeRequests } from './pages/OvertimeRequests';
 import { PayrollManagement } from './pages/PayrollManagement';
@@ -423,6 +424,7 @@ function AppContent() {
             <Route path="/manager-dashboard" element={<ManagerDashboard />} />
             <Route path="/org-management" element={<OrgManagement />} />
             <Route path="/workflow-management" element={<WorkflowManagement />} />
+            <Route path="/projects" element={<Projects />} />
             <Route path="/leave-management" element={<LeaveManagement />} />
             <Route path="/overtime-requests" element={<OvertimeRequests />} />
             <Route path="/payroll" element={<PayrollManagement />} />

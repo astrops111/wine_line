@@ -38,7 +38,7 @@ const css = `
 .dash-header {
   position: relative;
   padding: 32px 24px 40px;
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #155e75 60%, #0891b2 100%);
   border-radius: 0 0 28px 28px;
   text-align: center;
   overflow: hidden;
@@ -498,15 +498,15 @@ export function LiffManagerDashboard() {
 
     async function lookupEmployee(lineUserId: string) {
         try {
-            // Resolve LINE user → employee
+            // Resolve LINE user → employee (production uses line_users table)
             const { data: mapping, error: mapErr } = await supabase
-                .from('line_employee_mapping')
+                .from('line_users')
                 .select('user_id')
                 .eq('line_user_id', lineUserId)
-                .single();
+                .maybeSingle();
 
-            if (mapErr || !mapping) {
-                setError('您的 LINE 帳號尚未綁定員工資料');
+            if (mapErr || !mapping || !mapping.user_id) {
+                setError('您的 LINE 帳號尚未綁定員工資料，請先使用 /註冊 指令進行綁定。');
                 setLoading(false);
                 return;
             }
@@ -514,9 +514,9 @@ export function LiffManagerDashboard() {
             // Get employee's org + manager status
             const { data: user, error: userErr } = await supabase
                 .from('users')
-                .select('id, name, organization_id, is_manager, is_line_manager, role')
+                .select('id, name, organization_id, is_manager, is_line_manager')
                 .eq('id', mapping.user_id)
-                .single();
+                .maybeSingle();
 
             if (userErr || !user) {
                 setError('無法取得員工資料');
@@ -524,7 +524,7 @@ export function LiffManagerDashboard() {
                 return;
             }
 
-            if (!user.is_manager && !user.is_line_manager && user.role !== 'admin') {
+            if (!user.is_manager && !user.is_line_manager) {
                 setError('此看板僅限主管使用');
                 setLoading(false);
                 return;

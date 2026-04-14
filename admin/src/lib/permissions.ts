@@ -118,6 +118,7 @@ export const SUB_ROUTE_PARENT_MAP: Record<string, string> = {
     '/tasks':      'workflow-management',
     '/workflows':  'workflow-management',
     '/checklists': 'workflow-management',
+    '/projects':   'workflow-management',
     '/employees':  'org-management',
 };
 
