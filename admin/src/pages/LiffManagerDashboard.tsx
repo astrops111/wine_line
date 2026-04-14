@@ -1,9 +1,25 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import liff from '@line/liff';
 import { supabase } from '../lib/supabase';
-import { StoreProgressSection, type StoreProgress } from '../components/LiffManager/StoreProgressSection';
-import { DelayedTasksSection, type DelayedTask } from '../components/LiffManager/DelayedTasksSection';
-import { ActivityTimeline, type ActivityItem } from '../components/LiffManager/ActivityTimeline';
+import { ActivityTimeline, type ActivityItem, type ActivityPeriod } from '../components/LiffManager/ActivityTimeline';
+
+interface WorkflowInstance {
+    id: string;
+    name: string;
+    status: string;
+    started_at: string;
+    tasks: { id: string; title: string; status: string; due_date: string | null; assigned_user: { name: string } | null }[];
+}
+
+interface PendingApproval {
+    id: string;
+    taskId: string;
+    taskTitle: string;
+    assignee: string;
+    workflowName: string;
+    requestedAt: string;
+    approvers: { name: string; status: string }[];
+}
 
 /* ── CSS-in-JS ── */
 const css = `
@@ -417,24 +433,51 @@ export function LiffManagerDashboard() {
     const [userName, setUserName] = useState<string>('');
     const [refreshing, setRefreshing] = useState(false);
     const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
-    const [stats, setStats] = useState({ completed: 0, pending: 0, delayed: 0, approvals: 0, total: 0 });
-    const [storeProgress, setStoreProgress] = useState<StoreProgress[]>([]);
-    const [delayedTasks, setDelayedTasks] = useState<DelayedTask[]>([]);
-    const [activity, setActivity] = useState<ActivityItem[]>([]);
-    const [pendingApprovals, setPendingApprovals] = useState<{ id: string; taskTitle: string; requester: string; requestedAt: string; taskId: string; shortId: string }[]>([]);
+    const [rawInstances, setRawInstances] = useState<any[]>([]);
+    const [rawTaskStat, setRawTaskStat] = useState<any[]>([]);
+    const [rawActivityTasks, setRawActivityTasks] = useState<any[]>([]);
+    const [rawApprovals, setRawApprovals] = useState<any[]>([]);
+    const [activityPeriod, setActivityPeriod] = useState<ActivityPeriod>('today');
+    const [expandedInstanceId, setExpandedInstanceId] = useState<string | null>(null);
+    const [focusTab, setFocusTab] = useState<'in_progress' | 'overdue'>('in_progress');
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+    const [selectedDeptId, setSelectedDeptId] = useState<string>('all');
 
     // LIFF initialization & employee lookup (mirrors LiffApp.tsx pattern)
     useEffect(() => {
         if (import.meta.env.DEV) {
-            // Local dev: mock LINE user and look up employee
-            const mockLineId = 'U_MOCK_LINE_ID';
+            // Local dev: bypass LINE mapping — load first manager/admin directly
             setUserName('Test Manager');
-            lookupEmployee(mockLineId);
+            devBypassLookup();
         } else {
             initLiff();
         }
     }, []);
+
+    async function devBypassLookup() {
+        try {
+            const { data: users, error: userErr } = await supabase
+                .from('users')
+                .select('id, name, organization_id, is_manager, is_line_manager')
+                .or('is_manager.eq.true,is_line_manager.eq.true')
+                .limit(1);
+            const user = users?.[0];
+            if (userErr || !user) {
+                setError('找不到可用的主管/管理員帳號 (dev bypass)');
+                setLoading(false);
+                return;
+            }
+            setOrgId(user.organization_id);
+            setCurrentUserId(user.id);
+            if (user.name) setUserName(user.name);
+            await loadData(user.organization_id, user.id);
+        } catch (err) {
+            console.error('devBypassLookup error:', err);
+            setError('Dev bypass 失敗');
+            setLoading(false);
+        }
+    }
 
     async function initLiff() {
         try {
@@ -504,112 +547,67 @@ export function LiffManagerDashboard() {
         if (!oid) return;
 
         try {
-            // Build task query with org filter
-            let taskQuery = supabase.from('tasks')
-                .select('id, title, status, priority, due_date, completed_at, created_at, updated_at, organization_id, users!tasks_assigned_to_fkey(id, name, store_id)')
-                .eq('organization_id', oid)
-                .order('sort_order', { ascending: true });
-
-            // Build store query with org filter; store_type may not exist, so catch error
-            let storeQuery = supabase.from('stores')
-                .select('id, name, store_code, store_type')
-                .eq('organization_id', oid)
-                .eq('is_active', true);
-
-            const [taskRes, storeRes] = await Promise.all([taskQuery, storeQuery]);
-
-            // Filter out HQ stores client-side (safe if store_type column doesn't exist)
-            const allStores: any[] = (storeRes.data || []).filter(
-                (s: any) => !s.store_type || s.store_type !== 'headquarters'
-            );
-            const tasks: any[] = (taskRes.data || []).map((t: any) => ({ ...t, assigned_user: t.users }));
             const now = new Date();
 
-            // Summary
-            const completed = tasks.filter(t => t.status === 'completed').length;
-            const pendingCount = tasks.filter(t => t.status === 'pending' || t.status === 'in_progress').length;
-            const delayedCount = tasks.filter(t => {
-                if (t.status === 'completed' || t.status === 'cancelled') return false;
-                return t.status === 'blocked' || (t.due_date && new Date(t.due_date) < now);
-            }).length;
-            // Pending approvals for this manager
-            let approvalCount = 0;
+            const [instRes, taskStatRes, activityRes, deptRes] = await Promise.all([
+                supabase.from('workflow_instances')
+                    .select('id, name, status, started_at, tasks(id, title, status, due_date, assigned_user:users!tasks_assigned_to_fkey(name, department_id))')
+                    .eq('organization_id', oid)
+                    .order('started_at', { ascending: false })
+                    .limit(60),
+                supabase.from('tasks')
+                    .select('status, due_date, users!tasks_assigned_to_fkey(department_id)')
+                    .eq('organization_id', oid),
+                supabase.from('tasks')
+                    .select('id, title, status, priority, due_date, completed_at, updated_at, created_at, users!tasks_assigned_to_fkey(name, store_id, department_id)')
+                    .eq('organization_id', oid)
+                    .gte('updated_at', new Date(now.getTime() - 30 * 86400000).toISOString())
+                    .order('updated_at', { ascending: false })
+                    .limit(300),
+                supabase.from('departments').select('id, name').eq('organization_id', oid).order('name'),
+            ]);
+
+            setRawInstances(instRes.data || []);
+            setRawTaskStat(taskStatRes.data || []);
+            setRawActivityTasks((activityRes.data || []) as any[]);
+            setDepartments(deptRes.data || []);
+
+            // Pending approvals
             if (uid) {
-                const { data: approvals } = await supabase.from('task_confirmations')
-                    .select('id, task_id, created_at, tasks!inner(title, assigned_to, users!tasks_assigned_to_fkey(name))')
-                    .eq('approver_id', uid)
-                    .eq('status', 'pending');
-                const items = (approvals || []).map((a: any) => ({
-                    id: a.id,
-                    taskId: a.task_id,
-                    shortId: (a.task_id as string).slice(0, 8),
-                    taskTitle: a.tasks?.title || '—',
-                    requester: a.tasks?.users?.name || '未知',
-                    requestedAt: a.created_at ? new Date(a.created_at).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '',
-                }));
-                setPendingApprovals(items);
-                approvalCount = items.length;
+                const { data: pendingTasks } = await supabase.from('tasks')
+                    .select('id, title, confirmation_status, confirmation_requested_at, assigned_user:users!tasks_assigned_to_fkey(name, department_id), workflow_instance:workflow_instances(name)')
+                    .eq('organization_id', oid)
+                    .eq('confirmation_required', true)
+                    .eq('confirmation_status', 'pending')
+                    .not('confirmation_requested_at', 'is', null);
+                if (pendingTasks && pendingTasks.length > 0) {
+                    const taskIds = pendingTasks.map((t: any) => t.id);
+                    const { data: allConfs } = await supabase.from('task_confirmations')
+                        .select('task_id, status, approver_id, approver:users!task_confirmations_approver_id_fkey(name)')
+                        .in('task_id', taskIds);
+                    const confMap: Record<string, { name: string; status: string }[]> = {};
+                    const mineTaskIds = new Set<string>();
+                    (allConfs || []).forEach((c: any) => {
+                        if (!confMap[c.task_id]) confMap[c.task_id] = [];
+                        confMap[c.task_id].push({ name: c.approver?.name || '—', status: c.status });
+                        if (c.approver_id === uid && c.status === 'pending') mineTaskIds.add(c.task_id);
+                    });
+                    setRawApprovals(
+                        pendingTasks.filter((t: any) => mineTaskIds.has(t.id)).map((t: any) => ({
+                            id: t.id,
+                            taskId: t.id,
+                            taskTitle: t.title,
+                            assignee: t.assigned_user?.name || '—',
+                            assigneeDeptId: t.assigned_user?.department_id || null,
+                            workflowName: t.workflow_instance?.name || '',
+                            requestedAt: t.confirmation_requested_at ? new Date(t.confirmation_requested_at).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '',
+                            approvers: confMap[t.id] || [],
+                        }))
+                    );
+                } else {
+                    setRawApprovals([]);
+                }
             }
-
-            setStats({ completed, pending: pendingCount, delayed: delayedCount, approvals: approvalCount, total: tasks.length });
-
-            // Store progress
-            const map = new Map<string, StoreProgress>();
-            allStores.forEach(s => map.set(s.id, { name: s.name, total: 0, completed: 0, percent: 0, blocked: 0, inProgress: 0, pending: 0 }));
-            const unassigned: StoreProgress = { name: '未分配門市', total: 0, completed: 0, percent: 0, blocked: 0, inProgress: 0, pending: 0 };
-            tasks.forEach(t => {
-                const sid = t.assigned_user?.store_id;
-                const b = sid && map.has(sid) ? map.get(sid)! : unassigned;
-                b.total++;
-                if (t.status === 'completed') b.completed++;
-                else if (t.status === 'in_progress') b.inProgress++;
-                else if (t.status === 'blocked') b.blocked++;
-                else b.pending++;
-            });
-            const arr: StoreProgress[] = [];
-            map.forEach(sp => { if (sp.total > 0) { sp.percent = Math.round((sp.completed / sp.total) * 100); arr.push(sp); } });
-            if (unassigned.total > 0) { unassigned.percent = Math.round((unassigned.completed / unassigned.total) * 100); arr.push(unassigned); }
-            arr.sort((a, b) => b.percent - a.percent);
-            setStoreProgress(arr);
-
-            // Delayed
-            setDelayedTasks(
-                tasks
-                    .filter(t => {
-                        if (t.status === 'completed' || t.status === 'cancelled') return false;
-                        return t.status === 'blocked' || (t.due_date && new Date(t.due_date) < now);
-                    })
-                    .map(t => ({
-                        id: t.id, title: t.title,
-                        storeName: t.assigned_user?.store_id ? (allStores.find((s: any) => s.id === t.assigned_user?.store_id)?.name || '—') : '未分配',
-                        assignee: t.assigned_user?.name || '未指派',
-                        priority: t.priority,
-                        daysOverdue: t.due_date ? Math.max(0, Math.ceil((now.getTime() - new Date(t.due_date).getTime()) / 86400000)) : 0,
-                    }))
-                    .sort((a, b) => (a.priority === 'urgent' ? -1 : 0) - (b.priority === 'urgent' ? -1 : 0) || b.daysOverdue - a.daysOverdue)
-            );
-
-            // Activity
-            const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-            setActivity(
-                tasks
-                    .filter(t => {
-                        const u = t.updated_at ? new Date(t.updated_at) : null;
-                        const c = t.completed_at ? new Date(t.completed_at) : null;
-                        return (u && u >= todayStart) || (c && c >= todayStart) || new Date(t.created_at) >= todayStart;
-                    })
-                    .map(t => {
-                        let type: ActivityItem['type'] = 'updated';
-                        let timeStr = t.updated_at || t.created_at;
-                        if (t.completed_at && new Date(t.completed_at) >= todayStart) { type = 'completed'; timeStr = t.completed_at; }
-                        else if (new Date(t.created_at) >= todayStart && !t.updated_at) { type = 'created'; timeStr = t.created_at; }
-                        else if (t.status === 'blocked') { type = 'blocked'; }
-                        const sName = t.assigned_user?.store_id ? (allStores.find((s: any) => s.id === t.assigned_user?.store_id)?.name || '') : '';
-                        return { id: t.id, time: new Date(timeStr).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }), title: t.title, storeName: sName, type };
-                    })
-                    .sort((a, b) => b.time.localeCompare(a.time))
-                    .slice(0, 10)
-            );
 
             setLastRefresh(new Date());
         } catch (err) {
@@ -631,6 +629,96 @@ export function LiffManagerDashboard() {
         setRefreshing(true);
         await loadData();
     }
+
+    // Dept filter predicate
+    const matchesDept = useCallback((deptId: string | null | undefined) => {
+        if (selectedDeptId === 'all') return true;
+        return deptId === selectedDeptId;
+    }, [selectedDeptId]);
+
+    // Filtered instances (all statuses) — carry dept-filtered tasks
+    const filteredInstances = useMemo(() => {
+        return rawInstances.map(inst => {
+            const tasks = (inst.tasks || []).filter((t: any) => matchesDept(t.assigned_user?.department_id));
+            return { ...inst, tasks };
+        }).filter(inst => selectedDeptId === 'all' || inst.tasks.length > 0);
+    }, [rawInstances, selectedDeptId, matchesDept]);
+
+    const wfStat = useMemo(() => {
+        const list = filteredInstances;
+        return {
+            total: list.length,
+            running: list.filter(i => i.status === 'running').length,
+            paused: list.filter(i => i.status === 'paused').length,
+            completed: list.filter(i => i.status === 'completed').length,
+        };
+    }, [filteredInstances]);
+
+    const recentInstances = useMemo(() => {
+        return filteredInstances.filter(i => i.status === 'running' || i.status === 'paused').slice(0, 20);
+    }, [filteredInstances]);
+
+    const taskStat = useMemo(() => {
+        const now = new Date();
+        const list = rawTaskStat.filter((t: any) => matchesDept(t.users?.department_id));
+        return {
+            total: list.length,
+            pending: list.filter((t: any) => t.status === 'pending').length,
+            in_progress: list.filter((t: any) => t.status === 'in_progress').length,
+            completed: list.filter((t: any) => t.status === 'completed').length,
+            blocked: list.filter((t: any) => t.status === 'blocked').length,
+            overdue: list.filter((t: any) => t.due_date && t.status !== 'completed' && t.status !== 'cancelled' && new Date(t.due_date) < now).length,
+        };
+    }, [rawTaskStat, matchesDept]);
+
+    const pendingApprovals = useMemo(() => {
+        return rawApprovals.filter((a: any) => matchesDept(a.assigneeDeptId));
+    }, [rawApprovals, matchesDept]);
+
+    const filteredActivityTasks = useMemo(() => {
+        return rawActivityTasks.filter((t: any) => matchesDept(t.users?.department_id));
+    }, [rawActivityTasks, matchesDept]);
+
+    const activity: ActivityItem[] = useMemo(() => {
+        const now = new Date();
+        const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+        const cutoff = activityPeriod === 'today'
+            ? todayStart
+            : new Date(now.getTime() - (activityPeriod === '7days' ? 7 : 30) * 86400000);
+        const sameDay = activityPeriod === 'today';
+        return filteredActivityTasks
+            .filter(t => {
+                const u = t.updated_at ? new Date(t.updated_at) : null;
+                const c = t.completed_at ? new Date(t.completed_at) : null;
+                const cr = new Date(t.created_at);
+                return (u && u >= cutoff) || (c && c >= cutoff) || cr >= cutoff;
+            })
+            .map(t => {
+                let type: ActivityItem['type'] = 'updated';
+                let timeStr: string = t.updated_at || t.created_at;
+                if (t.completed_at && new Date(t.completed_at) >= cutoff) { type = 'completed'; timeStr = t.completed_at; }
+                else if (new Date(t.created_at) >= cutoff && !t.updated_at) { type = 'created'; timeStr = t.created_at; }
+                else if (t.status === 'blocked') { type = 'blocked'; }
+                const d = new Date(timeStr);
+                const time = sameDay
+                    ? d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })
+                    : d.toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' }) + ' ' + d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+                return { id: t.id, time, _ts: d.getTime(), title: t.title, storeName: '', type } as ActivityItem & { _ts: number };
+            })
+            .sort((a: any, b: any) => b._ts - a._ts)
+            .slice(0, sameDay ? 10 : 30);
+    }, [filteredActivityTasks, activityPeriod]);
+
+    const { inProgressList, overdueList } = useMemo(() => {
+        const now = new Date();
+        const inProg = filteredActivityTasks
+            .filter(t => t.status === 'in_progress')
+            .sort((a: any, b: any) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime());
+        const over = filteredActivityTasks
+            .filter(t => t.status !== 'completed' && t.status !== 'cancelled' && t.due_date && new Date(t.due_date) < now)
+            .sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime());
+        return { inProgressList: inProg, overdueList: over };
+    }, [filteredActivityTasks]);
 
     if (loading) {
         return (
@@ -657,7 +745,12 @@ export function LiffManagerDashboard() {
         );
     }
 
-    const overallPct = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+    const overallPct = taskStat.total > 0 ? Math.round((taskStat.completed / taskStat.total) * 100) : 0;
+
+    const statusBadge: Record<string, { bg: string; color: string; label: string }> = {
+        running: { bg: 'rgba(59,130,246,0.15)', color: '#60a5fa', label: '進行中' },
+        paused:  { bg: 'rgba(245,158,11,0.15)', color: '#fbbf24', label: '暫停' },
+    };
 
     return (
         <>
@@ -665,13 +758,13 @@ export function LiffManagerDashboard() {
             <div className="liff-dash">
                 {/* ── Header ── */}
                 <div className="dash-header">
-                    <h1 className="dash-title">門市營運管理看板</h1>
+                    <h1 className="dash-title">📊 工作流程總覽</h1>
                     <p className="dash-subtitle">
-                        {userName ? `${userName}，` : ''}掌握所有門市任務進度
+                        {userName ? `${userName}，` : ''}流程、任務與查核清單概況
                     </p>
                     <div className="overall-bar-wrap">
                         <div className="overall-label">
-                            <span>整體營運進度</span>
+                            <span>整體任務完成率</span>
                             <span className="overall-pct">{overallPct}%</span>
                         </div>
                         <div className="overall-track">
@@ -680,39 +773,170 @@ export function LiffManagerDashboard() {
                     </div>
                 </div>
 
-                {/* ── Summary Cards ── */}
-                <div className="summary-grid" style={stats.approvals > 0 ? { gridTemplateColumns: 'repeat(4, 1fr)' } : undefined}>
+                {/* ── Summary Cards (mirrors 總覽) ── */}
+                <div className="summary-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
                     <div className="summary-card">
-                        <div className="summary-val green">{stats.completed}</div>
-                        <div className="summary-lbl">已完成</div>
+                        <div className="summary-val" style={{ color: '#60a5fa' }}>{wfStat.running}</div>
+                        <div className="summary-lbl">進行中流程</div>
+                        <div style={{ fontSize: '10px', color: '#475569', marginTop: '2px' }}>{wfStat.total} 總計</div>
                     </div>
                     <div className="summary-card">
-                        <div className="summary-val amber">{stats.pending}</div>
-                        <div className="summary-lbl">待完成</div>
+                        <div className="summary-val" style={{ color: '#22d3ee' }}>{taskStat.in_progress}</div>
+                        <div className="summary-lbl">進行中任務</div>
                     </div>
                     <div className="summary-card">
-                        <div className="summary-val red">{stats.delayed}</div>
-                        <div className="summary-lbl">延遲</div>
+                        <div className="summary-val amber">{taskStat.pending}</div>
+                        <div className="summary-lbl">待處理任務</div>
+                        <div style={{ fontSize: '10px', color: '#475569', marginTop: '2px' }}>{taskStat.total} 總計</div>
                     </div>
-                    {stats.approvals > 0 && (
-                        <div className="summary-card">
-                            <div className="summary-val" style={{ color: '#a78bfa' }}>{stats.approvals}</div>
-                            <div className="summary-lbl">待審批</div>
-                        </div>
-                    )}
+                    <div className="summary-card">
+                        <div className="summary-val red">{taskStat.overdue}</div>
+                        <div className="summary-lbl">逾期任務</div>
+                    </div>
                 </div>
 
                 {/* ── Refresh Bar ── */}
-                <div className="refresh-bar">
+                <div className="refresh-bar" style={{ flexWrap: 'wrap', padding: '10px 16px' }}>
                     <button className="refresh-btn" onClick={handleRefresh} disabled={refreshing}>
                         <span className={refreshing ? 'refresh-spinning' : ''} style={{ display: 'inline-block' }}>🔄</span>
                         {' '}{refreshing ? '更新中…' : '重新整理'}
                     </button>
+                    <select
+                        value={selectedDeptId}
+                        onChange={(e) => setSelectedDeptId(e.target.value)}
+                        style={{
+                            background: selectedDeptId === 'all' ? 'rgba(255,255,255,0.06)' : 'rgba(129,140,248,0.15)',
+                            border: '1px solid',
+                            borderColor: selectedDeptId === 'all' ? 'rgba(255,255,255,0.08)' : 'rgba(129,140,248,0.4)',
+                            borderRadius: '20px',
+                            padding: '6px 12px',
+                            color: selectedDeptId === 'all' ? '#818cf8' : '#a5b4fc',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            outline: 'none',
+                        }}
+                    >
+                        <option value="all">🏢 全部部門</option>
+                        {departments.map(d => (
+                            <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                    </select>
                     {lastRefresh && (
                         <span style={{ fontSize: '10px', color: '#334155' }}>
                             {lastRefresh.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })} 更新
                         </span>
                     )}
+                </div>
+
+                {/* ── Active Workflows ── */}
+                <div className="glass-section">
+                    <div className="section-head">
+                        <span className="section-title">🔄 進行中流程</span>
+                        {recentInstances.length > 0 && <span className="section-meta">{recentInstances.length}</span>}
+                    </div>
+                    <div className="section-body">
+                        {recentInstances.length === 0 ? (
+                            <div className="empty-state">目前沒有進行中的流程</div>
+                        ) : (
+                            <div style={{ display: 'grid', gap: '10px' }}>
+                                {recentInstances.map(inst => {
+                                    const tasks = inst.tasks || [];
+                                    const now = new Date();
+                                    const total = tasks.length;
+                                    const completed = tasks.filter(t => t.status === 'completed').length;
+                                    const inProgress = tasks.filter(t => t.status === 'in_progress').length;
+                                    const blocked = tasks.filter(t => t.status === 'blocked').length;
+                                    const overdueCount = tasks.filter(t => t.status !== 'completed' && t.status !== 'cancelled' && t.due_date && new Date(t.due_date) < now).length;
+                                    const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+                                    const pctColor = pct >= 80 ? '#34d399' : pct >= 40 ? '#fbbf24' : '#f87171';
+                                    const badge = statusBadge[inst.status];
+                                    const isOpen = expandedInstanceId === inst.id;
+                                    const inProgressTasks = tasks.filter(t => t.status === 'in_progress');
+                                    return (
+                                        <div
+                                            key={inst.id}
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={() => setExpandedInstanceId(isOpen ? null : inst.id)}
+                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedInstanceId(isOpen ? null : inst.id); } }}
+                                            style={{
+                                                cursor: 'pointer',
+                                                padding: '12px 14px',
+                                                borderRadius: '12px',
+                                                background: 'rgba(255,255,255,0.025)',
+                                                border: '1px solid',
+                                                borderColor: isOpen ? 'rgba(129,140,248,0.4)' : 'rgba(255,255,255,0.06)',
+                                                boxShadow: isOpen ? '0 4px 16px rgba(79,70,229,0.15)' : '0 1px 3px rgba(0,0,0,0.2)',
+                                                transition: 'border-color 0.15s, box-shadow 0.15s',
+                                            }}
+                                        >
+                                            {/* Header row */}
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', gap: '8px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                                                    <span style={{ fontSize: '10px', color: '#64748b', display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0 }}>▶</span>
+                                                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#dde2f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inst.name}</span>
+                                                    {badge && (
+                                                        <span style={{ fontSize: '10px', padding: '2px 7px', borderRadius: '4px', fontWeight: 600, background: badge.bg, color: badge.color, flexShrink: 0 }}>
+                                                            {badge.label}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <span style={{ fontSize: '14px', fontWeight: 700, color: pctColor, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>{pct}%</span>
+                                            </div>
+                                            {/* Progress bar (neutral grey) */}
+                                            <div style={{ height: '6px', borderRadius: '99px', background: 'rgba(255,255,255,0.06)', overflow: 'hidden', marginBottom: '10px' }}>
+                                                <div style={{ height: '100%', borderRadius: '99px', width: `${pct}%`, background: 'linear-gradient(90deg, #fff 0%, rgba(255,255,255,0.85) 100%)', boxShadow: '0 0 8px rgba(255,255,255,0.3)', transition: 'width 0.6s cubic-bezier(0.4,0,0.2,1)' }} />
+                                            </div>
+                                            {/* Icon stats row */}
+                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', fontSize: '11px', alignItems: 'center' }}>
+                                                <span style={{ color: '#34d399', fontWeight: 600 }}>✅ 已完成 {completed}/{total}</span>
+                                                {inProgress > 0 && <span style={{ color: '#60a5fa', fontWeight: 600 }}>🔄 更新 {inProgress}</span>}
+                                                {blocked > 0 && <span style={{ color: '#fbbf24', fontWeight: 600 }}>🟠 阻塞 {blocked}</span>}
+                                                {overdueCount > 0 && (
+                                                    <span style={{
+                                                        fontSize: '10px',
+                                                        padding: '2px 8px',
+                                                        borderRadius: '999px',
+                                                        fontWeight: 700,
+                                                        background: 'rgba(248,113,113,0.15)',
+                                                        color: '#f87171',
+                                                        border: '1px solid rgba(248,113,113,0.3)',
+                                                        letterSpacing: '0.3px',
+                                                    }}>❗ 逾期 {overdueCount}</span>
+                                                )}
+                                                <span style={{ marginLeft: 'auto', fontSize: '10px', color: '#475569' }}>{new Date(inst.started_at).toLocaleDateString('zh-TW')}</span>
+                                            </div>
+                                            {/* Expanded: in-progress tasks */}
+                                            {isOpen && (
+                                                <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                                    <div style={{ fontSize: '11px', color: '#475569', fontWeight: 600, marginBottom: '6px' }}>🔄 進行中任務 ({inProgressTasks.length})</div>
+                                                    {inProgressTasks.length === 0 ? (
+                                                        <div style={{ fontSize: '11px', color: '#475569', padding: '4px 0' }}>目前無進行中任務</div>
+                                                    ) : inProgressTasks.map(t => {
+                                                        const taskOverdue = t.due_date && new Date(t.due_date) < new Date();
+                                                        return (
+                                                            <div key={t.id} style={{ padding: '8px 10px', marginBottom: '6px', borderRadius: '8px', background: 'rgba(59,130,246,0.06)', borderLeft: '2px solid #60a5fa' }}>
+                                                                <div style={{ fontSize: '12px', fontWeight: 600, color: '#dde2f0', marginBottom: '3px' }}>{t.title}</div>
+                                                                <div style={{ display: 'flex', gap: '10px', fontSize: '10px', color: '#64748b' }}>
+                                                                    <span>👤 {t.assigned_user?.name || '未指派'}</span>
+                                                                    {t.due_date && (
+                                                                        <span style={{ color: taskOverdue ? '#f87171' : '#64748b', fontWeight: taskOverdue ? 700 : 400 }}>
+                                                                            📅 {new Date(t.due_date).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })}{taskOverdue ? ' 逾期' : ''}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 {/* ── Awaiting Approvals ── */}
@@ -725,26 +949,119 @@ export function LiffManagerDashboard() {
                         <div className="section-body">
                             {pendingApprovals.map(a => (
                                 <div key={a.id} className="delay-card" style={{ borderLeftColor: '#a78bfa' }}>
+                                    {a.workflowName && <div style={{ fontSize: '10px', color: '#64748b', marginBottom: '2px' }}>{a.workflowName}</div>}
                                     <div className="delay-title">{a.taskTitle}</div>
                                     <div className="delay-meta">
-                                        <span>申請人：{a.requester}</span>
+                                        <span>負責人：{a.assignee}</span>
                                         <span>{a.requestedAt}</span>
-                                        <span style={{ color: '#a78bfa', fontWeight: 700 }}>#{a.shortId}</span>
                                     </div>
+                                    {a.approvers.length > 0 && (
+                                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                                            <div style={{ fontSize: '10px', color: '#475569', marginBottom: '4px', fontWeight: 600 }}>審批人</div>
+                                            {a.approvers.map((ap, i) => (
+                                                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', padding: '2px 0' }}>
+                                                    <span style={{ color: '#cbd5e1' }}>{ap.name}</span>
+                                                    <span style={{
+                                                        fontSize: '10px', padding: '1px 6px', borderRadius: '4px', fontWeight: 600,
+                                                        background: ap.status === 'approved' ? 'rgba(34,197,94,0.15)' : ap.status === 'rejected' ? 'rgba(239,68,68,0.15)' : 'rgba(245,158,11,0.15)',
+                                                        color: ap.status === 'approved' ? '#34d399' : ap.status === 'rejected' ? '#f87171' : '#fbbf24',
+                                                    }}>
+                                                        {ap.status === 'approved' ? '已核准' : ap.status === 'rejected' ? '已拒絕' : '待回覆'}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
                     </div>
                 )}
 
-                {/* ── Store Progress ── */}
-                <StoreProgressSection storeProgress={storeProgress} />
+                {/* ── In-Progress / Overdue Tabs ── */}
+                {(inProgressList.length > 0 || overdueList.length > 0) && (() => {
+                    const activeList: any[] = focusTab === 'in_progress' ? inProgressList : overdueList;
+                    const accent = focusTab === 'in_progress' ? '#60a5fa' : '#f87171';
+                    const bgTint = focusTab === 'in_progress' ? 'rgba(59,130,246,0.06)' : 'rgba(248,113,113,0.06)';
+                    const mkTabStyle = (active: boolean, color: string, tintA: string, tintB: string): React.CSSProperties => ({
+                        flex: 1,
+                        padding: '10px 12px',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        borderRadius: '999px',
+                        border: '1px solid',
+                        borderColor: active ? tintB : 'rgba(255,255,255,0.06)',
+                        background: active ? tintA : 'rgba(255,255,255,0.02)',
+                        color: active ? color : '#64748b',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s',
+                        letterSpacing: '0.3px',
+                    });
+                    return (
+                        <div className="glass-section">
+                            <div style={{ display: 'flex', gap: '8px', padding: '14px 18px 4px' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setFocusTab('in_progress')}
+                                    style={mkTabStyle(focusTab === 'in_progress', '#60a5fa', 'rgba(96,165,250,0.15)', 'rgba(96,165,250,0.4)')}
+                                >
+                                    🔄 進行任務 <span style={{ opacity: 0.75, marginLeft: '4px' }}>{inProgressList.length}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setFocusTab('overdue')}
+                                    style={mkTabStyle(focusTab === 'overdue', '#f87171', 'rgba(248,113,113,0.15)', 'rgba(248,113,113,0.4)')}
+                                >
+                                    ❗ 逾期任務 <span style={{ opacity: 0.75, marginLeft: '4px' }}>{overdueList.length}</span>
+                                </button>
+                            </div>
+                            <div className="section-body">
+                                {activeList.length === 0 ? (
+                                    <div className="empty-state" style={{ padding: '20px 8px' }}>
+                                        {focusTab === 'in_progress' ? '目前無進行中任務' : '✓ 沒有逾期任務'}
+                                    </div>
+                                ) : activeList.slice(0, 15).map((t: any) => {
+                                    const isOverdueTab = focusTab === 'overdue';
+                                    const overdueDays = t.due_date && new Date(t.due_date) < new Date() && t.status !== 'completed' && t.status !== 'cancelled'
+                                        ? Math.max(0, Math.ceil((Date.now() - new Date(t.due_date).getTime()) / 86400000))
+                                        : null;
+                                    return (
+                                        <div key={t.id} style={{ padding: '8px 10px', marginBottom: '6px', borderRadius: '8px', background: bgTint, borderLeft: `2px solid ${accent}` }}>
+                                            <div style={{ fontSize: '12px', fontWeight: 600, color: '#dde2f0', marginBottom: '3px' }}>{t.title}</div>
+                                            <div style={{ display: 'flex', gap: '8px', fontSize: '10px', color: '#64748b', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                <span>👤 {t.users?.name || '未指派'}</span>
+                                                {isOverdueTab ? (
+                                                    overdueDays !== null && <span style={{ color: '#f87171', fontWeight: 700 }}>📅 逾期 {overdueDays} 天</span>
+                                                ) : (
+                                                    <>
+                                                        {t.due_date && (
+                                                            <span>📅 {new Date(t.due_date).toLocaleDateString('zh-TW', { month: 'numeric', day: 'numeric' })}</span>
+                                                        )}
+                                                        {overdueDays !== null && (
+                                                            <span style={{
+                                                                fontSize: '9px',
+                                                                padding: '1px 7px',
+                                                                borderRadius: '999px',
+                                                                fontWeight: 700,
+                                                                background: 'rgba(248,113,113,0.15)',
+                                                                color: '#f87171',
+                                                                border: '1px solid rgba(248,113,113,0.3)',
+                                                                letterSpacing: '0.3px',
+                                                            }}>❗ 逾期 {overdueDays}天</span>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    );
+                })()}
 
-                {/* ── Delayed Tasks ── */}
-                <DelayedTasksSection delayedTasks={delayedTasks} />
-
-                {/* ── Today's Updates ── */}
-                <ActivityTimeline activity={activity} />
+                {/* ── Activity ── */}
+                <ActivityTimeline activity={activity} period={activityPeriod} onPeriodChange={setActivityPeriod} />
 
                 {/* Safe area */}
                 <div style={{ height: '40px' }} />
