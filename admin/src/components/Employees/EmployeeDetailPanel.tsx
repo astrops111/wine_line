@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { t, getLocale } from '../../lib/i18n';
 import { useOrg } from '../../lib/OrgContext';
@@ -67,6 +67,30 @@ export function EmployeeDetailPanel({
     const daysOfWeek = getDaysOfWeek(zh);
 
     const [tab, setTab] = useState<Tab>('personal');
+
+    // Auto-detected LINE group memberships (from line_group_members recorded via webhook)
+    const [detectedGroupIds, setDetectedGroupIds] = useState<Set<string>>(new Set());
+    useEffect(() => {
+        const lineUserId = lineUsers.find(u => u.user_id === selected.id)?.line_user_id;
+        if (!lineUserId) { setDetectedGroupIds(new Set()); return; }
+        supabase.from('line_group_members')
+            .select('line_group_id')
+            .eq('line_user_id', lineUserId)
+            .then(({ data }) => {
+                const detectedLineGroupIds = new Set((data || []).map((m: any) => m.line_group_id));
+                const ids = new Set(lineGroups.filter(g => detectedLineGroupIds.has(g.line_group_id)).map(g => g.id));
+                setDetectedGroupIds(ids);
+
+                // Auto-fill editForm.line_group_ids with detected groups not already checked
+                if (editForm && ids.size > 0) {
+                    const missing = Array.from(ids).filter(id => !editForm.line_group_ids.includes(id));
+                    if (missing.length > 0) {
+                        patchForm({ line_group_ids: [...editForm.line_group_ids, ...missing] });
+                    }
+                }
+            });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selected.id, lineUsers, lineGroups]);
 
     // Local UI state
     const [showLeaveForm, setShowLeaveForm] = useState(false);
@@ -402,10 +426,24 @@ export function EmployeeDetailPanel({
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
                                     {lineGroups.map(g => {
                                         const checked = editForm?.line_group_ids.includes(g.id) ?? false;
+                                        const detected = detectedGroupIds.has(g.id);
                                         return (
                                             <label key={g.id} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '6px', border: `1px solid ${checked ? 'var(--accent-primary)' : 'var(--border-color)'}`, background: checked ? 'var(--accent-primary-dim)' : 'transparent', cursor: 'pointer', fontSize: '12px' }}>
                                                 <input type="checkbox" checked={checked} onChange={e => { const ids = editForm?.line_group_ids ?? []; patchForm({ line_group_ids: e.target.checked ? [...ids, g.id] : ids.filter(id => id !== g.id) }); }} />
                                                 {g.group_name}
+                                                {detected && (
+                                                    <span title={zh ? '從 LINE 活動中偵測到此使用者屬於此群組' : 'Auto-detected from LINE activity'} style={{
+                                                        marginLeft: '2px',
+                                                        fontSize: '9px',
+                                                        padding: '1px 6px',
+                                                        borderRadius: '999px',
+                                                        fontWeight: 700,
+                                                        background: 'rgba(34,197,94,0.15)',
+                                                        color: '#15803d',
+                                                        border: '1px solid rgba(34,197,94,0.4)',
+                                                        letterSpacing: '0.3px',
+                                                    }}>✓ {zh ? '自動' : 'Auto'}</span>
+                                                )}
                                             </label>
                                         );
                                     })}
@@ -418,8 +456,8 @@ export function EmployeeDetailPanel({
                                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{zh ? '開啟後可在 LINE 使用管理指令' : 'Enables /manage commands in LINE'}</div>
                             </div>
                             <button onClick={() => updateField(selected.id, 'is_line_manager', !(selected as any).is_line_manager)}
-                                style={{ width: '44px', height: '24px', borderRadius: '12px', border: 'none', cursor: 'pointer', background: (selected as any).is_line_manager ? 'var(--accent-primary)' : 'var(--border-color)', position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
-                                <span style={{ position: 'absolute', top: '2px', left: (selected as any).is_line_manager ? '22px' : '2px', width: '20px', height: '20px', borderRadius: '50%', background: '#fff', transition: 'left 0.2s' }} />
+                                style={{ width: '48px', height: '26px', borderRadius: '13px', border: `2px solid ${(selected as any).is_line_manager ? 'var(--accent-primary)' : 'var(--text-muted)'}`, cursor: 'pointer', background: (selected as any).is_line_manager ? 'var(--accent-primary)' : 'transparent', position: 'relative', transition: 'background 0.2s, border-color 0.2s', flexShrink: 0, boxShadow: '0 0 0 1px rgba(0,0,0,0.05)' }}>
+                                <span style={{ position: 'absolute', top: '1px', left: (selected as any).is_line_manager ? '22px' : '1px', width: '18px', height: '18px', borderRadius: '50%', background: (selected as any).is_line_manager ? '#fff' : 'var(--text-muted)', transition: 'left 0.2s, background 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
                             </button>
                         </div>
                     </div>

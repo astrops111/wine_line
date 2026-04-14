@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import type { PendingAction } from './types.ts';
 import { verifySignature, getLineProfile, getGroupSummary, text, replyAndLog, pushAndLog } from './line-api.ts';
-import { upsertLineUser, upsertLineGroup, logMessage, logCommand, logError } from './db-helpers.ts';
+import { upsertLineUser, upsertLineGroup, upsertLineGroupMember, logMessage, logCommand, logError } from './db-helpers.ts';
 import { mkBtn, withQuickReplies, flexMenu, flexSuccess, flexManagerMenu, buildWorkflowSelectionFlex } from './flex-builders.ts';
 import { cmdTaskList, cmdTaskCreate, cmdTaskDone, cmdTaskUpdate, cmdTaskRequestConfirm, cmdTaskConfirmRespond, cmdNotes, cmdProjectList, cmdProjectDone, cmdProjectNote, cmdProjectStatus } from './command-handlers.ts';
 import { cmdWorkflowStatus, cmdWorkflowTasks, checkManager, cmdManagerOverview, cmdManagerAssign, cmdManagerLeaveReview, cmdRegister, handleCreateTaskStep } from './command-handlers-workflow.ts';
@@ -116,6 +116,7 @@ serve(async (req) => {
     if (isGroup && groupId) {
       const summary = await getGroupSummary(groupId, accessToken);
       await upsertLineGroup(groupId, summary.groupName, db);
+      if (lineUserId) await upsertLineGroupMember(lineUserId, groupId, db);
     }
 
     const profile = await getLineProfile(lineUserId, accessToken, groupId);

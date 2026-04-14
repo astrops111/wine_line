@@ -443,6 +443,7 @@ export function LiffManagerDashboard() {
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
     const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
     const [selectedDeptId, setSelectedDeptId] = useState<string>('all');
+    const [isManagerUser, setIsManagerUser] = useState(false);
 
     // LIFF initialization & employee lookup (mirrors LiffApp.tsx pattern)
     useEffect(() => {
@@ -468,6 +469,7 @@ export function LiffManagerDashboard() {
                 setLoading(false);
                 return;
             }
+            setIsManagerUser(true);
             setOrgId(user.organization_id);
             setCurrentUserId(user.id);
             if (user.name) setUserName(user.name);
@@ -524,12 +526,7 @@ export function LiffManagerDashboard() {
                 return;
             }
 
-            if (!user.is_manager && !user.is_line_manager) {
-                setError('此看板僅限主管使用');
-                setLoading(false);
-                return;
-            }
-
+            setIsManagerUser(!!(user.is_manager || user.is_line_manager));
             setOrgId(user.organization_id);
             setCurrentUserId(user.id);
             if (user.name) setUserName(user.name);
@@ -551,15 +548,15 @@ export function LiffManagerDashboard() {
 
             const [instRes, taskStatRes, activityRes, deptRes] = await Promise.all([
                 supabase.from('workflow_instances')
-                    .select('id, name, status, started_at, tasks(id, title, status, due_date, assigned_user:users!tasks_assigned_to_fkey(name, department_id))')
+                    .select('id, name, status, started_at, tasks(id, title, status, due_date, assigned_to, assigned_user:users!tasks_assigned_to_fkey(name, department_id))')
                     .eq('organization_id', oid)
                     .order('started_at', { ascending: false })
                     .limit(60),
                 supabase.from('tasks')
-                    .select('status, due_date, users!tasks_assigned_to_fkey(department_id)')
+                    .select('status, due_date, assigned_to, users!tasks_assigned_to_fkey(department_id)')
                     .eq('organization_id', oid),
                 supabase.from('tasks')
-                    .select('id, title, status, priority, due_date, completed_at, updated_at, created_at, users!tasks_assigned_to_fkey(name, store_id, department_id)')
+                    .select('id, title, status, priority, due_date, completed_at, updated_at, created_at, assigned_to, users!tasks_assigned_to_fkey(name, store_id, department_id)')
                     .eq('organization_id', oid)
                     .gte('updated_at', new Date(now.getTime() - 30 * 86400000).toISOString())
                     .order('updated_at', { ascending: false })
@@ -630,19 +627,23 @@ export function LiffManagerDashboard() {
         await loadData();
     }
 
-    // Dept filter predicate
-    const matchesDept = useCallback((deptId: string | null | undefined) => {
+    // Scope predicate: dept filter for managers; own-tasks for non-managers
+    const matchesScope = useCallback((task: any) => {
+        if (!isManagerUser) {
+            return task.assigned_to === currentUserId;
+        }
         if (selectedDeptId === 'all') return true;
-        return deptId === selectedDeptId;
-    }, [selectedDeptId]);
+        return (task.assigned_user?.department_id ?? task.users?.department_id) === selectedDeptId;
+    }, [isManagerUser, currentUserId, selectedDeptId]);
 
-    // Filtered instances (all statuses) — carry dept-filtered tasks
+    // Filtered instances — carry scope-filtered tasks; hide workflows that have no matching tasks
     const filteredInstances = useMemo(() => {
+        const effectivelyFiltering = !isManagerUser || selectedDeptId !== 'all';
         return rawInstances.map(inst => {
-            const tasks = (inst.tasks || []).filter((t: any) => matchesDept(t.assigned_user?.department_id));
+            const tasks = (inst.tasks || []).filter((t: any) => matchesScope(t));
             return { ...inst, tasks };
-        }).filter(inst => selectedDeptId === 'all' || inst.tasks.length > 0);
-    }, [rawInstances, selectedDeptId, matchesDept]);
+        }).filter(inst => !effectivelyFiltering || inst.tasks.length > 0);
+    }, [rawInstances, isManagerUser, selectedDeptId, matchesScope]);
 
     const wfStat = useMemo(() => {
         const list = filteredInstances;
@@ -660,7 +661,7 @@ export function LiffManagerDashboard() {
 
     const taskStat = useMemo(() => {
         const now = new Date();
-        const list = rawTaskStat.filter((t: any) => matchesDept(t.users?.department_id));
+        const list = rawTaskStat.filter((t: any) => matchesScope(t));
         return {
             total: list.length,
             pending: list.filter((t: any) => t.status === 'pending').length,
@@ -669,15 +670,21 @@ export function LiffManagerDashboard() {
             blocked: list.filter((t: any) => t.status === 'blocked').length,
             overdue: list.filter((t: any) => t.due_date && t.status !== 'completed' && t.status !== 'cancelled' && new Date(t.due_date) < now).length,
         };
-    }, [rawTaskStat, matchesDept]);
+    }, [rawTaskStat, matchesScope]);
 
     const pendingApprovals = useMemo(() => {
-        return rawApprovals.filter((a: any) => matchesDept(a.assigneeDeptId));
-    }, [rawApprovals, matchesDept]);
+        // Managers see all awaiting approvals where they're the approver; non-managers also
+        // see those plus any approvals where they're the requester (assignee).
+        if (isManagerUser) {
+            if (selectedDeptId === 'all') return rawApprovals;
+            return rawApprovals.filter((a: any) => a.assigneeDeptId === selectedDeptId);
+        }
+        return rawApprovals;
+    }, [rawApprovals, isManagerUser, selectedDeptId]);
 
     const filteredActivityTasks = useMemo(() => {
-        return rawActivityTasks.filter((t: any) => matchesDept(t.users?.department_id));
-    }, [rawActivityTasks, matchesDept]);
+        return rawActivityTasks.filter((t: any) => matchesScope(t));
+    }, [rawActivityTasks, matchesScope]);
 
     const activity: ActivityItem[] = useMemo(() => {
         const now = new Date();
@@ -760,7 +767,7 @@ export function LiffManagerDashboard() {
                 <div className="dash-header">
                     <h1 className="dash-title">📊 工作流程總覽</h1>
                     <p className="dash-subtitle">
-                        {userName ? `${userName}，` : ''}流程、任務與查核清單概況
+                        {userName ? `${userName}，` : ''}{isManagerUser ? '流程、任務與查核清單概況' : '您參與的流程與指派任務'}
                     </p>
                     <div className="overall-bar-wrap">
                         <div className="overall-label">
@@ -801,7 +808,7 @@ export function LiffManagerDashboard() {
                         <span className={refreshing ? 'refresh-spinning' : ''} style={{ display: 'inline-block' }}>🔄</span>
                         {' '}{refreshing ? '更新中…' : '重新整理'}
                     </button>
-                    <select
+                    {isManagerUser && <select
                         value={selectedDeptId}
                         onChange={(e) => setSelectedDeptId(e.target.value)}
                         style={{
@@ -821,7 +828,7 @@ export function LiffManagerDashboard() {
                         {departments.map(d => (
                             <option key={d.id} value={d.id}>{d.name}</option>
                         ))}
-                    </select>
+                    </select>}
                     {lastRefresh && (
                         <span style={{ fontSize: '10px', color: '#334155' }}>
                             {lastRefresh.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })} 更新

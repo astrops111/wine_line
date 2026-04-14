@@ -29,6 +29,27 @@ export async function upsertLineUser(lineUserId: string, displayName: string, db
   return { row: inserted, isNew: true };
 }
 
+/** Record that a LINE user was observed participating in a group. No-op on duplicate. */
+export async function upsertLineGroupMember(lineUserId: string, lineGroupId: string, db: SupabaseClient) {
+  try {
+    const { data: existing } = await db
+      .from("line_group_members")
+      .select("id")
+      .eq("line_user_id", lineUserId)
+      .eq("line_group_id", lineGroupId)
+      .maybeSingle();
+    if (existing) return;
+    await db.from("line_group_members").insert({
+      line_user_id: lineUserId,
+      line_group_id: lineGroupId,
+      role: "member",
+      joined_at: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.error("upsertLineGroupMember error:", e);
+  }
+}
+
 export async function upsertLineGroup(groupId: string, groupName: string, db: SupabaseClient) {
   const { data: existing } = await db
     .from("line_groups")
